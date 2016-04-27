@@ -25,6 +25,9 @@
 // Move on to the next waypoint when getting within this distance of the current goal (in meters)
 #define WAYPOINT_RADIUS         25
 
+// If set to 1, odd numbered Logo subroutines are logged as a waypoint. Recommended for THERMALLING_MISSION
+#define LOG_WAYPOINT_PER_SUBROUTINE     0  
+
 // Origin Location
 // When using relative waypoints, the default is to interpret those waypoints as relative to the
 // plane's power-up location.  Here you can choose to use any specific, fixed 3D location as the
@@ -220,7 +223,6 @@
 // WIND_SPEED_Z         - in cm/s
 // PARAM                - current param value
 // XX_INPUT_CHANNEL     - channel value from 2000-4000 (any channel defined in options.h, e.g. THROTTLE_INPUT_CHANNEL)
-
 
 
 ////////////////////////////////////////////////////////////////////////////////

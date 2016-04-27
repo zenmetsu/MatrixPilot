@@ -736,6 +736,15 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 
 		case 10: // Exec (reset the stack and then call a subroutine)
 			instructionIndex = find_start_of_subroutine(instr.subcmd);
+
+#ifndef LOG_WAYPOINT_PER_SUBROUTINE
+#define LOG_WAYPOINT_PER_SUBROUTINE                         0
+#endif
+#if ( LOG_WAYPOINT_PER_SUBROUTINE == 1 )
+			//log Subroutine number instead
+			//log only odd subroutine numbers
+			if ( (instr.subcmd%2) == 1)	waypointIndex = instr.subcmd ;
+#endif
 			logoStack[0].returnInstructionIndex = instructionIndex;
 			logoStackIndex = 0;
 			interruptStackBase = 0;
@@ -750,6 +759,11 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 				logoStack[logoStackIndex].returnInstructionIndex = instructionIndex;
 			}
 			instructionIndex = find_start_of_subroutine(instr.subcmd);
+#if ( LOG_WAYPOINT_PER_SUBROUTINE == 1 )
+			//log Subroutine number instead
+			//log only odd subroutine numbers
+			if ( (instr.subcmd%2) == 1) waypointIndex = instr.subcmd ;
+#endif
 			break;
 
 		case 3: // Forward/Back
@@ -1025,7 +1039,9 @@ static void process_instructions(void)
 			return;  // don't update goal if we didn't hit a FLY command
 	}
 
+#if ( LOG_WAYPOINT_PER_SUBROUTINE != 1 )
 	waypointIndex = instructionIndex - 1;
+#endif
 
 	if (logo_goal_has_moved())
 	{
