@@ -27,6 +27,10 @@
 #include "../libDCM/mathlibNAV.h"
 #include "../libDCM/deadReckoning.h"
 
+#if (THERMALLING_MISSION == 1)
+#include "states.h"
+#endif
+
 int16_t minimum_groundspeed;
 int16_t minimum_airspeed;
 int16_t maximum_airspeed;
@@ -195,9 +199,22 @@ fractional gliding_airspeed_pitch_adjust(void)
 	// Pitch adjust for airspeed on glide only.
 	if (throttle_control >= 100)
 	{
+#if (THERMALLING_MISSION != 1 )
+		aspd_pitch_adj = 0;
+		airspeed_error_integral.WW = 0;
+#else
+		aspd_pitch_adj += MOTOR_ON_PITCH_UP; //with motor on, maintain the same speed, and to climb, use more pitch up
+#endif		
+	}
+
+#if (THERMALLING_MISSION == 1 )
+	// Pitch adjust for airspeed on glide only, repeat this for Brakes, which also effects pitch.
+	if (autopilotBrake >= 300)
+	{
 		aspd_pitch_adj = 0;
 		airspeed_error_integral.WW = 0;
 	}
+#endif    //THERMALLING_MISSION
 
 	// limit the rate of the airspeed pitch adjustment
 	if (aspd_pitch_adj > last_aspd_pitch_adj)
@@ -219,6 +236,52 @@ fractional gliding_airspeed_pitch_adjust(void)
 
 void airspeedCntrl(void)
 {
+
+#if (AIRFRAME_TYPE == AIRFRAME_GLIDER)
+	// set flaps to follow FLAPS_INPUT_CHANNEL proportionally
+	flapsSelected = ( ((signed int)udb_pwIn[FLAPS_INPUT_CHANNEL]) - 3115 ) ;
+#if (THERMALLING_MISSION == 1 )
+	// desiredSpeed and flaps control
+		if (!state_flags._.GPS_steering)
+		{
+			//no desiredSpeed control from LOGO, use FLAPS_INPUT_CHANNEL to set desiredSpeed
+			//this will overrule updates from Mavlink
+			if (  ( ((signed int)udb_pwIn[FLAPS_INPUT_CHANNEL]) - 3115 ) < -330  )
+			{
+				desiredSpeed = DESIRED_SPEED_SLOW_F4;    //dm/s
+			}
+			else if (  ( ((signed int)udb_pwIn[FLAPS_INPUT_CHANNEL]) - 3115 ) > 330  )
+			{
+				desiredSpeed = DESIRED_SPEED_FAST_FMIN4;  //dm/s
+			}
+			else
+			{
+				//Flaps FLAPS_INPUT_CHANNEL centered
+				desiredSpeed = DESIRED_SPEED_NORMAL_F0;   //dm/s
+			}
+		} //if not auto
+		else
+		{
+			//Logo control, FLAPS_INPUT_CHANNEL is ignored  
+			
+			// Follow desiredSpeed set by flightplan-logo.c
+		    if ( desiredSpeed == DESIRED_SPEED_SLOW_F4 )
+			{
+				//normal speed = 0, slow = -1000, high speed = 1000
+			   	flapsSelected = -1000;	 // Flap setting 4 (down) for thermalling
+	   		}
+			else if ( desiredSpeed == DESIRED_SPEED_FAST_FMIN4 )
+			{
+			  	flapsSelected = 400;// Flap setting -2 (up) for speed
+			}
+	   		else
+			{
+				flapsSelected = 0;//no camber
+			}
+		}
+#endif //THERMALLING_MISSION
+#endif //AIRFRAME_GLIDER
+
 	airspeed                   = calc_airspeed();
 	groundspeed                = calc_groundspeed();
 	target_airspeed            = calc_target_airspeed(desiredSpeed);

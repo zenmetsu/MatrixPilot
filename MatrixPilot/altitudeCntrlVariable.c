@@ -66,6 +66,12 @@ int16_t alt_hold_pitch_min;
 int16_t alt_hold_pitch_max;
 int16_t alt_hold_pitch_high;
 int16_t rtl_pitch_down;
+#if ( THERMALLING_MISSION == 1 )
+extern int16_t autopilotBrake; // braking by autopilot, defined in servoMix.c and set in altitudeCntrlVariable.c   0 brake = 0, full brake == 2000
+static int32_t speed_height_old = 0;
+static int16_t varioCounter = 0;   // 0..3 to create 1Hz from 4Hz
+extern int16_t vario;   // in cm/s   used for Logo by  - defined in flightplan_logo.c and set in altitudeCntrlVariable.c
+#endif  //THERMALLING_MISSION
 
 // Internal computed variables.
 int16_t max_throttle;
@@ -248,6 +254,16 @@ static void normalAltitudeCntrl(void)
 
 	speed_height = excess_energy_height(target_airspeed, airspeed); // equivalent height of the airspeed
 
+#if ( THERMALLING_MISSION == 1 )
+	varioCounter++;
+	if (varioCounter >= 40)  //2 out of 10 times == 2Hz
+	{
+		varioCounter = 0;
+		//- vario in altitudeCntrlVariable.c because : if in logo c, no vario possible in manual and stab modes
+		vario = ( ( vario * 5 ) + (int16_t)(IMUvelocityz._.W1) + ((int16_t)( speed_height - speed_height_old ) / 200) ) / 6;    //update @ 2Hz, used in flightplan_logo.c
+		speed_height_old = speed_height;
+	}
+#endif  //THERMALLING_MISSION
 	if (udb_flags._.radio_on == 1)
 	{
 		throttleIn = udb_pwIn[THROTTLE_INPUT_CHANNEL];
@@ -375,6 +391,9 @@ static void normalAltitudeCntrl(void)
 	{
 		pitchAltitudeAdjust = 0;
 		manualThrottle(throttleIn);
+#if (AIRFRAME_TYPE == AIRFRAME_GLIDER)
+		autopilotBrake = 0;
+#endif  //AIRFRAME_GLIDER
 	}
 }
 

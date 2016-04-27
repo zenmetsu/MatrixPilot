@@ -305,6 +305,24 @@ void helicalTurnCntrl(void)
 	desiredTilt.WW = - __builtin_mulsu(desiredTurnRateRadians, airSpeed);
 	desiredTilt.WW /= GRAVITYCMSECSEC;
 
+#if ( THERMALLING_MISSION == 1 )
+    // a fixed bank turn is needed, no navigation. For thermalling turns.
+	extern boolean fixedBankActive;	  //flightplan-logo.c
+	extern int16_t fixedBankDeg;	  //flightplan-logo.c
+
+  	if ((AILERON_NAVIGATION||RUDDER_NAVIGATION) && state_flags._.GPS_steering)        // only if LOGO is running
+	{
+		if ( fixedBankActive & ( steeringInput > -200 & steeringInput < 200 ) )	//for RT_BANK(),LEVEL_1S commands, only if no pilot input
+		{
+			//overrule other deflections
+			//rollAccum._.W1 = FIXED_BANK_ROLL_FACTOR * fixedBankDeg;	//~x deg bank
+			desiredTilt.WW = FIXED_BANK_ROLL_FACTOR * fixedBankDeg * -8;	//~x deg bank
+			desiredTurnRateRadians = FIXED_BANK_ROLL_FACTOR * fixedBankDeg;  //scaling? aircraft dependent?
+		}
+	}
+#endif
+
+
 	// limit the lateral acceleration to +- 4 times gravity, total wing loading approximately 4.12 times gravity
 
 	if (desiredTilt.WW > (int32_t)2 * (int32_t)RMAX - 1)
