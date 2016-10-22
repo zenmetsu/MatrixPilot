@@ -203,9 +203,29 @@ fractional gliding_airspeed_pitch_adjust(void)
 	// Pitch adjust for airspeed on glide only.
 	if (throttle_control >= 100)
 	{
+#if (THERMALLING_MISSION != 1 )
+		aspd_pitch_adj = 0;
+		airspeed_error_integral.WW = 0;
+#else
+#if ( MY_PERSONAL_OPTIONS == 1 )
+		//config.ini support for LET
+//		aspd_pitch_adj += altit.MotorOnPitchUp; //with motor on, maintain the same speed, and to climb, use more pitch up
+//#else		
+		aspd_pitch_adj += MOTOR_ON_PITCH_UP; //with motor on, maintain the same speed, and to climb, use more pitch up
+#endif
+#endif
+	}
+
+#if (THERMALLING_MISSION == 1 )
+#if (AIRFRAME_TYPE == AIRFRAME_GLIDER)
+	// Pitch adjust for airspeed on glide only, repeat this for Brakes, which also effects pitch.
+	if (get_autopilotBrake() >= 300)
+	{
 		aspd_pitch_adj = 0;
 		airspeed_error_integral.WW = 0;
 	}
+#endif //AIRFRAME_GLIDER
+#endif //THERMALLING_MISSION
 
 	// limit the rate of the airspeed pitch adjustment
 	if (aspd_pitch_adj > last_aspd_pitch_adj)
@@ -238,6 +258,55 @@ void airspeedCntrl(void)
 	
 	//custom code to control flaps goes here
 	
+#ifndef THERMALLING_MISSION
+#define THERMALLING_MISSION 0
+#endif
+#if (THERMALLING_MISSION == 1 )
+	//if (!flags._.GPS_steering)
+	if (!state_flags._.GPS_steering)
+	{
+		//no desiredSpeed control from LOGO, use FLAPS_INPUT_CHANNEL to set desiredSpeed
+		//this will overrule updates from Mavlink
+		if (  ( ((signed int)udb_pwIn[FLAPS_INPUT_CHANNEL]) - 3115 ) < -330  )
+		{
+			desiredSpeed = DESIRED_SPEED_SLOW_F4;    //dm/s
+		}
+		else if (  ( ((signed int)udb_pwIn[FLAPS_INPUT_CHANNEL]) - 3115 ) > 330  )
+		{
+			desiredSpeed = DESIRED_SPEED_FAST_FMIN4;  //dm/s
+		}
+		else
+		{
+			//Flaps FLAPS_INPUT_CHANNEL centered
+			desiredSpeed = DESIRED_SPEED_NORMAL_F0;   //dm/s
+		}
+		// set flaps to follow slider proportionally, so effect my be measured
+		flapsSelected = ( ((signed int)udb_pwIn[FLAPS_INPUT_CHANNEL]) - 3115 ) ;
+
+	} //if not auto
+	else
+	{
+		//Logo control
+
+		// desiredSpeed set by flightplan-logo.c
+
+		// set flapsSelected using desiredSpeed
+		if ( desiredSpeed == DESIRED_SPEED_SLOW_F4 )
+		{
+			//normal speed = 0, slow = -1000, high speed = 1000
+			flapsSelected = -1000;	 // Flap setting 4 (down) for thermalling
+		}
+		else if ( desiredSpeed == DESIRED_SPEED_FAST_FMIN4 )
+		{
+		  	flapsSelected = 400;// Flap setting -2 (up) for speed
+		}
+		else
+		{
+			flapsSelected = 0;//no camber
+		}
+	}
+#endif //THERMALLING_MISSION
+
 	//Overspeed protection (overrules normal brakes when airspeed too high)
 	//airspeed in cm/s ,  desiredSpeed stored in dm/s (10ths of meters per second)
 	if (state_flags._.altitude_hold_throttle || state_flags._.altitude_hold_pitch)     //stab or auto, not manual

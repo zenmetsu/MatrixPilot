@@ -31,6 +31,9 @@
 #include "altitudeCntrl.h"
 #include "sonarCntrl.h"
 #include "../libDCM/deadReckoning.h"
+#if ( THERMALLING_MISSION == 1 )
+#include "../libDCM/estAltitude.h"
+#endif  //THERMALLING_MISSION
 #include "../libUDB/servoOut.h"
 
 #if (ALTITUDE_GAINS_VARIABLE == 1)
@@ -71,6 +74,20 @@ int16_t alt_hold_pitch_min;
 int16_t alt_hold_pitch_max;
 int16_t alt_hold_pitch_high;
 int16_t rtl_pitch_down;
+
+#if ( THERMALLING_MISSION == 1 )
+#if ( HILSIM == 1 )
+static int32_t speed_height_old = 0;
+#endif 
+static int16_t varioCounter = 0;            // 0..3 to create 1Hz from 4Hz
+extern int16_t vario;                       // in cm/s   used for Logo by  - defined in flightplan_logo.c and set in altitudeCntrlVariable.c
+static boolean motorClimbRunStarted;        // boolean climbing with motor so far this run 
+static int16_t avgMotorRunClimbrate;        // average climbrate in cm/s in this run
+static int16_t sinkMotorOffTimer;           // wait period to postpone climbing with motor due to sink  (30 sec)
+static int16_t motorClimbRunCount;          // counter (40Hz steps) for motor run
+static float avgMotorClimbrate;             // average climbrate after settle all runs in m/s
+static float steadyClimbPowerFactor = 0.7;  // reduce throttle for a 0.7 m/s climb, start with 0.7
+#endif  //THERMALLING_MISSION
 
 // Internal computed variables.
 int16_t max_throttle;
@@ -204,7 +221,13 @@ void setTargetAltitude(int16_t targetAlt)
 static void normalAltitudeCntrl(void)
 {
 	union longww throttleAccum;
+#if ( THERMALLING_MISSION == 1 )
+//	makes no sense if speed_control is on (may be useful for RACING_MODE)
+/*
 	union longww pitchAccum;
+*/
+#endif  //THERMALLING_MISSION
+
 	int16_t throttleIn;
 	int16_t throttleInOffset;
 	union longww heightError = { 0 };
@@ -252,6 +275,21 @@ static void normalAltitudeCntrl(void)
 	int16_t height_marginx8 = height_margin << 3;
 
 	speed_height = excess_energy_height(target_airspeed, airspeed); // equivalent height of the airspeed
+
+#if ( THERMALLING_MISSION == 1 )
+	varioCounter++;
+	if ( (varioCounter % 10) == 0)  //1 out of 10 times == 4Hz
+	{
+		// vario in altitudeCntrlVariable.c because : if in logo c, no vario possible in manual and stab modes
+		//attempt to compensate energy by mixing speedheigth
+#if (USE_BAROMETER_ALTITUDE == 0)
+		vario = ( ( vario * 23 ) + (int16_t)(IMUvelocityz._.W1) + ((int16_t)( speed_height - speed_height_old ) / 200) ) / 24;    //update @ 4Hz, in cm/sec, used in flightplan_logo.c
+		speed_height_old = speed_height;
+#else
+		vario = ( ( vario * 11 ) + (int16_t)(get_barometer_vert_velocity()/10) )/ 12;    //from estAltitude.c   in cm/sec
+#endif
+	}
+#endif  //THERMALLING_MISSION
 
 	if (udb_flags._.radio_on == 1)
 	{
@@ -323,6 +361,8 @@ static void normalAltitudeCntrl(void)
 				if (throttleAccum.WW > (int16_t)(max_throttle)) throttleAccum.WW = (int16_t)(max_throttle);
 			}
 
+/* //THERMALLING_MISSION  this makes no sense if speed_control is on (may be usefull for RACING_MODE)
+
 			heightError._.W1 = - desiredHeight;
 			heightError.WW = (heightError.WW + IMUlocationz.WW - speed_height) >> 13;
 			if (heightError._.W0 < -height_marginx8)
@@ -338,9 +378,155 @@ static void normalAltitudeCntrl(void)
 				pitchAccum.WW = __builtin_mulss((int16_t)(pitch_height_gain) , - heightError._.W0 - height_marginx8)>>3;
 				pitchAltitudeAdjust = (int16_t)(pitch_at_max) + pitchAccum._.W0;
 			}
+*/
+//#endif  //THERMALLING_MISSION
 
-#if (AIRFRAME_TYPE == AIRFRAME_GLIDER)
-			//custom code for autopilotBrake goes here: apply brakes when too high or above glideslope
+
+
+#if ( THERMALLING_MISSION == 1 )
+			//motorClimbRunStarted - boolean climbing with motor so far this run 
+			//avgMotorRunClimbrate - average climbrate of seconds in this run
+			//sinkMotorOffTimer - wait period to postpone climbing with motor due to sink
+			//should save battery power by not climbing in sink, but dropping to and maintaining minimal altitude 
+			//monitor mc, stop if avg since start is not minimal climb
+			//glide to minimal and/or wait 30 sec
+			// land flag off, alt set to 50m
+			//normal mc: use avg power for climbrate 0.7
+			if (state_flags._.GPS_steering)   //LOGO only
+			{
+				if ( IMUlocationz._.W1 > 60 ) //only keep track above 60m
+				{
+					if ( throttleAccum.WW == (int16_t)(max_throttle) && (!desired_behavior._.land))   // motor is running, only if max
+					{
+						if ( sinkMotorOffTimer == 0 ) //only do this if the sinkMotorOffTimer is not running
+						{
+							if ( motorClimbRunStarted == 0 )
+							{
+								avgMotorRunClimbrate = 70; //startvalue. climbing has not begun yet
+								motorClimbRunStarted = 1;
+								motorClimbRunCount = 0;
+							}
+							else
+							{
+								motorClimbRunCount++;
+							}
+							if ( motorClimbRunCount > (4 * 40) )    //wait for motor climb to settle
+							{
+								avgMotorRunClimbrate = ((avgMotorRunClimbrate * 24.0) + vario)/25.0; // cm/s  10sec running avg, 40Hz	(from 70 to <0 after ~10 sec value -1)
+								if ( avgMotorRunClimbrate < 10 ) //average should be above 0.1 m/s, else suppress motor for 30 sec.
+								{
+									//glide to minimal and/or wait 30 sec
+									sinkMotorOffTimer = 1;  //start timer, motor only for maintaining 50m
+									motorClimbRunStarted = 0; //stop tuning
+								}
+								else
+								{
+									avgMotorClimbrate = (((avgMotorClimbrate * 299.0 )+ (float)vario)/300.0); // cm/s  20sec running avg, 40Hz (after ~20 sec v)
+									//assume normal power is enough for 2 m/s climb, reduce throttle for a 0.7 m/s climb
+									//short fluctuations allow for thermal detection
+									//increase / decrease power as needed for a 0.7 m/s climb
+									// i.e. 0.7m/s => 0.7,  0.6m/s => 0.8 .. 0.8m/s => 0.6
+									if (avgMotorClimbrate < 70)
+									{
+										steadyClimbPowerFactor += 0.0001;
+									}
+									if (avgMotorClimbrate > 70)
+									{
+										steadyClimbPowerFactor -= 0.0001;
+									}
+									if (steadyClimbPowerFactor < 0.3)
+									{
+										steadyClimbPowerFactor = 0.3;
+									}
+									if (steadyClimbPowerFactor > 0.9)
+									{
+										steadyClimbPowerFactor = 0.9;
+									}
+								}
+							}
+						}
+					}
+					else  //!throttle  | land
+					{
+						//LOGO aborts climb? run ends
+						motorClimbRunStarted = 0;	//motor climrate tuning must start over next time
+						sinkMotorOffTimer = 0;      //end suppress motor
+					}
+				} //>60m
+			}
+			else //!Gps
+			{
+				motorClimbRunStarted = 0;	//motor climrate tuning must start over next time
+				sinkMotorOffTimer = 0;      //end suppress motor
+			}
+#endif // ( THERMALLING_MISSION == 1 )
+
+
+
+#if ( THERMALLING_MISSION == 1 )
+			if ( IMUlocationz._.W1 > 60 ) //only above 60m, when below, we may need more power to maintain minimal safe altitude
+			{
+				if ( sinkMotorOffTimer > 0 )
+				{
+					// no throttle above 60m with timout counter running
+					throttleAccum.WW = 0;
+				}
+				else
+				{
+					// reduce throttle for a 0.7 m/s climb
+					throttleAccum.WW = (int16_t)((float)(throttleAccum.WW) * steadyClimbPowerFactor);
+				}
+				
+			}
+			else   //below 60m
+			{
+				if ( sinkMotorOffTimer > 0 )
+				{
+					//use throttle as needed to remain at safe minimal altitude of 50m
+					heightError._.W1 = -50;  //leave LOGO in control of desiredHeight
+					heightError.WW = (heightError.WW + IMUlocationz.WW + speed_height) >> 13;
+					if (heightError._.W0 < -height_marginx8)
+					{
+						throttleAccum.WW = (int16_t)(max_throttle);
+					}
+					else if (heightError._.W0 > height_marginx8)
+					{
+						throttleAccum.WW = 0;
+					}
+					else
+					{
+						throttleAccum.WW = (int16_t)(max_throttle) + (__builtin_mulss(throttle_height_gain, (-heightError._.W0 - height_marginx8))>>3);
+						if (throttleAccum.WW > (int16_t)(max_throttle)) throttleAccum.WW = (int16_t)(max_throttle);
+					}
+				}
+				else
+				{
+					// reduce throttle for a 0.7 m/s climb
+					throttleAccum.WW = (int16_t)((float)(throttleAccum.WW) * steadyClimbPowerFactor);
+				}
+			}
+			//control autopilotBrake : brakes when too high or above glideslope
+			//don't use speed_height
+			//for Gliders we need a constant brake output
+			heightError._.W1 = - desiredHeight; //
+			heightError.WW = (heightError.WW + IMUlocationz.WW ) >> 13;
+			if (desired_behavior._.land)    //if F_LAND is set in Logo
+			{
+				if (heightError._.W0 > 0)
+				{
+					//autopilotBrake; assume 0 brake = 0, full brake == 1700
+					autopilotBrake = (__builtin_mulss(80, (heightError._.W0))>>3);
+				}
+				else
+				{
+					autopilotBrake = 0;
+				}
+			}
+			else
+			{
+				autopilotBrake = 0;
+			}
+
 #endif  //AIRFRAME_GLIDER
 
 #if (RACING_MODE == 1)
@@ -350,6 +536,22 @@ static void normalAltitudeCntrl(void)
 			}
 #endif
 		}
+
+
+#if ( THERMALLING_MISSION == 1 )
+		if ( sinkMotorOffTimer > 0 )
+		{
+			sinkMotorOffTimer++; 
+			// this will suppress motor , climb was insufficient due to sink
+			if ( sinkMotorOffTimer > (40 * 30) )  //30 sec
+			{
+				motorClimbRunStarted = 0;	//motor climrate tuning must start over next time
+				sinkMotorOffTimer = 0;      //end suppress motor 
+			}
+		}
+#endif // ( THERMALLING_MISSION == 1 )
+
+
 
 		if (!state_flags._.altitude_hold_throttle)
 		{

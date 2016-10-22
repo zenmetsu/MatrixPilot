@@ -27,10 +27,12 @@ void udb_barometer_callback(long pressure, int16_t temperature, char status);
 void altimeter_calibrate(void);
 void estAltitude(void);
 
-long get_barometer_altitude(void);
-long get_barometer_pressure(void);
-int16_t get_barometer_temperature(void);
-long get_barometer_agl_altitude(void);
+inline long get_barometer_altitude(void);
+inline long get_barometer_pressure(void);
+inline int16_t get_barometer_temperature(void);
+#if ( THERMALLING_MISSION == 1 )
+inline long get_barometer_vert_velocity(void);
+#endif  //THERMALLING_MISSION
 
 
 #endif // ESTALTITUDE_H

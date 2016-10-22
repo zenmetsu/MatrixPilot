@@ -1,5 +1,13 @@
 @echo off
 
+pyProjectCreator.py -r ../.. -n MatrixPilot -t AUAV3 -c Config/Fantasy
+pyProjectCreator.py -r ../.. -n MatrixPilot -t AUAV3 -c Config/Grafas
+pyProjectCreator.py -r ../.. -n MatrixPilot -t AUAV3 -c Config/Hilsim_Fantasy_Auav3
+pyProjectCreator.py -r ../.. -n MatrixPilot -t UDB5  -c Config/Hilsim_Fantasy_Udb5
+pyProjectCreator.py -r ../.. -n MatrixPilot -t AUAV3 -c Config/Linea
+
+goto END:
+
 pyProjectCreator.py -r ../.. -n MatrixPilot -t SIL -c Config/Cessna
 
 pyProjectCreator.py -r ../.. -n MatrixPilot -t SIL

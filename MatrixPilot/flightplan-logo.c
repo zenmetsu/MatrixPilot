@@ -62,12 +62,18 @@ enum {
 	// XX_INPUT_CHANNEL // leave room for input channels: 1 - NUM_INPUTS (up to 15)
 	DIST_TO_HOME = 16,
 	DIST_TO_GOAL,
+#if ( THERMALLING_MISSION == 1 )
+	DIST_TO_UPWIND_POINT,  //custom command
+#endif
 	ALT,
 	CURRENT_ANGLE,
 	ANGLE_TO_HOME,
 	ANGLE_TO_GOAL,
 	REL_ANGLE_TO_HOME,
 	REL_ANGLE_TO_GOAL,
+#if ( THERMALLING_MISSION == 1 )
+	REL_ANGLE_TO_UPWIND_POINT, //custom command
+#endif
 	GROUND_SPEED,
 	AIR_SPEED,
 	AIR_SPEED_Z,
@@ -75,6 +81,12 @@ enum {
 	WIND_SPEED_X,
 	WIND_SPEED_Y,
 	WIND_SPEED_Z,
+#if ( THERMALLING_MISSION == 1 )
+	WIND_FROM_ANGLE,
+	BATTERY_VOLTAGE,
+	AIR_SPEED_Z_DELTA,
+	READ_F_LAND,
+#endif
 	PARAM
 };
 
@@ -89,6 +101,10 @@ enum {
 #define _EXEC(fn, x, pr)        {10,  0,   pr,  fn,  x},
 
 #define _FD(x, fl, pr)          {3,   fl,  pr,  0,   x},
+#if ( THERMALLING_MISSION == 1 )
+#define _RT_BANK(x, fl, pr)  	{3,   fl,  pr,  1,	 x},  //custom command
+#define _LEVEL_1S(fl)		  	{3,	  fl,  0,   2,	 0},  //custom command
+#endif
 
 #define _RT(x, pr)              {4,   0,   pr,  0,   x},
 #define _SET_ANGLE(x, pr)       {4,   0,   pr,  1,   x},
@@ -143,6 +159,11 @@ enum {
 #define BK(x)                   _FD(-x, 1, 0)
 #define FD_PARAM                _FD(1, 1, 1)
 #define BK_PARAM                _FD(-1, 1, 1)
+
+#if ( THERMALLING_MISSION == 1 )
+#define RT_BANK(x)              _RT_BANK(x, 1, 0)           //custom command
+#define LEVEL_1S	            _LEVEL_1S(1) 		    //custom command
+#endif
 
 #define RT(x)                   _RT(x, 0)
 #define LT(x)                   _RT(-x, 0)
@@ -253,14 +274,41 @@ static union longww absoluteXLong;
 static struct logoInstructionDef *currentInstructionSet = (struct logoInstructionDef*)instructions;
 static int16_t numInstructionsInCurrentSet = NUM_INSTRUCTIONS;
 
+#if ( THERMALLING_MISSION == 1 )
+int16_t vario = 0;// in cm/s ,used for Logo  - updated in MavUDBExtra.c @ 1hz - running average (3s)
+static int16_t vario_old = 0;// in cm/s ,used for AIR_SPEED_Z_DELTA
+int16_t fixedBankTargetAngle = 0; // heading,  used for Logo  - for RT_BANK command
+int16_t fixedBankActiveCounter; //  used for Logo  - for RT_BANK and LEVEL_1S commands
+boolean fixedBankActive = false; // used for Logo  - for RT_BANK and LEVEL_1S commands
+int16_t fixedBankDeg;  // deg bank, used for Logo  - for RT_BANK and LEVEL_1S commands
+#ifndef THERMALLING_TURN     // in case not specified
+#define THERMALLING_TURN  0  // not implemented
+#endif
+static int16_t get_current_angle(void);
+#if ( MY_PERSONAL_OPTIONS == 1 )
+boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c
+#endif
+#endif
+
 // If we've processed this many instructions without commanding the plane to fly,
 // then stop and continue on the next run through
+
+#if ( THERMALLING_MISSION == 1 )
+#define MAX_INSTRUCTIONS_PER_CYCLE  20
+#else
 #define MAX_INSTRUCTIONS_PER_CYCLE  32
+#endif
+
 static int16_t instructionsProcessed = 0;
 
 // Storage for command injection
 static struct logoInstructionDef logo_inject_instr;
 static uint8_t logo_inject_pos = 0;
+
+#if ( MY_PERSONAL_OPTIONS == 1 )
+boolean regularFlyingField; //  declared and used by flightplan_logo.c and set by telemetry.c
+#endif
+
 #define LOGO_INJECT_READY 255
 
 // Storage for interrupt handling
@@ -473,10 +521,48 @@ void flightplan_logo_update(void)
 	}
 	else
 	{
+#if ( THERMALLING_MISSION != 1 )
 		if (tofinish_line < WAYPOINT_PROXIMITY_RADIUS) // crossed the finish line
 		{
 			process_instructions();
 		}
+#else
+		// inhibit navigation for x loops, to allow drifting downwind
+
+		if ( fixedBankActive )
+		{
+			fixedBankActiveCounter--;   //countdown @ 40Hz
+			if (fixedBankDeg == 0) // LEVEL_1S
+			{
+				if (fixedBankActiveCounter <= 0)
+				{
+					fixedBankActive = false;
+					process_instructions();  //as if arrived
+				}
+			}
+			else    // RT_BANK
+			{
+				//check if target of 15 deg right has been reached  or timer times out
+				if ( (fixedBankActiveCounter <= 0) | ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) < 180 )) // closest direction is right of target
+
+				//use Gps heading
+				//if ( ( ( cog_gpsBB - fixedBankTargetAngle + 360) % 360 ) < 180 ) // closest direction is right of target
+				{
+					fixedBankActive = false;
+					process_instructions();  //as if arrived
+				}
+			}
+		}
+		else
+		{
+			//
+			//org code:
+			if (tofinish_line < WAYPOINT_PROXIMITY_RADIUS) // crossed the finish line
+			{
+				process_instructions();
+			}
+		}
+#endif  //THERMALLING_MISSION
 	}
 }
 
@@ -565,7 +651,12 @@ static int16_t get_angle_to_point(int16_t x, int16_t y)
 	angle = (dir_to_goal * 180 + 64) >> 7;  // 0-359 (ccw, 0=East)
 	angle = -angle + 90;                    // 0-359 (clockwise, 0=North)
 	if (angle < 0) angle += 360;
+#if ( MY_PERSONAL_OPTIONS == 1 )
+	if (angle >= 360) angle -= 360;
+#else
 	if (angle > 360) angle -= 360;
+#endif
+
 	return angle;
 }
 
@@ -578,10 +669,84 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 
 	switch (ident) {
 		case DIST_TO_HOME: // in m
-			return sqrt_long(IMUlocationx._.W1 * (int32_t)IMUlocationx._.W1 + IMUlocationy._.W1 * (int32_t)IMUlocationy._.W1);
+//disable next line for Waddinxveen
+//			return sqrt_long(IMUlocationx._.W1 * (int32_t)IMUlocationx._.W1 + IMUlocationy._.W1 * (int32_t)IMUlocationy._.W1);
+
+#if ( MY_PERSONAL_OPTIONS == 1 )
+		{
+			
+			// if to far, return distance in any case
+			int16_t distance = sqrt_long(IMUlocationx._.W1 * (int32_t)IMUlocationx._.W1 + IMUlocationy._.W1 * (int32_t)IMUlocationy._.W1); 
+			if ( distance > GEOFENCE_SIZE )
+			{
+				return distance;
+			}
+			// scrict line geofence 
+			//check posistion of plane, north of home is not allowed in Waddinxveen
+			//return a too long distance to trigger a return to geofence
+			//angle as seen from virtual home
+
+			//Waddinxveen
+			//int16_t angle = get_angle_to_point(1,-120);
+			//Lageweg, powerlines
+			int16_t angle = get_angle_to_point(0,0);   //x east+ , y north+
+			
+			angle += 180;
+			while (angle < 0) angle += 360;
+			while (angle > 359) angle -= 360;
+
+			//like ATC from home tower..
+			//Waddinxveen
+			//if ( (angle > 267) || (angle < 87) )
+			//Lageweg, powerlines 
+			if ( (angle > 296) || (angle < 116) )  //good
+			{
+				//soft line geofence
+				angle = get_angle_to_point(-130,-60);	//x east+ , y north+  ~130m margin for soft line gf
+				
+				angle += 180;
+				while (angle < 0) angle += 360;
+				while (angle > 359) angle -= 360;
+
+				//like ATC from home tower..
+				//Waddinxveen
+				//if ( (angle > 267) || (angle < 87) )
+				//Lageweg, powerlines 
+				if ( (angle > 296) || (angle < 116) )  //good
+				{
+				 	return distance; // normal answer
+				}
+				else
+				{
+					return GEOFENCE_SIZE * 4/5;   // soft geofence trigger
+				}
+			}
+			else
+			{
+				return GEOFENCE_SIZE * 2;	// strict geofence trigger
+			}
+		}
+#endif
+
 
 		case DIST_TO_GOAL: // in m
 			return tofinish_line;
+
+#if ( THERMALLING_MISSION == 1 )
+		case DIST_TO_UPWIND_POINT: // in m
+		{
+			int16_t windpointx = estimatedWind[0] * UPWIND_POINT_FACTOR ;
+			int16_t windpointy = estimatedWind[1] * UPWIND_POINT_FACTOR ;
+			if (windpointx > UPWIND_POINT_DISTANCE_LIMIT) windpointx = UPWIND_POINT_DISTANCE_LIMIT ;  	//max wind from west
+			if (windpointx < -UPWIND_POINT_DISTANCE_LIMIT) windpointx = -UPWIND_POINT_DISTANCE_LIMIT ; 	//max wind from east
+			if (windpointy > UPWIND_POINT_DISTANCE_LIMIT) windpointy = UPWIND_POINT_DISTANCE_LIMIT ; 	//max wind from south
+			if (windpointy < -UPWIND_POINT_DISTANCE_LIMIT) windpointy = -UPWIND_POINT_DISTANCE_LIMIT ; 	//max wind from north
+
+			//this calculates the distance of the "turtle from a point upwind from home by a factor"
+			//this point is calculated by translating homepoint by windspeed_x / factor (4)  and  windspeed_y / factor (4)
+			return sqrt_long(((int32_t)IMUlocationx._.W1 + (int32_t)windpointx ) * ((int32_t)IMUlocationx._.W1 + (int32_t)windpointx ) + ((int32_t)IMUlocationy._.W1 + (int32_t)windpointy ) * ((int32_t)IMUlocationy._.W1 + (int32_t)windpointy ) ) ;
+		}
+#endif
 
 		case ALT: // in m
 			return IMUlocationz._.W1;
@@ -594,7 +759,12 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			int16_t angle = get_angle_to_point(0,0);
 			angle += 180;
 			if (angle < 0) angle += 360;
+#if ( MY_PERSONAL_OPTIONS == 1 )
+			if (angle >= 360) angle -= 360;
+#else
 			if (angle > 360) angle -= 360;
+#endif
+
 			return angle;
 		}
 		case ANGLE_TO_GOAL: // in degrees. 0-359 (clockwise, 0=North)
@@ -603,6 +773,43 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		case REL_ANGLE_TO_HOME: // in degrees. -180-179 (0=heading directly towards Home. Home to the right of the nose of the plane is positive)
 		{
 			int16_t angle = get_angle_to_point(0,0);
+
+#if ( MY_PERSONAL_OPTIONS == 1 )
+			angle += 180;
+			while (angle < 0) angle += 360;
+			while (angle > 359) angle -= 360;
+			//absolute, home is at plane's .. deg
+			//Waddinxveen
+			//if ( (angle > 267) || (angle < 87) )	   
+			//Lageweg, powerlines 
+			if ( (angle > 296) || (angle < 116) )	  // good: home at 300..359 or 0..90 
+			{
+				angle = get_angle_to_point(-130,-60);	//x east+ , y north+  ~130m margin for soft line gf
+				angle += 180;
+				while (angle < 0) angle += 360;
+				while (angle > 359) angle -= 360;
+				////home is at plane's .. deg
+				//Waddinxveen
+				//if ( (angle > 267) || (angle < 87) )
+				//Lageweg, powerlines
+				if ( (angle > 296) || (angle < 116) )  // good 
+				{
+					angle = get_angle_to_point(0,0);  //x east+ , y north+	-- estimated soft line gf aiming point
+				}
+				else	
+				{
+				   	angle = get_angle_to_point(-500,-500);	//x east+ , y north+  -- estimated soft line gf aiming point
+				}
+			}
+			else
+			{
+				//Waddinxveen
+				//int16_t angle = get_angle_to_point(1,-120);
+				//Lageweg, powerlines
+				angle = get_angle_to_point(-500,-500);	//x east+ , y north+  -- estimated line gf aiming point
+			}
+#endif //MY_PERSONAL_OPTIONS
+
 			angle = get_current_angle() - angle;
 			angle += 180;
 			if (angle < -180) angle += 360;
@@ -616,6 +823,28 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			if (angle >= 180) angle -= 360;
 			return -angle;
 		}
+
+#if ( THERMALLING_MISSION == 1 )
+
+		case REL_ANGLE_TO_UPWIND_POINT: // in degrees. -180-179 (0=heading directly towards home. clockwise offset is positive)
+		{
+			int16_t windpointx = estimatedWind[0] / UPWIND_POINT_FACTOR ;
+			int16_t windpointy = estimatedWind[1] / UPWIND_POINT_FACTOR ;
+			if (windpointx > UPWIND_POINT_DISTANCE_LIMIT) windpointx = UPWIND_POINT_DISTANCE_LIMIT ;  	//max wind from west
+			if (windpointx < -UPWIND_POINT_DISTANCE_LIMIT) windpointx = -UPWIND_POINT_DISTANCE_LIMIT ; 	//max wind from east
+			if (windpointy > UPWIND_POINT_DISTANCE_LIMIT) windpointy = UPWIND_POINT_DISTANCE_LIMIT ; 	//max wind from south
+			if (windpointy < -UPWIND_POINT_DISTANCE_LIMIT) windpointy = -UPWIND_POINT_DISTANCE_LIMIT ; 	//max wind from north
+
+			int16_t angle = get_current_angle() - get_angle_to_point(-windpointx, -windpointy) ;
+			angle += 180;
+			if (angle < -180) angle += 360 ;
+			if (angle >= 180) angle -= 360 ;
+
+			return -angle ;
+		}
+#endif
+
+
 		case GROUND_SPEED: // in cm/s
 			return ground_velocity_magnitudeXY;
 
@@ -623,7 +852,11 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			return air_speed_magnitudeXY;
 
 		case AIR_SPEED_Z: // in cm/s
+#if ( THERMALLING_MISSION != 1 )
 			return IMUvelocityz._.W1 - estimatedWind[2];
+#else
+			return vario;	 // in cm/s
+#endif
 
 		case WIND_SPEED: // in cm/s
 			return sqrt_long(estimatedWind[0] * (int32_t)estimatedWind[0] + estimatedWind[1] * (int32_t)estimatedWind[1]);
@@ -636,6 +869,35 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 
 		case WIND_SPEED_Z: // in cm/s
 			return estimatedWind[2];
+
+#if ( THERMALLING_MISSION == 1 )
+		case WIND_FROM_ANGLE: // wind from in degrees 0-359, 0 = North
+		{
+			int16_t angle = get_angle_to_point(estimatedWind[0], estimatedWind[1]);
+			while (angle < 0) angle += 360;
+			while (angle > 359) angle -= 360;
+
+			return angle;
+		}
+
+		case BATTERY_VOLTAGE: // 
+		{
+			return battery_voltage._.W1;
+		}
+		
+		case AIR_SPEED_Z_DELTA: //  used for waiting for a decrease in climbrate in a thermal
+		{
+			static int16_t airSpeedZDelta;
+			airSpeedZDelta = vario - vario_old; 
+			vario_old = vario;
+			return airSpeedZDelta;
+		}
+		
+		case READ_F_LAND: //  used for waiting for a decrease in climbrate in a thermal
+		{
+			return ((desired_behavior.W & F_LAND) > 0);
+		}
+#endif  //THERMALLING_MISSION
 
 		case PARAM:
 		{
@@ -736,6 +998,12 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 
 		case 10: // Exec (reset the stack and then call a subroutine)
 			instructionIndex = find_start_of_subroutine(instr.subcmd);
+
+#if ( LOG_WAYPOINT_PER_SUBROUTINE == 1 )
+			//log Subroutine number instead
+			//log only odd subroutine numbers
+			if ( (instr.subcmd%2) == 1)	waypointIndex = instr.subcmd ;
+#endif
 			logoStack[0].returnInstructionIndex = instructionIndex;
 			logoStackIndex = 0;
 			interruptStackBase = 0;
@@ -750,6 +1018,11 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 				logoStack[logoStackIndex].returnInstructionIndex = instructionIndex;
 			}
 			instructionIndex = find_start_of_subroutine(instr.subcmd);
+#if ( LOG_WAYPOINT_PER_SUBROUTINE == 1 )
+			//log Subroutine number instead
+			//log only odd subroutine numbers
+			if ( (instr.subcmd%2) == 1) waypointIndex = instr.subcmd ;
+#endif
 			break;
 
 		case 3: // Forward/Back
@@ -765,6 +1038,53 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), instr.arg) << 2);
 				}
 				break;
+
+#if ( THERMALLING_MISSION == 1 )
+				case 1: // RT_BANK
+				{
+					//rotate turtle too, like RT(). Set the rotation target 30 deg to the right
+ 					fixedBankTargetAngle = turtleAngles[currentTurtle] + 30; // ~0.5 - 1 sec == 30 deg headingchange
+					while (fixedBankTargetAngle < 0) fixedBankTargetAngle += 360;
+					fixedBankTargetAngle = fixedBankTargetAngle % 360;
+
+					//this is a fly command, do the same as FD()
+					int16_t cangle = turtleAngles[currentTurtle];	// 0-359 (clockwise, 0=North)
+					int8_t b_angle = (cangle * 182 + 128) >> 8; 	// 0-255 (clockwise, 0=North)
+					b_angle = -b_angle - 64;						// 0-255 (ccw, 0=East)
+
+					// 25: should be fd(groundspeed) in m from m/s (ideally)
+					// selected a fixed number I used before, combined with servo calculation
+					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 25) << 2);
+					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);
+
+					fixedBankDeg = instr.arg;  //controls roll and yaw,
+					fixedBankActiveCounter = 240; //40Hz = 4s
+					fixedBankActive = true;	 //controls roll and yaw, will be reset when rotation is reached
+					break;
+				}
+				case 2: // LEVEL_1S
+				{
+					//caution: reset navigation after this command
+					/*
+					//this is a fly command, do the same as FD()
+					int16_t cangle = turtleAngles[currentTurtle];	// 0-359 (clockwise, 0=North)
+					int8_t b_angle = (cangle * 182 + 128) >> 8; 	// 0-255 (clockwise, 0=North)
+					b_angle = -b_angle - 64;						// 0-255 (ccw, 0=East)
+
+					// 25: should be fd(groundspeed) in m from m/s (ideally)
+					// selected a fixed number I used before, combined with servo calculation
+					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 25) << 2);
+					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);
+					*/
+
+					//this is a fly command, based on time only
+					fixedBankDeg = 0;  //controls roll and yaw, level
+					fixedBankActiveCounter = 40; //40Hz = 1s
+					fixedBankActive = true;	 //controls roll and yaw, will end after one sec
+					break;
+				}
+#endif  //THERMALLING_MISSION
+
 			}
 			break;
 
@@ -825,10 +1145,31 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					turtleLocations[currentTurtle].y._.W1 = IMUlocationy._.W1;
 					break;
 				case 7: // HOME
+				{
 					turtleAngles[currentTurtle] = 0;
 					turtleLocations[currentTurtle].x.WW = 0;
 					turtleLocations[currentTurtle].y.WW = 0;
+#if ( MY_PERSONAL_OPTIONS == 1 )
+					//if we are flying from my regular flying field move home to the landing point (angle 130, 60m) for convenience
+					//on other field; initilize the autopilot on the landing spot
+	 				if ( regularFlyingField )
+					//if ( lat_origin.WW > 518260000 & lat_origin.WW < 518270000 & lon_origin.WW > 42980000 & lon_origin.WW < 42990000 )
+					{
+#if ( HILSIM == 1 )
+					   turtleLocations[currentTurtle].x._.W0 = 0;
+					   turtleLocations[currentTurtle].x._.W1 = -425;
+					   turtleLocations[currentTurtle].y._.W0 = 0;
+					   turtleLocations[currentTurtle].y._.W1 = -300;
+#else
+					   turtleLocations[currentTurtle].x._.W0 = 0;
+					   turtleLocations[currentTurtle].x._.W1 = 45;
+					   turtleLocations[currentTurtle].y._.W0 = 0;
+					   turtleLocations[currentTurtle].y._.W1 = -39;
+#endif
+					}
+#endif
 					break;
+				}		
 				case 8: // Absolute set high value
 					absoluteHighWord = instr.arg;
 					break;
@@ -937,8 +1278,55 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					desiredSpeed += instr.arg * 10;
 					break;
 				case 1: // Set Speed
+
+
+#if (THERMALLING_MISSION != 1)
 					desiredSpeed = instr.arg * 10;
+#else
+				{
+					//command changed to dm/s
+					if ( ( instr.arg == DESIRED_SPEED_NORMAL_F0 ) | ( instr.arg == DESIRED_SPEED_SLOW_F4 ) | ( instr.arg == DESIRED_SPEED_FAST_FMIN4 ) )
+					{
+						//calculate and set desiredSpeed
+						//normal speed = 0, slow = -1000, high speed = 1000
+						if ( instr.arg == DESIRED_SPEED_NORMAL_F0 )
+						{
+							desiredSpeed = instr.arg; //dm/s
+						}
+						else
+						{
+							if ( instr.arg == DESIRED_SPEED_SLOW_F4 )
+							{
+								 desiredSpeed = instr.arg; //dm/s
+							}
+							else
+							{
+								if ( instr.arg == DESIRED_SPEED_FAST_FMIN4 )
+								{
+									desiredSpeed = instr.arg; //dm/s
+								} //if
+							} //else
+						} //else
+					} //if
+					else
+					{
+						//	 org code, needs 2 indents;
+						desiredSpeed = instr.arg * 10;
+						//
+					} //else
+					//limits
+					if (desiredSpeed < DESIRED_SPEED_SLOW_F4)
+					{
+						 desiredSpeed = DESIRED_SPEED_SLOW_F4;
+					}
+					if (desiredSpeed > DESIRED_SPEED_FAST_FMIN4)
+					{
+						  desiredSpeed = DESIRED_SPEED_FAST_FMIN4;
+					}
 					break;
+				}//case1
+#endif
+				//
 			}
 			if (desiredSpeed < 0) desiredSpeed = 0;
 #endif
@@ -1025,7 +1413,9 @@ static void process_instructions(void)
 			return;  // don't update goal if we didn't hit a FLY command
 	}
 
+#if ( LOG_WAYPOINT_PER_SUBROUTINE != 1 )
 	waypointIndex = instructionIndex - 1;
+#endif
 
 	if (logo_goal_has_moved())
 	{

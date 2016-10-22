@@ -45,6 +45,11 @@
 #include "../libUDB/mcu.h"
 #include "../libUDB/servoOut.h"
 
+#if ( MY_PERSONAL_OPTIONS == 1 )
+#include "airspeedCntrl.h"           //for get_flapsSelected()
+extern int16_t vario;   // in cm/s   used for Logo by  - defined and set in flightplan_logo.c @ 1hz
+#endif  //MY_PERSONAL_OPTIONS
+
 extern uint16_t maxstack;
 
 int16_t mavlink_sue_telemetry_counter = 13; // Countdown counter, for use with SERIAL_UDB_EXTRA compatibility
@@ -68,7 +73,7 @@ void MAVUDBExtraOutput(void)
 	static int16_t pwTrim_save[MAVLINK_SUE_CHANNEL_MAX_SIZE + 1];
 	
 	switch  (mavlink_sue_telemetry_counter)
-	{
+		{
 		case 13:
 //			serial_output("F22:Sensors=%i,%i,%i,%i,%i,%i\n",
 //				UDB_XACCEL.value, UDB_YACCEL.value,
@@ -113,23 +118,23 @@ void MAVUDBExtraOutput(void)
 			mavlink_msg_serial_udb_extra_f17_send(MAVLINK_COMM_0,
 				turns.FeedForward, turns.TurnRateNav, turns.TurnRateFBW);
 			break;
-		case 8:
+			case 8:
 //			serial_output("F18:AOA_NRM=%5.3f:AOA_INV=%5.3f:EL_TRIM_NRM=%5.3f:EL_TRIM_INV=%5.3f:CRUISE_SPD=%5.3f:\r\n",
 //				turns.AngleOfAttackNormal, turns.AngleOfAttackInverted, turns.ElevatorTrimNormal,
 //				turns.ElevatorTrimInverted, turns.RefSpeed);
 			mavlink_msg_serial_udb_extra_f18_send(MAVLINK_COMM_0,
 				turns.AngleOfAttackNormal, turns.AngleOfAttackInverted, turns.ElevatorTrimNormal,
 				turns.ElevatorTrimInverted, turns.RefSpeed);
-			break;
-		case 7:
+				break;
+			case 7:
 //			serial_output("F19:AIL=%i,%i:ELEV=%i,%i:THROT=%i,%i:RUDD=%i,%i:\r\n",
 //				AILERON_OUTPUT_CHANNEL, AILERON_CHANNEL_REVERSED, ELEVATOR_OUTPUT_CHANNEL,ELEVATOR_CHANNEL_REVERSED,
 //				THROTTLE_OUTPUT_CHANNEL, THROTTLE_CHANNEL_REVERSED, RUDDER_OUTPUT_CHANNEL,RUDDER_CHANNEL_REVERSED );
 			mavlink_msg_serial_udb_extra_f19_send(MAVLINK_COMM_0,
 				AILERON_OUTPUT_CHANNEL, AILERON_CHANNEL_REVERSED, ELEVATOR_OUTPUT_CHANNEL,ELEVATOR_CHANNEL_REVERSED,
 				THROTTLE_OUTPUT_CHANNEL, THROTTLE_CHANNEL_REVERSED, RUDDER_OUTPUT_CHANNEL,RUDDER_CHANNEL_REVERSED);
-			break;
-		case 6:
+				break;
+			case 6:
 //			serial_output("F14:WIND_EST=%i:GPS_TYPE=%i:DR=%i:BOARD_TYPE=%i:AIRFRAME=%i:"
 //			              "RCON=0x%X:TRAP_FLAGS=0x%X:TRAP_SOURCE=0x%lX:ALARMS=%i:"
 //			              "CLOCK=%i:FP=%d:\r\n",
@@ -140,8 +145,8 @@ void MAVUDBExtraOutput(void)
 				WIND_ESTIMATION, GPS_TYPE, DEADRECKONING, BOARD_TYPE, AIRFRAME_TYPE,
 				get_reset_flags(), trap_flags, trap_source, osc_fail_count,
 				CLOCK_CONFIG, FLIGHT_PLAN_TYPE);
-			break;
-		case 5:
+				break;
+			case 5:
 //			serial_output("F4:R_STAB_A=%i:R_STAB_RD=%i:P_STAB=%i:Y_STAB_R=%i:Y_STAB_A=%i:AIL_NAV=%i:RUD_NAV=%i:AH_STAB=%i:AH_WP=%i:RACE=%i:\r\n",
 //				settings._.RollStabilizaionAilerons, settings._.RollStabilizationRudder, 
 //				settings._.PitchStabilization, settings._.YawStabilizationRudder, 
@@ -153,47 +158,47 @@ void MAVUDBExtraOutput(void)
 				settings._.PitchStabilization, settings._.YawStabilizationRudder,
 				settings._.YawStabilizationAileron, settings._.AileronNavigation,
 				settings._.RudderNavigation, settings._.AltitudeholdStabilized,
-				settings._.AltitudeholdWaypoint, settings._.RacingMode);
-			break;
-		case 4:
+				    settings._.AltitudeholdWaypoint, settings._.RacingMode);
+				break;
+			case 4:
 //			serial_output("F5:YAWKP_A=%5.3f:YAWKD_A=%5.3f:ROLLKP=%5.3f:ROLLKD=%5.3f:A_BOOST=%5.3f:A_BOOST=NULL\r\n",
 //				gains.YawKPAileron, gains.YawKDAileron, gains.RollKP, gains.RollKD);
 			mavlink_msg_serial_udb_extra_f5_send(MAVLINK_COMM_0, 
 				gains.YawKPAileron, gains.YawKDAileron, gains.RollKP, gains.RollKD);
-			break;
-		case 3:
+				break;
+			case 3:
 //			serial_output("F6:P_GAIN=%5.3f:P_KD=%5.3f:RUD_E_MIX=NULL:ROL_E_MIX=NULL:E_BOOST=%3.1f:\r\n",
 //				gains.Pitchgain, gains.PitchKD, gains.ElevatorBoost);
 			mavlink_msg_serial_udb_extra_f6_send(MAVLINK_COMM_0,
 				gains.Pitchgain, gains.PitchKD, 0, 0, gains.ElevatorBoost);
-			break;
-		case 2:
+				break;
+			case 2:
 //			serial_output("F7:Y_KP_R=%5.4f:Y_KD_R=%5.3f:RLKP_RUD=%5.3f:RLKD_RUD=%5.3f:RUD_BOOST=%5.3f:RTL_PITCH_DN=%5.3f:\r\n",
 //				gains.YawKPRudder, gains.YawKDRudder, gains.RollKPRudder, gains.RollKDRudder, gains.RudderBoost, gains.RtlPitchDown);
 			mavlink_msg_serial_udb_extra_f7_send(MAVLINK_COMM_0,
 				gains.YawKPRudder, gains.YawKDRudder, gains.RollKPRudder, gains.RollKDRudder, gains.RudderBoost, gains.RtlPitchDown);
-			break;
-		case 1:
+				break;
+			case 1:
 //			serial_output("F8:H_MAX=%6.1f:H_MIN=%6.1f:MIN_THR=%3.2f:MAX_THR=%3.2f:PITCH_MIN_THR=%4.1f:PITCH_MAX_THR=%4.1f:PITCH_ZERO_THR=%4.1f:\r\n",
 //				altit.HeightTargetMax, altit.HeightTargetMin, altit.AltHoldThrottleMin, altit.AltHoldThrottleMax,
 //				altit.AltHoldPitchMin, altit.AltHoldPitchMax, altit.AltHoldPitchHigh);
 			mavlink_msg_serial_udb_extra_f8_send(MAVLINK_COMM_0,
 				altit.HeightTargetMax, altit.HeightTargetMin, altit.AltHoldThrottleMin, altit.AltHoldThrottleMax,
 				altit.AltHoldPitchMin, altit.AltHoldPitchMax, altit.AltHoldPitchHigh);
-			break;
-		default:
-		{
+				break;
+			default:
+			{
 			// F2 below means "Format Revision 2: and is used by a Telemetry parser to invoke the right pattern matching
 			// F2 is a compromise between easy reading of raw data in an ascii file and minimising extraneous data in the stream.
 			
 			mavlink_sue_toggle = !mavlink_sue_toggle;
-			if (state_flags._.f13_print_req == 1)
-			{
+					if (state_flags._.f13_print_req == 1)
+					{
 				if (mavlink_sue_toggle && !f13_print_prepare)
 				{
 					f13_print_prepare = true;
 					return;  //wait for next run
-				}
+					}
  			}
 			if (!f13_print_prepare)
 			{
@@ -220,18 +225,18 @@ void MAVUDBExtraOutput(void)
 					
 					mavlink_msg_serial_udb_extra_f2_a_send(MAVLINK_COMM_0, 
 						tow.WW, ((udb_flags._.radio_on << 2) + (dcm_flags._.nav_capable << 1) + state_flags._.GPS_steering),
-						lat_gps.WW, lon_gps.WW, alt_sl_gps.WW, waypointIndex,
+					    lat_gps.WW, lon_gps.WW, alt_sl_gps.WW, waypointIndex,
 						rmat[0], rmat[1], rmat[2],
 						rmat[3], rmat[4], rmat[5],
 						rmat[6], rmat[7], rmat[8],
 						(uint16_t) cog_gps.BB, sog_gps.BB, (uint16_t) udb_cpu_load(),
-						air_speed_3DIMU, estimatedWind[0], estimatedWind[1], estimatedWind[2],
+					    air_speed_3DIMU, estimatedWind[0], estimatedWind[1], estimatedWind[2],
 #if (MAG_YAW_DRIFT == 1)
-						magFieldEarth[0], magFieldEarth[1], magFieldEarth[2],
+					    magFieldEarth[0], magFieldEarth[1], magFieldEarth[2],
 #else
 						(int16_t)0, (int16_t)0, (int16_t)0,
 #endif
-						svs, hdop);
+					    svs, hdop);
 
 					
 					// Approximate time passing between each telemetry line, even though
@@ -251,7 +256,7 @@ void MAVUDBExtraOutput(void)
 					{
 						if (i <= NUM_INPUTS) 
 						{
-							pwIn_save[i] = udb_pwIn[i];
+						pwIn_save[i] = udb_pwIn[i];
 							pwTrim_save[i] = udb_pwTrim[i];
 						}
 						else
@@ -261,19 +266,23 @@ void MAVUDBExtraOutput(void)
 						}
 						if (i <= NUM_OUTPUTS) 
 						{
-							pwOut_save[i] = udb_pwOut[i];
-						}
-						else
-						{
+						pwOut_save[i] = udb_pwOut[i];
+#if ( MY_PERSONAL_OPTIONS == 1 )
+					pwOut_save[9] = get_flapsSelected() + SERVOCENTER ;  //Auav3 only supports 8 outputs, need 9, 10 are sent by mavlink
+#endif
+
+					}
+					else
+					{
 							pwOut_save[i] = 0;
 						}
 					}	
 				}
 				else
 				{
-					vect3_16t goal;
+						vect3_16t goal;
 					navigate_get_goal(&goal);
-					int16_t stack_free = 0;
+						int16_t stack_free = 0;
 //					for (i= 1; i <= NUM_INPUTS; i++)
 //						serial_output("p%ii%i:",i,pwIn_save[i]);
 //					for (i= 1; i <= NUM_OUTPUTS; i++)
@@ -301,7 +310,7 @@ void MAVUDBExtraOutput(void)
 //					serial_output("DH%i:",desiredHeight);
 #if (RECORD_FREE_STACK_SPACE == 1)
 					extern uint16_t maxstack;
-					stack_free = (int16_t)(4096-maxstack); // This is actually wrong for the UDB4, but currently left the same as for telemetry.c
+						stack_free = (int16_t)(4096-maxstack); // This is actually wrong for the UDB4, but currently left the same as for telemetry.c
 #endif // (RECORD_FREE_STACK_SPACE == 1)
 //					serial_output("stk%d:", (int16_t)(4096-maxstack));
 //					serial_output("\r\n");
@@ -316,11 +325,17 @@ void MAVUDBExtraOutput(void)
 						locationErrorEarth[0], locationErrorEarth[1], locationErrorEarth[2],
 						state_flags.WW,
 #if (SILSIM != 1)
-						osc_fail_count,
+						    osc_fail_count,
 #else
-						0,
+						    0,
 #endif // (SILSIM != 1)
-						IMUvelocityx._.W1, IMUvelocityy._.W1, IMUvelocityz._.W1,
+
+#if ( MY_PERSONAL_OPTIONS == 1 )
+// my vario
+						    IMUvelocityx._.W1, IMUvelocityy._.W1, vario,
+#else
+						    IMUvelocityx._.W1, IMUvelocityy._.W1, IMUvelocityz._.W1,
+#endif
 						goal.x, goal.y, goal.z,
 						aero_force[0], aero_force[1], aero_force[2],
 #if (USE_BAROMETER_ALTITUDE == 1)
@@ -342,19 +357,19 @@ void MAVUDBExtraOutput(void)
 						desiredHeight,
 						stack_free);
 						
+					}
 				}
-			}
 			if (state_flags._.f13_print_req == 1)
 			{
 				// The F13 line of telemetry is printed when origin has been captured and in between F2 lines in SERIAL_UDB_EXTRA
 				if (!f13_print_prepare)
 				{
 					return;
-				}
+		}
 				else
 				{
 					f13_print_prepare = false;
-				}
+	}
 //				serial_output("F13:week%i:origN%li:origE%li:origA%li:\r\n", week_no, lat_origin.WW, lon_origin.WW, alt_origin);
 				mavlink_msg_serial_udb_extra_f13_send(MAVLINK_COMM_0, 
 					week_no.BB, lat_origin.WW, lon_origin.WW, alt_origin.WW);

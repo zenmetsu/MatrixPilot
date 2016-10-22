@@ -56,6 +56,11 @@
 #include "../libUDB/magnetometer.h" // Needed for SERIAL_MAGNETOMETER 
 #include <string.h>
 
+//me
+#include "options_mavlink.h"
+#include "telemetry.h"
+#include "airspeedCntrl.h"
+//me
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serial Output Format (Can be SERIAL_NONE, SERIAL_DEBUG, SERIAL_ARDUSTATION, SERIAL_UDB,
@@ -84,7 +89,8 @@
 //#define SERIAL_BAUDRATE                     19200
 
 
-#if ((SERIAL_OUTPUT_FORMAT != SERIAL_NONE) && (SERIAL_OUTPUT_FORMAT != SERIAL_MAVLINK))
+//#if ((SERIAL_OUTPUT_FORMAT != SERIAL_NONE) && (SERIAL_OUTPUT_FORMAT != SERIAL_MAVLINK))
+#if ( ((SERIAL_OUTPUT_FORMAT != SERIAL_NONE) && (SERIAL_OUTPUT_FORMAT != SERIAL_MAVLINK) ) || (SERIAL3_OUTPUT_FORMAT == SERIAL_UDB) )
 
 #if (FLY_BY_DATALINK_ENABLED == 1)
 #include "fly_by_datalink.h"
@@ -92,6 +98,24 @@
 
 #include <stdarg.h>
 
+#if ( MY_PERSONAL_OPTIONS == 1 )
+#include "../libDCM/mathlibNAV.h"    //for sqrt_long
+extern int16_t vario;   // in cm/s   used for Logo by  - defined in flightplan_logo.c updated uin altitudeCntrlVariable.c @ 1hz
+extern boolean regularFlyingField; //  declared and used by flightplan_logo.c and set by telemetry.c
+static int16_t flightTimeUDB = 0;   // in sec starts when throttle opens, for GCS flighttime, allows GCS restarts
+#if (SERIAL_OUTPUT_FORMAT == SERIAL_UDB_EXTRA)
+static int16_t flightTimeSUE = 0;   // in sec starts when throttle opens, for GCS flighttime, allows GCS restarts
+static int16_t motorSecondsSUE = 0;   // in sec starts when throttle out opens, for GCS motor run time, allows GCS restarts
+static int16_t oneSecSUE;    // from 4Hz to 1Hz for mts and ftt records in SUE
+#endif
+static int16_t motorSecondsUDB = 0;   // in sec starts when throttle out opens, for GCS motor run time, allows GCS restarts
+extern int16_t desiredSpeed;
+extern int16_t desiredPitch;
+extern int16_t target_airspeed;
+extern int16_t location[];              //from estLocation.c
+extern int16_t locationz;              //from estLocation.c
+extern union longbbbb accum_nav;        //from estLocation.c
+#endif  //MY_PERSONAL_OPTIONS
 
 static union intbb voltage_milis = {0};
 static union intbb voltage_temp;
@@ -123,9 +147,18 @@ static char serial_buffer[SERIAL_BUFFER_SIZE+1];
 static int16_t sb_index = 0;
 static int16_t end_index = 0;
 
+#if ( MY_PERSONAL_OPTIONS == 1 )
+static char serial3_buffer[SERIAL_BUFFER_SIZE+1];
+static int16_t sb3_index = 0;
+static int16_t end3_index = 0;
+#endif  //MY_PERSONAL_OPTIONS 
 int16_t udb_serial_callback_get_byte_to_send(void);
 void udb_serial_callback_received_byte(uint8_t rxchar);
 
+#if ( MY_PERSONAL_OPTIONS == 1 )
+int16_t udb_serial3_callback_get_byte_to_send(void);
+void udb_serial3_callback_received_byte(uint8_t rxchar);
+#endif  //MY_PERSONAL_OPTIONS
 void telemetry_init(void)
 {
 #if (SERIAL_OUTPUT_FORMAT == SERIAL_OSD_REMZIBI)
@@ -137,10 +170,34 @@ void telemetry_init(void)
 #warning SERIAL_BAUDRATE set to default value of 19200 bps
 #endif
 
+// ( MY_PERSONAL_OPTIONS == 1 )
+//- support for 
+// 1 SUE or UDB       via serial  (no mavl)
+// 2 mavlink + UDB.via AUX (use serial)
+// 3 SUE via serial & UDB.via AUX  (no mavl)
+#ifndef SERIAL3_BAUDRATE
+#define SERIAL3_BAUDRATE 9600 // default
+#warning SERIAL3_BAUDRATE set to default value of 9600 bps
+#endif
+
+#if (USE_MAVLINK != 1)
 #if (CONSOLE_UART != 2)
 	udb_init_USART(&udb_serial_callback_get_byte_to_send, &udb_serial_callback_received_byte);
 #endif
 	udb_serial_set_rate(SERIAL_BAUDRATE);
+#else
+#if (SERIAL3_OUTPUT_FORMAT == SERIAL_UDB)
+	//assume serial is in use;  serial3 to aux
+	udb_init_USART3(&udb_serial3_callback_get_byte_to_send, &udb_serial3_callback_received_byte);
+	udb_serial3_set_rate(SERIAL3_BAUDRATE);
+#else
+	//normal serial to aux
+	udb_init_USART3(&udb_serial_callback_get_byte_to_send, &udb_serial_callback_received_byte);
+	udb_serial3_set_rate(SERIAL_BAUDRATE);
+#endif //ser3
+//me
+#endif //use_mavlink// MY_PERSONAL_OPTIONS
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -152,6 +209,13 @@ void udb_serial_callback_received_byte(uint8_t rxchar)
 {
 	(*sio_parse)(rxchar); // parse the input byte
 }
+#if ( MY_PERSONAL_OPTIONS == 1 )
+// this may be incorrect, but no data expected
+void udb_serial3_callback_received_byte(uint8_t rxchar)
+{
+	(*sio_parse)(rxchar); // parse the input byte
+}
+#endif  //MY_PERSONAL_OPTIONS
 
 static void sio_newMsg(uint8_t inchar)
 {
@@ -428,7 +492,13 @@ static void serial_output(const char* format, ...)
 	}
 	if (sb_index == 0)
 	{
+//( MY_PERSONAL_OPTIONS == 1 )
+#if (USE_MAVLINK != 1)
 		udb_serial_start_sending_data();
+#else
+		udb_serial3_start_sending_data();
+#endif
+//( MY_PERSONAL_OPTIONS == 1 )
 	}
 	log_telemetry(telebuf, len);
 
@@ -455,12 +525,45 @@ static void serial_output(const char* format, ...)
 
 	if (sb_index == 0)
 	{
+//me
+#if (USE_MAVLINK != 1)
 		udb_serial_start_sending_data();
+#else
+		udb_serial3_start_sending_data();
+#endif
+//me
 	}
 
 	va_end(arglist);
 }
 #endif // USE_TELELOG
+
+//me SERIAL3_OUTPUT_FORMAT == SERIAL_UDB
+static void serial3_output(const char* format, ...)
+{
+	int16_t start_index;
+	int16_t remaining;
+	va_list arglist;
+
+	va_start(arglist, format);
+
+	start_index = end3_index;
+	remaining = SERIAL_BUFFER_SIZE - start_index;
+
+	if (remaining > 1)
+	{
+		int16_t wrote = vsnprintf((char*)(&serial3_buffer[start_index]), (size_t)remaining, format, arglist);
+		end3_index = start_index + wrote;
+	}
+
+	if (sb3_index == 0)
+	{
+		udb_serial3_start_sending_data();
+	}
+
+	va_end(arglist);
+}
+//me
 
 int16_t udb_serial_callback_get_byte_to_send(void)
 {
@@ -474,6 +577,22 @@ int16_t udb_serial_callback_get_byte_to_send(void)
 	{
 		sb_index = 0;
 		end_index = 0;
+	}
+	return -1;
+}
+
+int16_t udb_serial3_callback_get_byte_to_send(void)
+{
+	uint8_t txchar = serial3_buffer[ sb3_index++ ];
+
+	if (txchar)
+	{
+		return txchar;
+	}
+	else
+	{
+		sb3_index = 0;
+		end3_index = 0;
 	}
 	return -1;
 }
@@ -571,20 +690,129 @@ void telemetry_output_8hz(void)
 	}
 }
 
-#elif (SERIAL_OUTPUT_FORMAT == SERIAL_UDB_EXTRA)
+//#elif (SERIAL_OUTPUT_FORMAT == SERIAL_UDB_EXTRA)
+#elif (SERIAL_OUTPUT_FORMAT == SERIAL_UDB_EXTRA || SERIAL3_OUTPUT_FORMAT == SERIAL_UDB)
 
 void telemetry_output_8hz(void)
 {
 	int16_t i;
-	static int toggle = 0;
+//me
+//	static int toggle = 0;
 	static boolean f13_print_prepare = false;
 	// F2: SERIAL_UDB_EXTRA format is printed out every other time, although it is being called at 8Hz, this
 	//     version will output at 4Hz.
+//me
+#if (SERIAL_OUTPUT_FORMAT == SERIAL_UDB_EXTRA)
+	static int toggle = 0;
 	static int16_t pwIn_save[NUM_INPUTS + 1];
 	static int16_t pwOut_save[NUM_OUTPUTS + 1];
+#endif
+	
+//me - a copy of SERIAL_UDB  if/end
+#if (SERIAL3_OUTPUT_FORMAT == SERIAL_UDB)      // me    to combine SUE with UDB via AUX  two blocks should be allmost identical
+			// Approximate time passing between each telemetry line, even though
+			// we may not have new GPS time data each time through.
+			//if (tow.WW > 0) tow.WW += 500;
+
+			if (udb_pulse_counter % 40 == 0)
+			{
+				if (udb_pwOut[THROTTLE_OUTPUT_CHANNEL] > 2512 ) // Throttle > 30% = start/add
+				{
+					motorSecondsUDB++;
+				}
+				//store start of flight
+				if (flightTimeUDB > 0) 
+				{
+					//add one second
+					flightTimeUDB++;
+				}
+				else
+				{	
+					if (udb_pwOut[THROTTLE_OUTPUT_CHANNEL] > 2512 ) // Throttle > 30% = flight start
+					{
+						flightTimeUDB = 1;
+					}
+				}
+				//static int16_t pwIn_save[NUM_INPUTS + 1];
+				static int16_t pwOut_save[NUM_OUTPUTS + 1];
+				for (i = 0; i <= NUM_OUTPUTS; i++)
+				{
+					pwOut_save[i] = udb_pwOut[i];
+				}	
+				//pwOut_save[9] = udb_pwOut[9];  //Auav3 only supports 8 outputs, need 9, 10 are sent by mavlink
+				//static int16_t int_aspd_pitch_adj;
+				//int_aspd_pitch_adj = (int16_t)(100.0 * (float)aspd_pitch_adj);
+				serial3_output("imz%i:W%i:bmv%i:"
+				              "ftt%i:as%i:wvx%i:wvy%i:"
+				              "fgs%X:mts%i:tz%i:",
+//				              "apa%i:"
+#if (USE_BAROMETER_ALTITUDE != 1)
+				(int16_t)(alt_sl_gps.WW/100), waypointIndex, battery_voltage._.W1,
+#else
+				IMUlocationz._.W1, waypointIndex, battery_voltage._.W1,     //imu z in m  uses barometer alt
+#endif
+				flightTimeUDB, air_speed_3DIMU, estimatedWind[0], estimatedWind[1], 
+				    //int_aspd_pitch_adj,
+				    state_flags.WW,	motorSecondsUDB, vario); 
+				for (i= 7; i <= NUM_OUTPUTS; i++)                //p7o, p8o  only
+				    serial3_output("p%io%i:",i,pwOut_save[i]);
+				serial3_output("ma%i:",get_flapsSelected() + SERVOCENTER);  // Flaps output (log only) as MAG W (ma%i:) for place in csv to Dashware
+//#if (HILSIM == 1)
+/*
+				serial3_output("cpu%u:",
+				    (uint16_t)udb_cpu_load());
+
+				serial3_output("dsp%i:",
+				    target_airspeed);
+				serial3_output("dpi%i:",
+				    desiredPitch);
+				//serial3_output("apa%i:",
+				    //100.0 * aspd_pitch_adj);
+				    //int_aspd_pitch_adj);
+
+	  		 	//don't want this in light telemetry to smartphones
+				serial3_output("tmp%i:prs%li:alt%li:agl%i:",
+				    get_barometer_temperature(), get_barometer_pressure(), 
+				    get_barometer_altitude());   //update agl from here @ 1Hz
+				    //get_barometer_altitude(), barometer_agl_altitude/1000 );
+
+				serial3_output("lcz%i:lan%i:gpz%i:lez%i:",
+				    (int16_t)location[2],                     //from estLocation.c
+				    ///locationz,                       //from estLocation.c
+				    //accum_nav._.W0,                  //from estLocation.c
+				    (int16_t)IMUlocationz._.W1,
+				    //GPSlocation.z,                   //from deadReckoning.c
+				    (int16_t)alt_sl_gps._.W0,
+				    (int16_t)get_gps_barometer_correction );          //from deadReckoning.c
+				    (get_barometer_altitude())/1000); // height in meters
+				serial3_output("lcz%i:",
+				    (int16_t)location[2] ); // height in meters
+
+
+				serial3_output("bcn%i:",
+				    (int16_t)get_gps_barometer_correction() );          //from deadReckoning.c    cm
+				serial3_output("gpz%i:",
+				    (int16_t)alt_sl_gps._.W0 );                     //from estLocation.c    cm
+				serial3_output("cal%i:",
+				    (int16_t)gps_barometer_correction ); // height in centimeters
+				serial3_output("vsp%i:",
+				    (int16_t)climb_baro );          //from deadReckoning.c    cm
+				    
+				serial3_output("bma%i:",
+				    (int16_t)(get_barometer_altitude()/10) ); // height in centimeters
+*/
+				//serial3_output("p2i%i:",udb_pwIn[2]);    //test channel
+				serial3_output("p9o%i:",get_flapsSelected() + SERVOCENTER);
+//				serial3_output("\r\n");
+				
+			} //heartbeat %40
+#endif    //SERIAL3_OUTPUT_FORMAT      //me     
+
 	
 	switch (telemetry_counter)
 	{
+//me
+#if (SERIAL_OUTPUT_FORMAT == SERIAL_UDB_EXTRA)
 		case 13:
 			serial_output("F22:Sensors=%i,%i,%i,%i,%i,%i\r\n",
 				UDB_XACCEL.value, UDB_YACCEL.value,
@@ -654,8 +882,13 @@ void telemetry_output_8hz(void)
 			    altit.HeightTargetMax, altit.HeightTargetMin, altit.AltHoldThrottleMin, altit.AltHoldThrottleMax,
 			    altit.AltHoldPitchMin, altit.AltHoldPitchMax, altit.AltHoldPitchHigh);
 			break;
+//me
+#endif //(SERIAL_OUTPUT_FORMAT == SERIAL_UDB_EXTRA)
+
 		default:
 		{
+//me
+#if (SERIAL_OUTPUT_FORMAT == SERIAL_UDB_EXTRA)
 			// F2 below means "Format Revision 2: and is used by a Telemetry parser to invoke the right pattern matching
 			// F2 is a compromise between easy reading of raw data in an ascii file and minimising extraneous data in the stream.
 			toggle = !toggle;
@@ -672,6 +905,8 @@ void telemetry_output_8hz(void)
 			{
 				if (toggle)
 				{
+
+#if ( MY_PERSONAL_OPTIONS != 1 )
 					serial_output("F2:T%li:S%d%d%d:N%li:E%li:A%li:W%i:"
 					              "a%i:b%i:c%i:d%i:e%i:f%i:g%i:h%i:i%i:"
 					              "c%u:s%i:cpu%u:"
@@ -690,6 +925,21 @@ void telemetry_output_8hz(void)
 				    (int16_t)0, (int16_t)0, (int16_t)0,
 #endif // MAG_YAW_DRIFT
 				    svs, hdop);
+#else  //MY_PERSONAL_OPTIONS
+					serial_output("F2:T%li:S%d%d%d:N%li:E%li:A%li:W%i:"
+					              "a%i:b%i:c%i:d%i:e%i:f%i:g%i:h%i:i%i:"
+					              "c%u:s%i:cpu%u:"
+					              "as%u:wvx%i:wvy%i:wvz%i:svs%i:hd%i:",
+					    tow.WW, udb_flags._.radio_on, dcm_flags._.nav_capable, state_flags._.GPS_steering,
+					    lat_gps.WW, lon_gps.WW, alt_sl_gps.WW, waypointIndex,
+					    rmat[0], rmat[1], rmat[2],
+					    rmat[3], rmat[4], rmat[5],
+					    rmat[6], rmat[7], rmat[8],
+					    (uint16_t)cog_gps.BB, sog_gps.BB, (uint16_t)udb_cpu_load(), 
+					    air_speed_3DIMU,
+					    estimatedWind[0], estimatedWind[1], estimatedWind[2],
+					    svs, hdop);
+#endif  //MY_PERSONAL_OPTIONS
 
 					// Approximate time passing between each telemetry line, even though
 					// we may not have new GPS time data each time through.
@@ -710,16 +960,28 @@ void telemetry_output_8hz(void)
 						serial_output("p%ii%i:",i,pwIn_save[i]);
 					for (i= 1; i <= NUM_OUTPUTS; i++)
 						serial_output("p%io%i:",i,pwOut_save[i]);
+#if ( MY_PERSONAL_OPTIONS == 1 )
+					serial_output("ma%i:", get_flapsSelected() + SERVOCENTER);  // Flaps output (log only) as MAG W (ma%i:) for place in csv to Dashware
+					serial_output("imx%i:imy%i:imz%i:lex%i:ley%i:lez%i:fgs%X:ofc%i:tx%i:ty%i:tz%i:G%d,%d,%d:",IMUlocationx._.W1,IMUlocationy._.W1,IMUlocationz._.W1,
+					    locationErrorEarth[0], locationErrorEarth[1], locationErrorEarth[2],
+					    state_flags.WW, osc_fail_count,
+					    IMUvelocityx._.W1, IMUvelocityy._.W1, vario,
+					    goal.x, goal.y, goal.z
+					    //, aero_force[0], aero_force[1], aero_force[2]
+				);
+#else
 					serial_output("imx%i:imy%i:imz%i:lex%i:ley%i:lez%i:fgs%X:ofc%i:tx%i:ty%i:tz%i:G%d,%d,%d:AF%i,%i,%i:",IMUlocationx._.W1,IMUlocationy._.W1,IMUlocationz._.W1,
 					    locationErrorEarth[0], locationErrorEarth[1], locationErrorEarth[2],
 					    state_flags.WW, osc_fail_count,
 					    IMUvelocityx._.W1, IMUvelocityy._.W1, IMUvelocityz._.W1, goal.x, goal.y, goal.z, aero_force[0], aero_force[1], aero_force[2]);
+#endif  //MY_PERSONAL_OPTIONS
 #if (USE_BAROMETER_ALTITUDE == 1)
 					serial_output("tmp%i:prs%li:alt%li:",
 					    get_barometer_temperature(), get_barometer_pressure(), 
 					    get_barometer_altitude());
 #endif
 					
+#if ( MY_PERSONAL_OPTIONS != 1 )
 					serial_output("bmv%i:mA%i:mAh%i:",
 #if (ANALOG_VOLTAGE_INPUT_CHANNEL != CHANNEL_UNUSED)
 	                battery_voltage._.W1,
@@ -732,6 +994,38 @@ void telemetry_output_8hz(void)
 					(int16_t)0, (int16_t)0);                    
 #endif
 					serial_output("DH%i:",desiredHeight);
+#else  //MY_PERSONAL_OPTIONS
+					//telemetry for file replay
+					oneSecSUE++;
+					if (oneSecSUE %4 == 0)
+					{
+						if (udb_pwOut[THROTTLE_OUTPUT_CHANNEL] > 2512 ) // Throttle > 10% = start/add
+						{
+							motorSecondsSUE++;
+						}
+						//store start of flight
+						if (flightTimeSUE > 0) 
+						{
+							//add one second
+							flightTimeSUE++;
+						}
+						else
+						{	
+							if (udb_pwOut[THROTTLE_OUTPUT_CHANNEL] > 2512 ) // Throttle > 10% = flight start
+							{
+								flightTimeSUE = 1;
+							}
+						}
+					}	
+					serial_output("ftt%i:",
+					    flightTimeSUE);
+					serial_output("mts%i:",
+						motorSecondsSUE);
+					serial_output("bmv%i:",
+					    battery_voltage._.W1);
+					serial_output("bma%i:",
+						(int16_t)(get_barometer_altitude()/10) );          //from estAltitude.c   in cm
+#endif  //MY_PERSONAL_OPTIONS
 #if (RECORD_FREE_STACK_SPACE == 1)
 					extern uint16_t maxstack;
 					serial_output("stk%d:", (int16_t)(4096-maxstack));
@@ -739,6 +1033,9 @@ void telemetry_output_8hz(void)
 					serial_output("\r\n");
 				}
 			}
+#endif  // me SUE
+
+//me  for any combination SUE/AUX MAVLINK/AUX:
 			if (state_flags._.f13_print_req == 1)
 			{
 				// The F13 line of telemetry is printed when origin has been captured and in between F2 lines in SERIAL_UDB_EXTRA
@@ -758,6 +1055,23 @@ void telemetry_output_8hz(void)
 				}
 				serial_output(":\r\n");
 				state_flags._.f13_print_req = 0;
+
+#if ( MY_PERSONAL_OPTIONS == 1 )
+				regularFlyingField = false;  // declared and used by FlightplanLog.c and set by MAVUDBExtra.c
+				//determines if we are flying from my regular flying field; in that case we will move home to the landing point (angle 130, 60m) for convenience
+#if ( HILSIM == 1 )
+				//F13:week15810:origN521729011:origE44317998:origA18:	52.1677,4.42448					
+				if ( (lat_origin.WW > 521720000 ) && (lat_origin.WW < 521730000 ) && ( lon_origin.WW > 44310000 ) && ( lon_origin.WW < 44320000 ) )
+				{
+//					regularFlyingField = true;
+				}
+#else
+				if ( (lat_origin.WW > 518260000 ) && (lat_origin.WW < 518270000 ) && ( lon_origin.WW > 42980000 ) && ( lon_origin.WW < 42990000 ) )
+				{
+					regularFlyingField = true;
+				}
+#endif
+#endif
 			}
 			break;
 		}

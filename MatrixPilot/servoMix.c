@@ -220,7 +220,7 @@ void servoMix(void)
 	{
 #if ( ALTITUDE_GAINS_VARIABLE == 1 )
 		//airspeedCntrl.c: controls autopilotBrake. define SPEED_CONTROL 1, GAINS_VARIABLE 1 and  ALTITUDE_GAINS_VARIABLE 1
-		if ( get_autopilotBrake() > 0 )
+		if ( get_autopilotBrake() > 0 ) 
 		{
 			//assume 0 brake = 0, full brake trottle == 1700
 			brakeSelectedTarget = get_autopilotBrake();
@@ -420,6 +420,20 @@ void servoMix(void)
 		{
 			throttleSteps = temp - SERVOMIN;
 			throttleSteps = (throttleSteps * throttleFactor)>>5;
+
+#if ( MY_PERSONAL_OPTIONS == 1 )
+#if (TEST_MODE_INPUT_CHANNEL != 0 )
+			if ((throttleSteps > 300) && ( pwManual[TEST_MODE_INPUT_CHANNEL] > 2300 )) //full left is off
+			{
+				temp = pwManual[TEST_MODE_INPUT_CHANNEL] - SERVOCENTER ;
+				throttleSteps += (int32_t)(temp/3); //centred = no change, else add or subract.
+			}
+#endif	//TEST_MODE_INPUT_CHANNEL
+			if ( throttleSteps < 250 )	//remove offset from throttle channel, prevent windmilling
+			{
+				throttleSteps = 0;
+			}
+#endif	
 			autopilotThrottleSelected = throttleSteps;// 0 = 0, full = 2000
 			throttleSteps += SERVOMIN;
 			temp = (signed int)throttleSteps;
@@ -457,7 +471,9 @@ void servoMix(void)
 	//Flaps control or logging
 	mixerSteps = flapsSelectedStep;
 	mixerSteps += SERVOMIN;
+/*me
 	udb_pwOut[FLAPS_OUTPUT_CHANNEL] = udb_servo_pulsesat( mixerSteps );
+//me*/
 #endif
 
 	}
