@@ -853,7 +853,7 @@
 
 
 #if ( MODEL_FANTASY == 1 && HILSIM == 0 )
- #define ALT_HOLD_THROTTLE_MAX                0.5
+ #define ALT_HOLD_THROTTLE_MAX                0.6
 #endif
 #if ( MODEL_FANTASY == 1 && HILSIM == 1 )
  #define ALT_HOLD_THROTTLE_MAX                1.0
