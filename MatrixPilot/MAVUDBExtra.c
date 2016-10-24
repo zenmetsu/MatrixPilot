@@ -272,15 +272,14 @@ void MAVUDBExtraOutput(void)
 						if (i <= NUM_OUTPUTS) 
 						{
 							pwOut_save[i] = udb_pwOut[i];
-#if ( MY_PERSONAL_OPTIONS == 1 )
-	mavlink_msg_serial_udb_extra_f2_b_send(MAVLINK_COMM_0,					pwOut_save[9] = get_flapsSelected() + SERVOCENTER ;  //Auav3 only supports 8 outputs, need 9, 10 are sent by mavlink
-#endif
-
 						}
 						else
 						{
 							pwOut_save[i] = 0;
 						}
+#if ( MY_PERSONAL_OPTIONS == 1 )
+						pwOut_save[9] = get_flapsSelected() + SERVOCENTER;  //Auav3 only supports 8 outputs, need 9, 10 are sent by mavlink
+#endif
 					}	
 				}
 				else
@@ -334,7 +333,6 @@ void MAVUDBExtraOutput(void)
 #else
 						0,
 #endif // (SILSIM != 1)
-						IMUvelocityx._.W1, IMUvelocityy._.W1, IMUvelocityz._.W1,
 #if ( MY_PERSONAL_OPTIONS == 1 )
 // my vario
 						    IMUvelocityx._.W1, IMUvelocityy._.W1, vario,
