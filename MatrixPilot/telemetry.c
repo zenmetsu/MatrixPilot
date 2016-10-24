@@ -696,17 +696,16 @@ void telemetry_output_8hz(void)
 void telemetry_output_8hz(void)
 {
 	int16_t i;
-//me
-//	static int toggle = 0;
+	static int toggle = 0;
 	static boolean f13_print_prepare = false;
 	// F2: SERIAL_UDB_EXTRA format is printed out every other time, although it is being called at 8Hz, this
 	//     version will output at 4Hz.
 //me
 #if (SERIAL_OUTPUT_FORMAT == SERIAL_UDB_EXTRA)
-	static int toggle = 0;
 	static int16_t pwIn_save[NUM_INPUTS + 1];
 	static int16_t pwOut_save[NUM_OUTPUTS + 1];
 #endif
+//me
 	
 //me - a copy of SERIAL_UDB  if/end
 #if (SERIAL3_OUTPUT_FORMAT == SERIAL_UDB)      // me    to combine SUE with UDB via AUX  two blocks should be allmost identical
@@ -887,8 +886,6 @@ void telemetry_output_8hz(void)
 
 		default:
 		{
-//me
-#if (SERIAL_OUTPUT_FORMAT == SERIAL_UDB_EXTRA)
 			// F2 below means "Format Revision 2: and is used by a Telemetry parser to invoke the right pattern matching
 			// F2 is a compromise between easy reading of raw data in an ascii file and minimising extraneous data in the stream.
 			toggle = !toggle;
@@ -901,6 +898,8 @@ void telemetry_output_8hz(void)
 					return;  //wait for next run
 				}
  			}
+//me
+#if (SERIAL_OUTPUT_FORMAT == SERIAL_UDB_EXTRA)
 			if (!f13_print_prepare)
 			{
 				if (toggle)
@@ -975,13 +974,13 @@ void telemetry_output_8hz(void)
 					    state_flags.WW, osc_fail_count,
 					    IMUvelocityx._.W1, IMUvelocityy._.W1, IMUvelocityz._.W1, goal.x, goal.y, goal.z, aero_force[0], aero_force[1], aero_force[2]);
 #endif  //MY_PERSONAL_OPTIONS
+					
+#if ( MY_PERSONAL_OPTIONS != 1 )
 #if (USE_BAROMETER_ALTITUDE == 1)
 					serial_output("tmp%i:prs%li:alt%li:",
 					    get_barometer_temperature(), get_barometer_pressure(), 
 					    get_barometer_altitude());
 #endif
-					
-#if ( MY_PERSONAL_OPTIONS != 1 )
 					serial_output("bmv%i:mA%i:mAh%i:",
 #if (ANALOG_VOLTAGE_INPUT_CHANNEL != CHANNEL_UNUSED)
 	                battery_voltage._.W1,
@@ -1017,14 +1016,14 @@ void telemetry_output_8hz(void)
 							}
 						}
 					}	
-					serial_output("ftt%i:",
-					    flightTimeSUE);
-					serial_output("mts%i:",
-						motorSecondsSUE);
+					//serial_output("ftt%i:",
+					//    flightTimeSUE);
+					//serial_output("mts%i:",
+					//	motorSecondsSUE);
 					serial_output("bmv%i:",
 					    battery_voltage._.W1);
-					serial_output("bma%i:",
-						(int16_t)(get_barometer_altitude()/10) );          //from estAltitude.c   in cm
+					//serial_output("bma%i:",
+					//	(int16_t)(get_barometer_altitude()/10) );          //from estAltitude.c   in cm
 #endif  //MY_PERSONAL_OPTIONS
 #if (RECORD_FREE_STACK_SPACE == 1)
 					extern uint16_t maxstack;
