@@ -1233,31 +1233,33 @@ const struct logoInstructionDef instructions[] = {
 				LT(10)
 				IF_EQ(READ_F_LAND,1)
 					DO (RETURN_GEOFENCE)
-				//ELSE
-			
-				//	DO (RETURN_MC_GEOFENCE)
-				//	DO (CHECKS_MC)
+				ELSE
+					DO (CHECKS_MC)
+					DO (RETURN_MC_GEOFENCE)
 				END	
 			END
-		 ELSE
+		ELSE
+
 			PARAM_DIV(10)
 			REPEAT_PARAM
 //			REPEAT(4)
+
 				RT(10)
 				IF_EQ(READ_F_LAND,1)
 					DO (RETURN_GEOFENCE)
-				//ELSE
-				//	DO (RETURN_MC_GEOFENCE)
-				//	DO (CHECKS_MC)
+				ELSE
+					DO (CHECKS_MC)
+					DO (RETURN_MC_GEOFENCE)
 				END	
 			END
-		 END //
+		END //
 		
+		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 		 //fix a hangup (prevent nesting?)
-		//IF_EQ(READ_F_LAND,1)
+		IF_EQ(READ_F_LAND,1)
 		 	 EXEC (LOGO_MAIN)		
+		END
 		//ELSE
-		//	 SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 		//END	
 
 	END //geof
@@ -1344,7 +1346,7 @@ const struct logoInstructionDef instructions[] = {
 */
 
 //		LOAD_TO_PARAM(REL_ANGLE_TO_HOME)   // gf -180..179)
-		IF_EQ( GEOFENCE_STATUS,1 )
+		IF_LE( GEOFENCE_STATUS,1 )
 //			IF_NE(GEOFENCE_TURN,0)   // gf -180..179)
 
 		//perform a precalculated turn 
@@ -1402,6 +1404,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (CHECK_WIND_GEOFENCE)
+/*
 		//IF_GT(DIST_TO_HOME, ( GEOFENCE_SIZE * 2 / 3) )           // sgf  at least outside soft geofence
 		IF_GT(DIST_TO_UPWIND_POINT, GEOFENCE_SIZE )              // wgf  !!!non-standard LOGO command!!!
 		//IF_GT(DIST_TO_UPWIND_POINT, ( GEOFENCE_SIZE * 4 / 5 ) )  // swgf !!!non-standard LOGO command!!!
@@ -1466,13 +1469,14 @@ const struct logoInstructionDef instructions[] = {
 			//FD(DESIRED_SPEED_NORMAL_F0/2) //no need to wait for navigation to search for thermals
 			FD(DESIRED_SPEED_NORMAL_F0/10) //wait for navigation to search for thermals
 		END //if
+*/
 	END
 	END
 
 
 
 	TO (CHECK_SOFT_WIND_GEOFENCE)
-		//IF_GT(DIST_TO_HOME, ( GEOFENCE_SIZE * 2 / 3) )           // sgf  at least outside soft geofence
+/*		//IF_GT(DIST_TO_HOME, ( GEOFENCE_SIZE * 2 / 3) )           // sgf  at least outside soft geofence
 		//IF_GT(DIST_TO_UPWIND_POINT, GEOFENCE_SIZE )              // wgf  !!!non-standard LOGO command!!!
 		IF_GT(DIST_TO_UPWIND_POINT, ( GEOFENCE_SIZE * 4 / 5 ) )  // swgf !!!non-standard LOGO command!!!
 
@@ -1536,6 +1540,7 @@ const struct logoInstructionDef instructions[] = {
 			//FD(DESIRED_SPEED_NORMAL_F0/2) //no need to wait for navigation to search for thermals
 			FD(DESIRED_SPEED_NORMAL_F0/10) //wait for navigation to search for thermals
 		END //if
+*/
 	END
 	END
 
@@ -1936,7 +1941,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (RETURN_MC_GEOFENCE)         
- 	    CLEAR_INTERRUPT  //don't change navigation
+/* 	    CLEAR_INTERRUPT  //don't change navigation
 		//IF_GT(DIST_TO_HOME, ( GEOFENCE_SIZE * 2 / 3) )           // sgf  at least outside soft geofence
 		//IF_GT(DIST_TO_UPWIND_POINT, GEOFENCE_SIZE )              // wgf  !!!non-standard LOGO command!!!
 		//IF_GT(DIST_TO_UPWIND_POINT, ( GEOFENCE_SIZE * 4 / 5 ) )  // swgf !!!non-standard LOGO command!!!
@@ -1984,6 +1989,9 @@ const struct logoInstructionDef instructions[] = {
 			//FD(DESIRED_SPEED_NORMAL_F0/10) //wait for navigation to search for thermals
 		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)	
 		//END //if    
+*/
+		FD(DESIRED_SPEED_NORMAL_F0/10)
+
 	END //geof
 	END
 
@@ -2358,9 +2366,15 @@ const struct logoInstructionDef instructions[] = {
 			//settle into gliding
 			EXEC (LOGO_MAIN)
 		END
+
+
+/*
 		IF_GT(DIST_TO_HOME, GEOFENCE_SIZE )
 			DO (RETURN_MC_GEOFENCE) 
 		END
+*/
+		DO (PLAN_RETURN_GEOFENCE) //act if needed
+
 		IF_GT(AIR_SPEED_Z, MOTOR_CLIMB_MAX) //Skip when in a thermal
 			// lift found
 			EXEC (LOGO_MAIN)
