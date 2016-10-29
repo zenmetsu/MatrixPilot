@@ -86,6 +86,8 @@ enum {
 	BATTERY_VOLTAGE,
 	AIR_SPEED_Z_DELTA,
 	READ_F_LAND,
+ 	GEOFENCE_STATUS,
+	GEOFENCE_TURN,	
 #endif
 	PARAM
 };
@@ -288,7 +290,70 @@ static int16_t get_current_angle(void);
 #if ( MY_PERSONAL_OPTIONS == 1 )
 boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c
 #endif
-#endif
+
+
+//Geofence 
+
+// define a struct with geofence shapes
+typedef struct tag_geofenceShape {
+	float ellips_diameter_x;
+	float ellips_diameter_y;
+	float fuzzy_factor;
+	float linear_x_slope;
+	float linear_y_slope;
+	float offset_x_plus_y;
+	int16_t sign;  
+} geofenceShape;
+
+//define an array of geofence shapes - define on what side of the lines the aicraft should be
+//shapes can be any combination of lines, circles and ellipses
+//Calculating the parameters:
+//LOGO defines HOME as {x, y} = {0,0}. This is the centre of the geofence
+//For a straight line, or the longitudinal axis of an ellipse:
+//How many meters is the line from Home to North? "Fill it in at offset_x_plus_y.
+//If x 'x + 1, what happens to y. Devide by 1000. use this in linear_y_slope  .
+//For an ellipse
+//What is the biggest East-West distance from your field? "The root of it? => 1 / ellips_diameter_x.  Devide by 1000
+//What is the greatest distance north-south from your field? "The root of it? => 1 / ellips_diameter_y.   Devide by 1000
+//                        (Square to put tilted ellipse)
+//For a circle:
+//Above you have already completed the same for ellips_diameter_x and ellips_diameter_y. No further news.
+//And guess the fuzzy_factor. Start at 0, i have no idea what effect it has.
+
+#define NUMB_OF_GEO_SHAPES 	   2  //per set
+geofenceShape geofenceShapes[NUMB_OF_GEO_SHAPES * 2]=
+{
+	{0.0000013,0.0000013,0,0,0,0.78,1},  //circle, Lageweg, 400m radius
+    {0,0,0,0.0015,0.00072,1.08,1},       //line, Lageweg, through Home, powerlines,  angle > 296 || angle < 116 
+	{0.0000013,0.0000013,0,0,0,0.84,1},  //circle, Lageweg, ~350m radius
+    {0,0,0,0.0015,0.00072,1.14,1}        //line, Lageweg, below Home, powerlines,  angle > 296 || angle < 116 
+};
+//},
+//geofenceShape geofenceShapesWind[NUMB_OF_GEO_SHAPES]=
+//{
+
+//define a set for outcomes of the geofence check, for left, ahead and right
+typedef struct tag_geoScores {
+	float geoScoreLeft;
+	float geoScoreAhead;
+	float geoScoreRight;
+} geoScores;
+
+geoScores geofenceScore;
+
+int16_t geoTurn;       //turn -40, 0, or 40 deg in 4 sec    scope: flightplan_logo.c
+int16_t geoStatus;     //0,1,2  0= soft/wind gf, 1=wind gf, 2 geofence (alarm)   scope: flightplan_logo.c  
+static int16_t geoHeartbeat;  //to get 1Hz timebase
+
+//definitions, should be in header file?
+float geoPreference(float x, float y, int16_t shapeNumb);   //use linear programmming to test position against a single geofence shape, return a score 0..1
+void areaGeoScore(int16_t metersAhead, int16_t windSeconds);  //return three scores 40m ahead, one for left 40 deg, one ahead , and one for right 40 deg windSeconds; translate x and y downwind, equivalent of x sec drift
+void geoSetStatus(); // run once a second. windSeconds; translate x and y downwind, equivalent of x sec drift
+void geoSetTurn();   // Call from LOGO. convert a set of score outcomes to a number of degrees for a turn (-40, 0, 40) from (set before) global variable   geofenceScore 
+
+#endif //THERMALLING_MISSION
+
+
 
 // If we've processed this many instructions without commanding the plane to fly,
 // then stop and continue on the next run through
@@ -564,6 +629,13 @@ void flightplan_logo_update(void)
 		}
 #endif  //THERMALLING_MISSION
 	}
+#if ( THERMALLING_MISSION == 1 )
+	geoHeartbeat++;
+	if ( geoHeartbeat % 40 == 0 )
+	{
+		geoSetStatus();	
+	}
+#endif
 }
 
 // For DO and EXEC, find the location of the given subroutine
@@ -896,6 +968,16 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		case READ_F_LAND: //  used for waiting for a decrease in climbrate in a thermal
 		{
 			return ((desired_behavior.W & F_LAND) > 0);
+		}
+		
+		case GEOFENCE_STATUS: //  used for waiting for a decrease in climbrate in a thermal
+		{
+			return geoStatus;
+		}
+		
+		case GEOFENCE_TURN: //  used for waiting for a decrease in climbrate in a thermal
+		{
+			return geoTurn;
 		}
 #endif  //THERMALLING_MISSION
 
@@ -1484,5 +1566,247 @@ void flightplan_logo_live_commit(void)
 		logo_inject_pos = 0;
 	}
 }
+
+//use linear programmming to test position against a set of geofence shapes
+//float geoPreference(float x, float y, geofenceShape geoshape)
+float geoPreference(float x, float y, int16_t shape)
+{
+	static float result;
+	
+	result = geofenceShapes[shape].ellips_diameter_x*x*x+ geofenceShapes[shape].ellips_diameter_y*y*y+ geofenceShapes[shape].fuzzy_factor*x*y+ geofenceShapes[shape].linear_x_slope*x+ geofenceShapes[shape].linear_y_slope*y+ geofenceShapes[shape].offset_x_plus_y;      // hoever zijn we van de lijn af
+	result *= (float)geofenceShapes[shape].sign;              // other side of the line
+	if (result < 1)
+	{
+		result = 1;        // limit when well in desired area
+	}
+	return result;
+}
+
+
+// this function returns three scores x m ahead, one for left 40 deg, one ahead, and one for right 40 deg, using wind drift (if not 0)
+//calls geoPreference() per shape
+void areaGeoScore(int16_t metersAhead, int16_t windSeconds)   // windSeconds; translate x and y downwind, equivalent of x sec drift
+{
+	static int16_t shapeIndex;
+	static float result=1;
+	static float x;  //pos in meters
+	static float y;  //pos in meters
+	static int16_t numbDirections;
+	static boolean strictGeofence = false;
+	static int16_t cangle = 0; 
+	static int8_t b_angle = 0;
+	//static geoScores geoScore; 
+	geofenceScore.geoScoreAhead = 1;
+	geofenceScore.geoScoreLeft = 1;
+	geofenceScore.geoScoreRight = 1;
+	
+	if (metersAhead == 0) 
+	{
+		numbDirections = 1;      //strict, use large shapes
+		strictGeofence = true;
+	}
+	else
+	{
+		numbDirections = 3;      //wind, use smaller shapes
+		strictGeofence = false;
+	    //strictGeofence = true;
+	}
+	
+	if (metersAhead == 0) 
+	{
+		x = (float)turtleLocations[PLANE].x._.W1 ;       // in m  windSeconds; translate x and y downwind, equivalent of x sec drift
+		y = (float)turtleLocations[PLANE].y._.W1 ;       // in m
+	}
+	else	
+	{
+		//ahead
+		x = (float)turtleLocations[PLANE].x._.W1 + (float)windSeconds * (float)(estimatedWind[0])/100.0;       // in m  windSeconds; translate x and y downwind, equivalent of x sec drift
+		y = (float)turtleLocations[PLANE].y._.W1 + (float)windSeconds * (float)(estimatedWind[1])/100.0;       // in m
+	
+		//code for LT() or RT()
+		cangle = turtleAngles[currentTurtle]+0;   //ahead   // 0-359 (clockwise, 0=North)
+		while (cangle < 0) cangle += 360;
+		while (cangle >= 360) cangle -= 360;
+	
+		//code from FD()
+		b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+		b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+		//select point forward "metersAhead"
+		//do the check for a point xm in front of plane
+		x += (float)((__builtin_mulss(-cosine(b_angle), metersAhead) << 2)>>16);  //from 16.16 to float
+		y += (float)((__builtin_mulss(-sine(b_angle), metersAhead) << 2)>>16);
+ 	}
+	if ( strictGeofence )
+	{ 
+		//for ( i=0; i<numbOfGeoshapes; i++)
+		result = 1;
+		for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+		{
+			result *= geoPreference(x,y,shapeIndex);
+		}
+		geofenceScore.geoScoreAhead = result;
+	}
+	else
+	{		
+		//for ( i=0; i<numbOfGeoshapes; i++)
+		result = 1;
+		for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+		{
+			result *= geoPreference(x,y,shapeIndex+2);  //use the smaller shapes
+		}
+		geofenceScore.geoScoreAhead = result;
+	}
+
+	if (numbDirections == 3);
+	{
+		//Left score
+		x = (float)turtleLocations[PLANE].x._.W1 + (float)windSeconds * (float)(estimatedWind[0])/100.0;       // in m  windSeconds; translate x and y downwind, equivalent of x sec drift
+		y = (float)turtleLocations[PLANE].y._.W1 + (float)windSeconds * (float)(estimatedWind[1])/100.0;       // in m
+	
+		//code for LT() or RT()
+		cangle = turtleAngles[currentTurtle]-40;   //left   // 0-359 (clockwise, 0=North)
+		while (cangle < 0) cangle += 360;
+		while (cangle >= 360) cangle -= 360;
+	
+		//code from FD()
+		b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+		b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+		//select point forward "metersAhead"
+		//do the check for a point xm in front of plane
+		x += (float)((__builtin_mulss(-cosine(b_angle), metersAhead) << 2)>>16);  //from 16.16 to float
+		y += (float)((__builtin_mulss(-sine(b_angle), metersAhead) << 2)>>16);
+
+		if ( strictGeofence )
+		{ 
+			//for ( i=0; i<numbOfGeoshapes; i++)
+			result = 1;
+			for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+			{
+				result *= geoPreference(x,y,shapeIndex);
+			}
+			geofenceScore.geoScoreLeft = result * 1.0;
+		}
+		else
+		{		
+			//for ( i=0; i<numbOfGeoshapes; i++)
+			result = 1;
+			for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+			{
+				result *= geoPreference(x,y,shapeIndex+2);  //use the smaller shapes
+			}
+			geofenceScore.geoScoreLeft = result * 1.0;
+		}
+		
+		//Right score
+		x = (float)turtleLocations[PLANE].x._.W1 + (float)windSeconds * (float)(estimatedWind[0])/100.0;       // in m  windSeconds; translate x and y downwind, equivalent of x sec drift
+		y = (float)turtleLocations[PLANE].y._.W1 + (float)windSeconds * (float)(estimatedWind[1])/100.0;       // in m
+	
+		//code for LT() or RT()
+		cangle = turtleAngles[currentTurtle]+40;   //right   // 0-359 (clockwise, 0=North)
+		while (cangle < 0) cangle += 360;
+		while (cangle >= 360) cangle -= 360;
+	
+		//code from FD()
+		b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+		b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+		//select point forward "metersAhead"
+		//do the check for a point xm in front of plane
+		x += (float)((__builtin_mulss(-cosine(b_angle), metersAhead) << 2)>>16);  //from 16.16 to float
+		y += (float)((__builtin_mulss(-sine(b_angle), metersAhead) << 2)>>16);
+	}		
+	if ( strictGeofence )
+	{ 
+		//for ( i=0; i<numbOfGeoshapes; i++)
+		result = 1;
+		for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+		{
+			result *= geoPreference(x,y,shapeIndex);
+		}
+		geofenceScore.geoScoreRight = result * 1.0;
+	}
+	else
+	{		
+		//for ( i=0; i<numbOfGeoshapes; i++)
+		result = 1;
+		for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+		{
+			result *= geoPreference(x,y,shapeIndex+2);  //use the smaller shapes
+		}
+		geofenceScore.geoScoreRight = result * 1.0;
+	}
+
+	// return geoScore; cannot pass this much data, unless using pointers, use global instead
+}
+
+// LOGO will use geoStatus first (GET_GF_STATUS)
+// LOGO then will use geoTurn to plan the turn
+// test geofence shapes from strictest to least strict, does more tests if needed
+// calls areaGeoScore() several times with  metersAhead  and  windSeconds
+// 	status  				advice mandatory 
+//	   0, soft/wind gf 			   0                if new thermal, thermal , else do trun (soft)
+//	   1, wind gf  			       0	            ignore turn if in thermal, else turn 
+//	   2, geofence 			       1                alarm
+void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, equivalent of x sec drift
+{
+	//float turn;     //0..1
+	//int16_t geoStatus;     //0,1,2
+	//int16_t geoTurn;       //turn -40, 0, or 40 deg in 4 sec    scope: flightplan_logo.c
+	//geofenceScore = 
+	areaGeoScore(0,0);  //int16_t metersAhead, int16_t windSeconds)
+	if ( geofenceScore.geoScoreAhead > 1 )
+	{
+		geoStatus = 2;
+		areaGeoScore(40,20);  //int16_t metersAhead, int16_t windSeconds)
+	}
+	else
+	{
+		//geofenceScore = 
+		areaGeoScore(40,20);  //int16_t metersAhead, int16_t windSeconds)
+		if ( geofenceScore.geoScoreAhead > 1 )
+		{
+		    geoStatus = 1;
+		}
+		else
+		{
+			//geofenceScore = 
+			areaGeoScore(40,30);  //int16_t metersAhead, int16_t windSeconds)
+			geoStatus = 0;
+			if ( geofenceScore.geoScoreAhead > 1 )
+			{
+			}
+			else
+			{
+				//geofenceScore = 
+				areaGeoScore(40,40);  //int16_t metersAhead, int16_t windSeconds)
+			}
+		}
+	}
+	geoSetTurn();	
+}	
+
+
+void geoSetTurn()   // set geoTurn;   //-40, 0 or 40 deg
+{
+	if ( (geofenceScore.geoScoreAhead < geofenceScore.geoScoreLeft) && (geofenceScore.geoScoreAhead < geofenceScore.geoScoreRight) )
+	{
+		geoTurn = 0;
+	}
+	else if (geofenceScore.geoScoreLeft < geofenceScore.geoScoreRight)
+	{
+		geoTurn = -40;
+	}
+	else
+	{
+		geoTurn = 40;
+	}	
+}	
+
+
+
+
+
+// me #endif //THERMALLING_MISSION
+
+
 
 //#endif // (FLIGHT_PLAN_TYPE == FP_LOGO)

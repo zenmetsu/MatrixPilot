@@ -1215,31 +1215,41 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (PLAN_RETURN_GEOFENCE)
 	    CLEAR_INTERRUPT  //don't change navigation
+
 		LOAD_TO_PARAM(REL_ANGLE_TO_HOME)   // gf -180..179)
+//		IF_EQ( GEOFENCE_STATUS,2 )
+//			IF_NE(GEOFENCE_TURN,0)   // gf -180..179)
+
 		//perform a precalculated turn 
 		IF_LT(REL_ANGLE_TO_HOME, 0) 			// gf	angle < 0	
+//			IF_LT(GEOFENCE_TURN, 0) 			// gf	angle < 0	
 			//make the turn to Home a smooth one
+
 			PARAM_MUL(-1)
 			PARAM_DIV(10)
 			REPEAT_PARAM
+//					REPEAT(4)
+
 				LT(10)
-				//IF_EQ(READ_F_LAND,1)
+				IF_EQ(READ_F_LAND,1)
 					DO (RETURN_GEOFENCE)
 				//ELSE
 			
 				//	DO (RETURN_MC_GEOFENCE)
 				//	DO (CHECKS_MC)
-				//END	
+				END	
 			END
 		 ELSE
 			PARAM_DIV(10)
+			REPEAT_PARAM
+//			REPEAT(4)
 				RT(10)
-				//IF_EQ(READ_F_LAND,1)
+				IF_EQ(READ_F_LAND,1)
 					DO (RETURN_GEOFENCE)
 				//ELSE
 				//	DO (RETURN_MC_GEOFENCE)
 				//	DO (CHECKS_MC)
-				//END	
+				END	
 			END
 		 END //
 		
@@ -1271,6 +1281,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (CHECK_SOFT_GEOFENCE)
+/*
 		IF_GT(DIST_TO_HOME, ( GEOFENCE_SIZE * 2 / 3) )             // sgf  at least outside soft geofence
 		//IF_GT(DIST_TO_UPWIND_POINT, GEOFENCE_SIZE )              // wgf  !!!non-standard LOGO command!!!
 		//IF_GT(DIST_TO_UPWIND_POINT, ( GEOFENCE_SIZE * 4 / 5 ) )  // swgf !!!non-standard LOGO command!!!
@@ -1330,7 +1341,54 @@ const struct logoInstructionDef instructions[] = {
 					END //<-30
 				END //>150
 			END //>-30
+*/
 
+//		LOAD_TO_PARAM(REL_ANGLE_TO_HOME)   // gf -180..179)
+		IF_EQ( GEOFENCE_STATUS,1 )
+//			IF_NE(GEOFENCE_TURN,0)   // gf -180..179)
+
+		//perform a precalculated turn 
+//		IF_LT(REL_ANGLE_TO_HOME, 0) 			// gf	angle < 0	
+			IF_LT(GEOFENCE_TURN, 0) 			// gf	angle < 0	
+			//make the turn to Home a smooth one
+
+//			PARAM_MUL(-1)
+//			PARAM_DIV(10)
+//			REPEAT_PARAM
+				REPEAT(4)
+	
+					LT(10)
+					IF_EQ(READ_F_LAND,1)
+						DO (CHECKS)  //maintain min and max altitudes
+						DO (SOFT_CHECKS)
+						DO (CHECK_THERMALS)
+						FD(DESIRED_SPEED_NORMAL_F0/10)
+
+					//ELSE
+				
+					//	DO (RETURN_MC_GEOFENCE)
+					//	DO (CHECKS_MC)
+					END	
+				END
+			ELSE
+	//			PARAM_DIV(10)
+	//			REPEAT_PARAM
+				REPEAT(4)
+					RT(10)
+					IF_EQ(READ_F_LAND,1)
+						DO (CHECKS)  //maintain min and max altitudes
+						DO (SOFT_CHECKS)
+						DO (CHECK_THERMALS)
+	 					FD(DESIRED_SPEED_NORMAL_F0/10)
+	
+					//ELSE
+					//	DO (RETURN_MC_GEOFENCE)
+					//	DO (CHECKS_MC)
+					END	
+				END
+			END
+		END //
+		
 			// end with straight
 			//FD(DESIRED_SPEED_NORMAL_F0/2) //no need to wait for navigation to search for thermals
 			FD(DESIRED_SPEED_NORMAL_F0/10) //wait for navigation to search for thermals
