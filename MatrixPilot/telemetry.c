@@ -185,18 +185,13 @@ void telemetry_init(void)
 	udb_init_USART(&udb_serial_callback_get_byte_to_send, &udb_serial_callback_received_byte);
 #endif
 	udb_serial_set_rate(SERIAL_BAUDRATE);
-#else
+#endif //use_mavlink// MY_PERSONAL_OPTIONS
+
 #if (SERIAL3_OUTPUT_FORMAT == SERIAL_UDB)
 	//assume serial is in use;  serial3 to aux
 	udb_init_USART3(&udb_serial3_callback_get_byte_to_send, &udb_serial3_callback_received_byte);
 	udb_serial3_set_rate(SERIAL3_BAUDRATE);
-#else
-	//normal serial to aux
-	udb_init_USART3(&udb_serial_callback_get_byte_to_send, &udb_serial_callback_received_byte);
-	udb_serial3_set_rate(SERIAL_BAUDRATE);
 #endif //ser3
-//me
-#endif //use_mavlink// MY_PERSONAL_OPTIONS
 
 }
 
