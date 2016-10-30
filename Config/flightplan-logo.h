@@ -1071,6 +1071,7 @@ const struct logoInstructionDef instructions[] = {
 #define CRUISE                                3
 #define PLAN_RETURN_GEOFENCE                  4
 #define RETURN_GEOFENCE                       5
+#define PLAN_SOFT_GEOFENCE                    6
 #define CHECK_WIND_GEOFENCE                   7
 #define CHECK_SOFT_GEOFENCE                   9
 #define CHECK_SOFT_WIND_GEOFENCE             11
@@ -1122,7 +1123,7 @@ const struct logoInstructionDef instructions[] = {
 
 	//Main  -  main program when motor is off
 
-		//cleanup   
+		//cleanup
 		SET_ALT(MAX_THERMALLING_ALT-10)    // the last 20m will be used to gradually apply brakes  - depends on brake gain
 		FLAG_ON(F_LAND)	 //Motor off
 		SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
@@ -1133,9 +1134,9 @@ const struct logoInstructionDef instructions[] = {
 		DO (SOFT_CHECKS)
 		DO (CHECK_THERMALS)	  //geofence will be monitored, end and restart if needed
 
-		DO (CHECK_WIND_GEOFENCE)
-		DO (CHECK_SOFT_GEOFENCE)
-		DO (CHECK_SOFT_WIND_GEOFENCE)
+		//DO (CHECK_WIND_GEOFENCE)
+		DO (PLAN_SOFT_GEOFENCE)
+		//DO (CHECK_SOFT_WIND_GEOFENCE)
 
 		DO (CRUISE)   // prevent overshoots
 
@@ -1214,53 +1215,28 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (PLAN_RETURN_GEOFENCE)
-	    CLEAR_INTERRUPT  //don't change navigation
-
-		LOAD_TO_PARAM(REL_ANGLE_TO_HOME)   // gf -180..179)
-//		IF_EQ( GEOFENCE_STATUS,2 )
-//			IF_NE(GEOFENCE_TURN,0)   // gf -180..179)
-
-		//perform a precalculated turn 
-		IF_LT(REL_ANGLE_TO_HOME, 0) 			// gf	angle < 0	
-//			IF_LT(GEOFENCE_TURN, 0) 			// gf	angle < 0	
-			//make the turn to Home a smooth one
-
-			PARAM_MUL(-1)
-			PARAM_DIV(10)
-			REPEAT_PARAM
-//					REPEAT(4)
-
-				LT(10)
+	    //CLEAR_INTERRUPT  //don't change navigation
+		IF_EQ( GEOFENCE_STATUS,2 )
+			REPEAT(4)
+				IF_LT(GEOFENCE_TURN, 0) 			// gf	angle < 0
+			 	    LT(10)
+				END
+				IF_GT(GEOFENCE_TURN, 0) 			// gf	angle < 0
+			 	    RT(10)
+				END
 				IF_EQ(READ_F_LAND,1)
 					DO (RETURN_GEOFENCE)
 				ELSE
-					DO (CHECKS_MC)
 					DO (RETURN_MC_GEOFENCE)
-				END	
-			END
-		ELSE
-
-			PARAM_DIV(10)
-			REPEAT_PARAM
-//			REPEAT(4)
-
-				RT(10)
-				IF_EQ(READ_F_LAND,1)
-					DO (RETURN_GEOFENCE)
-				ELSE
 					DO (CHECKS_MC)
-					DO (RETURN_MC_GEOFENCE)
-				END	
+				END
 			END
-		END //
-		
-		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
-		 //fix a hangup (prevent nesting?)
-		IF_EQ(READ_F_LAND,1)
-		 	 EXEC (LOGO_MAIN)		
-		END
-		//ELSE
-		//END	
+			//SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
+			 //fix a hangup (prevent nesting?)
+			IF_EQ(READ_F_LAND,1)
+			 	 EXEC (LOGO_MAIN)
+			END
+	    END
 
 	END //geof
 	END
@@ -1268,6 +1244,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (RETURN_GEOFENCE)
+		FD(DESIRED_SPEED_NORMAL_F0/10)
 		DO (CHECKS)  //maintain min and max altitudes
 		//DO (SOFT_CHECKS)
 		//DO (CHECK_THERMALS)
@@ -1275,7 +1252,6 @@ const struct logoInstructionDef instructions[] = {
 		//DO (SOFT_CHECKS_MC)
 		//DO (CHECK_THERMALS_MC)	  //geofence will be monitored, end and restart if needed
 		//LT(10)
-		FD(DESIRED_SPEED_NORMAL_F0/10)
 	END //geof
 	END
 
@@ -1344,57 +1320,52 @@ const struct logoInstructionDef instructions[] = {
 				END //>150
 			END //>-30
 */
+		FD(DESIRED_SPEED_NORMAL_F0/10)
+	END
+	END
 
-//		LOAD_TO_PARAM(REL_ANGLE_TO_HOME)   // gf -180..179)
-		IF_LE( GEOFENCE_STATUS,1 )
-//			IF_NE(GEOFENCE_TURN,0)   // gf -180..179)
 
-		//perform a precalculated turn 
-//		IF_LT(REL_ANGLE_TO_HOME, 0) 			// gf	angle < 0	
-			IF_LT(GEOFENCE_TURN, 0) 			// gf	angle < 0	
-			//make the turn to Home a smooth one
 
-//			PARAM_MUL(-1)
-//			PARAM_DIV(10)
-//			REPEAT_PARAM
-				REPEAT(4)
-	
-					LT(10)
+	TO (PLAN_SOFT_GEOFENCE)
+		IF_LT( GEOFENCE_STATUS,2 )                  // not strict
+			REPEAT(4)
+				IF_NE(GEOFENCE_TURN, 0) 			// gf	angle <> 0
+					IF_LT(GEOFENCE_TURN, 0) 			// gf	angle < 0
+				 	    LT(10)
+					END
+					IF_GT(GEOFENCE_TURN, 0) 			// gf	angle > 0
+				 	    RT(10)
+					END
 					IF_EQ(READ_F_LAND,1)
+	                    DO (CHECK_SOFT_GEOFENCE)   // 1 sec fd
 						DO (CHECKS)  //maintain min and max altitudes
 						DO (SOFT_CHECKS)
 						DO (CHECK_THERMALS)
-						FD(DESIRED_SPEED_NORMAL_F0/10)
 
-					//ELSE
-				
-					//	DO (RETURN_MC_GEOFENCE)
-					//	DO (CHECKS_MC)
-					END	
-				END
-			ELSE
-	//			PARAM_DIV(10)
-	//			REPEAT_PARAM
-				REPEAT(4)
-					RT(10)
-					IF_EQ(READ_F_LAND,1)
-						DO (CHECKS)  //maintain min and max altitudes
-						DO (SOFT_CHECKS)
-						DO (CHECK_THERMALS)
-	 					FD(DESIRED_SPEED_NORMAL_F0/10)
-	
-					//ELSE
-					//	DO (RETURN_MC_GEOFENCE)
-					//	DO (CHECKS_MC)
-					END	
+					ELSE
+						DO (CHECK_MC_SOFT_GEOFENCE)  // 1 sec fd
+						DO (CHECKS_MC)
+					END
 				END
 			END
 		END //
-		
-			// end with straight
-			//FD(DESIRED_SPEED_NORMAL_F0/2) //no need to wait for navigation to search for thermals
-			FD(DESIRED_SPEED_NORMAL_F0/10) //wait for navigation to search for thermals
-		END //if
+
+		// end with straight
+		//FD(DESIRED_SPEED_NORMAL_F0/2) //no need to wait for navigation to search for thermals
+		//FD(DESIRED_SPEED_NORMAL_F0/10) //wait for navigation to search for thermals
+
+		// end with straight
+		IF_NE(GEOFENCE_TURN, 0) 			// gf	angle <> 0
+			IF_EQ(READ_F_LAND,1)
+	            DO (CHECK_SOFT_GEOFENCE)   // 1 sec fd
+				DO (CHECKS)  //maintain min and max altitudes
+				DO (SOFT_CHECKS)
+				DO (CHECK_THERMALS)
+			ELSE
+				DO (CHECK_MC_SOFT_GEOFENCE)  // 1 sec fd
+			 	DO (CHECKS_MC)
+			END //if
+		 END
 	END
 	END
 
@@ -1403,8 +1374,8 @@ const struct logoInstructionDef instructions[] = {
     //Wind geofence routines
 
 
-	TO (CHECK_WIND_GEOFENCE)
 /*
+	TO (CHECK_WIND_GEOFENCE)
 		//IF_GT(DIST_TO_HOME, ( GEOFENCE_SIZE * 2 / 3) )           // sgf  at least outside soft geofence
 		IF_GT(DIST_TO_UPWIND_POINT, GEOFENCE_SIZE )              // wgf  !!!non-standard LOGO command!!!
 		//IF_GT(DIST_TO_UPWIND_POINT, ( GEOFENCE_SIZE * 4 / 5 ) )  // swgf !!!non-standard LOGO command!!!
@@ -1469,14 +1440,14 @@ const struct logoInstructionDef instructions[] = {
 			//FD(DESIRED_SPEED_NORMAL_F0/2) //no need to wait for navigation to search for thermals
 			FD(DESIRED_SPEED_NORMAL_F0/10) //wait for navigation to search for thermals
 		END //if
-*/
+
 	END
 	END
 
 
 
 	TO (CHECK_SOFT_WIND_GEOFENCE)
-/*		//IF_GT(DIST_TO_HOME, ( GEOFENCE_SIZE * 2 / 3) )           // sgf  at least outside soft geofence
+		//IF_GT(DIST_TO_HOME, ( GEOFENCE_SIZE * 2 / 3) )           // sgf  at least outside soft geofence
 		//IF_GT(DIST_TO_UPWIND_POINT, GEOFENCE_SIZE )              // wgf  !!!non-standard LOGO command!!!
 		IF_GT(DIST_TO_UPWIND_POINT, ( GEOFENCE_SIZE * 4 / 5 ) )  // swgf !!!non-standard LOGO command!!!
 
@@ -1540,9 +1511,9 @@ const struct logoInstructionDef instructions[] = {
 			//FD(DESIRED_SPEED_NORMAL_F0/2) //no need to wait for navigation to search for thermals
 			FD(DESIRED_SPEED_NORMAL_F0/10) //wait for navigation to search for thermals
 		END //if
+	END
+	END
 */
-	END
-	END
 
 
 
@@ -1552,27 +1523,28 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (CHECK_THERMALS)
 		//check for thermals
-
-		IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)  //>= 0.4 m/s climb is the trigger		also check CHECK_INSIDE_WIND_GEOFENCE
-			// lift found
-			// checks
-			//DO (CHECK_VERTICAL_PARAMETERS)
-			// keep flying straight until decreasing lift
-			//wait for decrease of lift
-			DO (WAIT_DECREASE_CLIMBRATE)	  //wait up to 6 sec for the climbrate decrease, keep the best climbrate
-			//current is less
-			//now beyond the best climbrate..
-			//turn up to 270 deg + 3sec straight if not better
-			//abort the turn if better climbrate is found
-			EXEC (THERMALLING_TURN)
-			//every check: if positive, take action, then restart program
-			EXEC (LOGO_MAIN)
-		END // 0.4 m/s trigger
+		IF_LE( GEOFENCE_STATUS,1 )
+			IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)  //>= 0.4 m/s climb is the trigger		also check CHECK_INSIDE_WIND_GEOFENCE
+				// lift found
+				// checks
+				//DO (CHECK_VERTICAL_PARAMETERS)
+				// keep flying straight until decreasing lift
+				//wait for decrease of lift
+				DO (WAIT_DECREASE_CLIMBRATE)	  //wait up to 6 sec for the climbrate decrease, keep the best climbrate
+				//current is less
+				//now beyond the best climbrate..
+				//turn up to 270 deg + 3sec straight if not better
+				//abort the turn if better climbrate is found
+				EXEC (THERMALLING_TURN)
+				//every check: if positive, take action, then restart program
+				EXEC (LOGO_MAIN)
+			END // 0.4 m/s trigger
+		END
 	END
 	END
 
-	
-    
+
+
 	TO (WAIT_DECREASE_CLIMBRATE)
 		//wait up to 6 sec for the climbrate to decrease, keep the best climbrate
 		/*
@@ -1749,7 +1721,7 @@ const struct logoInstructionDef instructions[] = {
 
 				LT(10)
 				//FD(DESIRED_SPEED_NORMAL_F0/10)
-		FD(DESIRED_SPEED_FAST_FMIN4/10)	//"SINK"
+				FD(DESIRED_SPEED_FAST_FMIN4/10)	//"SINK"
 			END
 		 ELSE
 			IF_GE(REL_ANGLE_TO_HOME, 150) 			 // gf  angle > 149	(150..179) =   179-150 L
@@ -1915,13 +1887,18 @@ const struct logoInstructionDef instructions[] = {
 			DO (SOFT_CHECKS_MC)
 			//if in an area with some lift, circle more , don't bother with soft gf
 			IF_LT(AIR_SPEED_Z,MOTOR_CLIMB_MAX - 30)	// > ~0.7 m/s climb is expected, circle if 0.9, exit if 1.2
-				DO (CHECK_MC_SOFT_GEOFENCE)
+
+				//DO (CHECK_MC_SOFT_GEOFENCE)
+				DO (PLAN_SOFT_GEOFENCE)
+
 			END
 			DO (MOTOR_CLIMB_FORWARD)    // prevent overshoots
 			//if in an area with some lift, circle more , don't bother with (soft) wind gf
 			IF_LT(AIR_SPEED_Z,MOTOR_CLIMB_MAX - 30)	// > ~0.7 m/s climb is expected, circle if 0.9, exit if 1.2
-				DO (CHECK_MC_WIND_GEOFENCE)
-				DO (CHECK_MC_SOFT_WIND_GEOFENCE)
+
+				//DO (CHECK_MC_WIND_GEOFENCE)
+				//DO (CHECK_MC_SOFT_GEOFENCE)
+				DO (PLAN_SOFT_GEOFENCE)
 			END
 			FLAG_OFF(F_LAND)	//Motor on
 			DO (MOTOR_CLIMB_FORWARD)	// prevent overshoots
@@ -1999,7 +1976,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (CHECK_MC_SOFT_GEOFENCE)
-
+/*
 		IF_GT(DIST_TO_HOME, ( GEOFENCE_SIZE * 2 / 3) )             // sgf  at least outside soft geofence
 		//IF_GT(DIST_TO_UPWIND_POINT, GEOFENCE_SIZE )              // wgf  !!!non-standard LOGO command!!!
 		//IF_GT(DIST_TO_UPWIND_POINT, ( GEOFENCE_SIZE * 4 / 5 ) )  // swgf !!!non-standard LOGO command!!!
@@ -2064,6 +2041,9 @@ const struct logoInstructionDef instructions[] = {
 			//FD(DESIRED_SPEED_NORMAL_F0/2) //no need to wait for navigation to search for thermals
 			FD(DESIRED_SPEED_NORMAL_F0/10) //wait for navigation to search for thermals
 		END //if
+*/
+		FD(DESIRED_SPEED_NORMAL_F0/10)
+		
 	END //geof
 	END
 
@@ -2071,7 +2051,7 @@ const struct logoInstructionDef instructions[] = {
   //Mc Wind geofence routines
 
 
-
+/*
 	TO (CHECK_MC_WIND_GEOFENCE)
 
 		//IF_GT(DIST_TO_HOME, ( GEOFENCE_SIZE * 2 / 3) )             // sgf  at least outside soft geofence
@@ -2210,8 +2190,7 @@ const struct logoInstructionDef instructions[] = {
 		END //if
 	END //geof
 	END
-
-
+*/
 
 	TO (MOTOR_CLIMB_FORWARD)
 		//start/continue a slow climb with motor
@@ -2304,7 +2283,10 @@ const struct logoInstructionDef instructions[] = {
 
 		//used by main, xgf an thermal
 	    //not allowed to be called by RETURN_GEOFENCE  
-		IF_GT(DIST_TO_HOME, GEOFENCE_SIZE )
+
+//		IF_GT(DIST_TO_HOME, GEOFENCE_SIZE )
+		IF_EQ( GEOFENCE_STATUS,2 )
+
 			SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
 
 //			EXEC (RETURN_GEOFENCE)
@@ -2373,8 +2355,9 @@ const struct logoInstructionDef instructions[] = {
 			DO (RETURN_MC_GEOFENCE) 
 		END
 */
-		DO (PLAN_RETURN_GEOFENCE) //act if needed
-
+		IF_EQ( GEOFENCE_STATUS,2 )
+			DO (PLAN_RETURN_GEOFENCE) //act if needed
+		END
 		IF_GT(AIR_SPEED_Z, MOTOR_CLIMB_MAX) //Skip when in a thermal
 			// lift found
 			EXEC (LOGO_MAIN)
