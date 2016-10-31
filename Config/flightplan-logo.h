@@ -1073,7 +1073,7 @@ const struct logoInstructionDef instructions[] = {
 #define RETURN_GEOFENCE                       5
 #define PLAN_SOFT_GEOFENCE                    6
 #define CHECK_WIND_GEOFENCE                   7
-#define CHECK_SOFT_GEOFENCE                   9
+#define RETURN_SOFT_GEOFENCE                  9
 #define CHECK_SOFT_WIND_GEOFENCE             11
 
 //Thermals
@@ -1228,7 +1228,6 @@ const struct logoInstructionDef instructions[] = {
 					DO (RETURN_GEOFENCE)
 				ELSE
 					DO (RETURN_MC_GEOFENCE)
-					DO (CHECKS_MC)
 				END
 			END
 			//SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
@@ -1257,8 +1256,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 
-
-	TO (CHECK_SOFT_GEOFENCE)
+	TO (RETURN_SOFT_GEOFENCE)
 /*
 		IF_GT(DIST_TO_HOME, ( GEOFENCE_SIZE * 2 / 3) )             // sgf  at least outside soft geofence
 		//IF_GT(DIST_TO_UPWIND_POINT, GEOFENCE_SIZE )              // wgf  !!!non-standard LOGO command!!!
@@ -1337,11 +1335,10 @@ const struct logoInstructionDef instructions[] = {
 				 	    RT(10)
 					END
 					IF_EQ(READ_F_LAND,1)
-	                    DO (CHECK_SOFT_GEOFENCE)   // 1 sec fd
+	                    DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
 						DO (CHECKS)  //maintain min and max altitudes
 						DO (SOFT_CHECKS)
 						DO (CHECK_THERMALS)
-
 					ELSE
 						DO (CHECK_MC_SOFT_GEOFENCE)  // 1 sec fd
 						DO (CHECKS_MC)
@@ -1357,7 +1354,7 @@ const struct logoInstructionDef instructions[] = {
 		// end with straight
 		IF_NE(GEOFENCE_TURN, 0) 			// gf	angle <> 0
 			IF_EQ(READ_F_LAND,1)
-	            DO (CHECK_SOFT_GEOFENCE)   // 1 sec fd
+	            DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
 				DO (CHECKS)  //maintain min and max altitudes
 				DO (SOFT_CHECKS)
 				DO (CHECK_THERMALS)
@@ -1968,7 +1965,7 @@ const struct logoInstructionDef instructions[] = {
 		//END //if    
 */
 		FD(DESIRED_SPEED_NORMAL_F0/10)
-
+		DO (CHECKS_MC)
 	END //geof
 	END
 

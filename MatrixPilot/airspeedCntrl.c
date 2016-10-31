@@ -211,7 +211,7 @@ fractional gliding_airspeed_pitch_adjust(void)
 		//config.ini support for LET
 //		aspd_pitch_adj += altit.MotorOnPitchUp; //with motor on, maintain the same speed, and to climb, use more pitch up
 //#else		
-		aspd_pitch_adj += MOTOR_ON_PITCH_UP; //with motor on, maintain the same speed, and to climb, use more pitch up
+//		aspd_pitch_adj += MOTOR_ON_PITCH_UP; //with motor on, maintain the same speed, and to climb, use more pitch up
 #endif
 #endif
 	}

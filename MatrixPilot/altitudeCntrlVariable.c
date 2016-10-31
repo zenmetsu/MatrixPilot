@@ -392,7 +392,7 @@ static void normalAltitudeCntrl(void)
 			//glide to minimal and/or wait 30 sec
 			// land flag off, alt set to 50m
 			//normal mc: use avg power for climbrate 0.7
-			if (state_flags._.GPS_steering)   //LOGO only
+			if (state_flags._.GPS_steering && ( desiredHeight > 70 ) )   //LOGO only, and not in landing phase.
 			{
 				if ( IMUlocationz._.W1 > 60 ) //only keep track above 60m
 				{
