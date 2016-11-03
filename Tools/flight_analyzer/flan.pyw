@@ -1050,7 +1050,7 @@ def write_placemark_preamble_auto(open_waypoint,current_waypoint,filename,log_bo
     else:
         print >> filename, "     <visibility>0</visibility>"
     print >> filename, """        <description>waypoint""",
-    print >> filename, current_waypoint,
+    print >> filename, logo_routines[current_waypoint],
     print >> filename, "</description>"
     temp_line = "     <styleUrl>#" +  \
         mycolors.list[current_waypoint % 12][0] + "</styleUrl>"
@@ -3081,6 +3081,59 @@ debug = 0 # set this to 1 of you want debug info to be printed.
 GPS = 0
 IMU = 1
             
+# LOG_WAYPOINT_PER_SUBROUTINE: Modify the names of the LOGO subroutines here. This example contains the names for flights with ATV LET:
+logo_routines = []
+for i in range(0,99,1):
+    logo_routines.append("")
+logo_routines[1] = "Mode Manual"
+logo_routines[2] = "Stabilized Gps lock"
+logo_routines[3] = "Cruise"
+logo_routines[4] = "Battery Low"
+logo_routines[5] = "Return_geofence"
+logo_routines[6] = "Check_inside_wind_geofence"
+logo_routines[7] = "Return_wind_geofence"
+logo_routines[9] = "Return_soft_geofence"
+logo_routines[11] = "Return_soft_wind_geofence"
+logo_routines[12] = "Check_thermals"
+logo_routines[13] = "Wait_decrease_climbrate"
+logo_routines[15] = "Thermalling_turn"
+logo_routines[17] = "Thermalling_shift_circle"
+logo_routines[18] = "Check_sink"
+logo_routines[19] = "Sink"
+logo_routines[20] = "Check_motor_climb_needed"
+logo_routines[21] = "Motor_climb"
+logo_routines[22] = "Check_mc_inside_geofence"
+logo_routines[23] = "Return_mc_geofence"
+logo_routines[24] = "Check_mc_inside_wind_geofence"
+logo_routines[25] = "Return_mc_soft_wind_geofence"
+logo_routines[27] = "Motor_climb_forward"
+logo_routines[29] = "Motor_climb_forward_GF"
+logo_routines[30] = "Checks_while_mc_int"
+logo_routines[31] = "Return_mc_wind_geofence"
+logo_routines[33] = "Pilot_input_in_MC"
+logo_routines[35] = "Mc_soft_geofence"
+logo_routines[39] = "Return_mc_soft_geofence"
+logo_routines[41] = "Downwind"
+logo_routines[43] = "Base"
+logo_routines[45] = "Final"
+logo_routines[47] = "Pilot_input"
+logo_routines[48] = "Checks_int"
+logo_routines[49] = "Clear_goal_errors"
+logo_routines[51] = "Too_low"
+logo_routines[53] = "Too_high"
+logo_routines[55] = "Better_lift"
+logo_routines[57] = "Loiter_Land"
+logo_routines[59] = "Descent_Pattern"
+logo_routines[61] = "Mode_Failsafe"
+logo_routines[62] = "Fs_Set_Alt_Alt    "
+logo_routines[63] = "Fs_Downwind       "
+logo_routines[65] = "Fs_Base           "
+logo_routines[67] = "Fs_Final          "
+logo_routines[69] = "Fs_Descent_Pattern"
+logo_routines[71] = "Fs_Loiter_Land    "
+
+# End of special hack for LOG_WAYPOINT_PER_SUBROUTINE
+
 if __name__=="__main__":
 
     instructions = "flan.py:  Convert a MatrixPilot telemetry and waypoints.h file " + \
