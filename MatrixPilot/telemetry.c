@@ -1053,6 +1053,7 @@ void telemetry_output_8hz(void)
 #if ( MY_PERSONAL_OPTIONS == 1 )
 				regularFlyingField = false;  // declared and used by FlightplanLog.c and set by MAVUDBExtra.c
 				//determines if we are flying from my regular flying field; in that case we will move home to the landing point (angle 130, 60m) for convenience
+/*
 #if ( HILSIM == 1 )
 				//F13:week15810:origN521729011:origE44317998:origA18:	52.1677,4.42448					
 				if ( (lat_origin.WW > 521720000 ) && (lat_origin.WW < 521730000 ) && ( lon_origin.WW > 44310000 ) && ( lon_origin.WW < 44320000 ) )
@@ -1060,11 +1061,12 @@ void telemetry_output_8hz(void)
 //					regularFlyingField = true;
 				}
 #else
+*/
 				if ( (lat_origin.WW > 518260000 ) && (lat_origin.WW < 518270000 ) && ( lon_origin.WW > 42980000 ) && ( lon_origin.WW < 42990000 ) )
 				{
 					regularFlyingField = true;
 				}
-#endif
+//#endif
 #endif
 			}
 			break;

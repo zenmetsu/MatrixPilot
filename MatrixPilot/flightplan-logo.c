@@ -85,9 +85,11 @@ enum {
 	WIND_FROM_ANGLE,
 	BATTERY_VOLTAGE,
 	AIR_SPEED_Z_DELTA,
+	AIR_SPEED_Z_VS_START,
 	READ_F_LAND,
  	GEOFENCE_STATUS,
-	GEOFENCE_TURN,	
+	GEOFENCE_TURN,
+	MOTOR_OFF_TIMER,	
 #endif
 	PARAM
 };
@@ -287,6 +289,8 @@ int16_t fixedBankDeg;  // deg bank, used for Logo  - for RT_BANK and LEVEL_1S co
 #define THERMALLING_TURN  0  // not implemented
 #endif
 static int16_t get_current_angle(void);
+static int16_t motorOffTimer = 0;
+static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
 #if ( MY_PERSONAL_OPTIONS == 1 )
 boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c
 #endif
@@ -324,9 +328,9 @@ typedef struct tag_geofenceShape {
 geofenceShape geofenceShapes[NUMB_OF_GEO_SHAPES * 2]=
 {
 	{0.0000013,0.0000013,0,0,0,0.78,1},  //circle, Lageweg, 400m radius
-    {0,0,0,0.0015,0.00072,1.08,1},       //line, Lageweg, through Home, powerlines,  angle > 296 || angle < 116 
+    {0,0,0,0.0015,0.00285,0.96,1},       //line, Lageweg, through Home, powerlines,  angle > 296 || angle < 116 
 	{0.0000013,0.0000013,0,0,0,0.84,1},  //circle, Lageweg, ~350m radius
-    {0,0,0,0.0015,0.00072,1.14,1}        //line, Lageweg, below Home, powerlines,  angle > 296 || angle < 116 
+    {0,0,0,0.0015,0.00285,1.14,1}        //line, Lageweg, below Home, powerlines,  angle > 296 || angle < 116 
 };
 //},
 //geofenceShape geofenceShapesWind[NUMB_OF_GEO_SHAPES]=
@@ -631,9 +635,18 @@ void flightplan_logo_update(void)
 	}
 #if ( THERMALLING_MISSION == 1 )
 	geoHeartbeat++;
-	if ( geoHeartbeat % 40 == 0 )
+	if ( geoHeartbeat % 40 == 0 )   //1Hz
 	{
-		geoSetStatus();	
+		geoSetStatus();	     //read geofencee status and update status system value
+
+		if (motorOffTimer > 0)   //monitor motor run
+		{
+		    motorOffTimer--;
+		}
+		if ((desired_behavior.W & F_LAND) == 0) // set to 4 as long as motor runs, to know time after stopping motor
+		{
+		    motorOffTimer = 4;  // start timer, wait 4 sec before detecting thermals, used by system value MOTOR_OFF_TIMER
+		}
 	}
 #endif
 }
@@ -962,7 +975,14 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			static int16_t airSpeedZDelta;
 			airSpeedZDelta = vario - vario_old; 
 			vario_old = vario;
+			airSpeedZStart = vario;  //setup for better lift detection
 			return airSpeedZDelta;
+		}
+		
+		case AIR_SPEED_Z_VS_START: //  used for waiting for a decrease in climbrate in a thermal
+		{
+			//set in AIR_SPEED_Z_DELTA for WAIT_DECREASE
+			return vario - airSpeedZStart;
 		}
 		
 		case READ_F_LAND: //  used for waiting for a decrease in climbrate in a thermal
@@ -970,14 +990,19 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			return ((desired_behavior.W & F_LAND) > 0);
 		}
 		
-		case GEOFENCE_STATUS: //  used for waiting for a decrease in climbrate in a thermal
+		case GEOFENCE_STATUS: //  used for Geofence
 		{
 			return geoStatus;
 		}
 		
-		case GEOFENCE_TURN: //  used for waiting for a decrease in climbrate in a thermal
+		case GEOFENCE_TURN: //  used for Geofence
 		{
 			return geoTurn;
+		}
+		
+		case MOTOR_OFF_TIMER: // 4..0 sec. used for waiting after motor off before detecting a thermal
+		{
+			return motorOffTimer;
 		}
 #endif  //THERMALLING_MISSION
 
@@ -1237,17 +1262,19 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 	 				if ( regularFlyingField )
 					//if ( lat_origin.WW > 518260000 & lat_origin.WW < 518270000 & lon_origin.WW > 42980000 & lon_origin.WW < 42990000 )
 					{
+/*
 #if ( HILSIM == 1 )
 					   turtleLocations[currentTurtle].x._.W0 = 0;
 					   turtleLocations[currentTurtle].x._.W1 = -425;
 					   turtleLocations[currentTurtle].y._.W0 = 0;
 					   turtleLocations[currentTurtle].y._.W1 = -300;
 #else
+*/
 					   turtleLocations[currentTurtle].x._.W0 = 0;
 					   turtleLocations[currentTurtle].x._.W1 = 45;
 					   turtleLocations[currentTurtle].y._.W0 = 0;
 					   turtleLocations[currentTurtle].y._.W1 = -39;
-#endif
+//#endif
 					}
 #endif
 					break;
@@ -1722,7 +1749,7 @@ void areaGeoScore(int16_t metersAhead, int16_t windSeconds)   // windSeconds; tr
 		{
 			result *= geoPreference(x,y,shapeIndex);
 		}
-		geofenceScore.geoScoreRight = result * 1.0;
+		geofenceScore.geoScoreRight = result * 1.01;
 	}
 	else
 	{		
@@ -1732,7 +1759,7 @@ void areaGeoScore(int16_t metersAhead, int16_t windSeconds)   // windSeconds; tr
 		{
 			result *= geoPreference(x,y,shapeIndex+2);  //use the smaller shapes
 		}
-		geofenceScore.geoScoreRight = result * 1.0;
+		geofenceScore.geoScoreRight = result * 1.01;
 	}
 
 	// return geoScore; cannot pass this much data, unless using pointers, use global instead
