@@ -1084,7 +1084,7 @@ const struct logoInstructionDef instructions[] = {
 #define SINK                                 19
 
 //Motor
-#define MOTOR_CLIMB                          21    // main program when motor is on
+#define TAKEOFF                          	 21    // keep level when low
 #define RETURN_MC_GEOFENCE                   23
 #define CHECK_MC_SOFT_WIND_GEOFENCE          25
 #define MOTOR_CLIMB_FORWARD                  27
@@ -1092,7 +1092,7 @@ const struct logoInstructionDef instructions[] = {
 #define CHECK_MC_WIND_GEOFENCE               31
 #define SOFT_CHECKS_MC                       32
 #define PILOT_INPUT_IN_MC                    33
-#define CHECK_MC_SOFT_GEOFENCE               35
+#define RETURN_MC_SOFT_GEOFENCE              35
 
 //Misc
 #define SOFT_CHECKS                          46
@@ -1126,16 +1126,25 @@ const struct logoInstructionDef instructions[] = {
 	
 		//cleanup
 		SET_ALT(MAX_THERMALLING_ALT-10)    // the last 20m will be used to gradually apply brakes  - depends on brake gain
-		FLAG_ON(F_LAND)	 //Motor off
+//		FLAG_ON(F_LAND)	 //Motor off
 		SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
 		PEN_DOWN
 		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 
-		DO (CHECKS)           	//is motor needed, landing requested, is pilot in control?
-		DO (SOFT_CHECKS)      	//see if calling subroutine needs to end; geofence, too high, sink
-		DO (CHECK_THERMALS)	  	//geofence will be monitored, end and restart if needed
-		DO (PLAN_SOFT_GEOFENCE)	//soft geofence
-		DO (CRUISE)   // prevent overshoots
+		IF_EQ(READ_F_LAND,1)
+			DO (CHECKS)           	 //is motor needed, landing requested, is pilot in control?
+			DO (SOFT_CHECKS)      	 //see if calling subroutine needs to end; geofence, too high, sink
+			DO (CHECK_THERMALS)	  	 //geofence will be monitored, end and restart if needed
+			DO (PLAN_SOFT_GEOFENCE)	 //soft geofence
+			DO (CRUISE)   // prevent overshoots
+		ELSE
+			DO (TAKEOFF)             //keep level when low
+			DO (CHECKS_MC)           //is motor needed, landing requested, is pilot in control?
+			DO (SOFT_CHECKS_MC)      //see if calling subroutine needs to end; geofence, too high, sink
+			//DO (CHECK_THERMALS)	 //geofence will be monitored, end and restart if needed
+			DO (PLAN_SOFT_GEOFENCE)	 //soft geofence
+			DO (MOTOR_CLIMB_FORWARD) //prevent overshoots
+		END 
 	END
 	END
 
@@ -1181,10 +1190,10 @@ const struct logoInstructionDef instructions[] = {
 				END
 			END
 			//SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
-			 //fix a hangup (prevent nesting?)
-			IF_EQ(READ_F_LAND,1)
+			//fix a hangup (prevent nesting?)
+			//IF_EQ(READ_F_LAND,1)
 			 	 EXEC (LOGO_MAIN)
-			END
+			//END
 	    END
 
 	END //geof
@@ -1215,7 +1224,7 @@ const struct logoInstructionDef instructions[] = {
 			//REPEAT(4)
 				//IF_NE(GEOFENCE_TURN, 0) 			// gf	angle <> 0
 			IF_LT(GEOFENCE_TURN, 0) 			// gf	angle < 0
-				REPEAT(3)
+				REPEAT(4)
 				    LT(10)
 					IF_EQ(READ_F_LAND,1)
 	                    DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
@@ -1223,12 +1232,14 @@ const struct logoInstructionDef instructions[] = {
 						DO (SOFT_CHECKS)
 						DO (CHECK_THERMALS)
 					ELSE
-						DO (CHECK_MC_SOFT_GEOFENCE)  // 1 sec fd
+						DO (RETURN_MC_SOFT_GEOFENCE)  // 1 sec fd
 						DO (CHECKS_MC)
+						DO (SOFT_CHECKS_MC)
+						DO (CHECK_THERMALS)
 					END
 				END
 			ELSE
-				REPEAT(3)
+				REPEAT(4)
 				//IF_GT(GEOFENCE_TURN, 0) 			// gf	angle > 0
 				    RT(10)
 					//END
@@ -1238,8 +1249,10 @@ const struct logoInstructionDef instructions[] = {
 						DO (SOFT_CHECKS)
 						DO (CHECK_THERMALS)
 					ELSE
-						DO (CHECK_MC_SOFT_GEOFENCE)  // 1 sec fd
+						DO (RETURN_MC_SOFT_GEOFENCE)  // 1 sec fd
 						DO (CHECKS_MC)
+						DO (SOFT_CHECKS_MC)
+						DO (CHECK_THERMALS)
 					END
 				END
 			END
@@ -1255,8 +1268,9 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (CHECK_THERMALS)
 		//check for thermals
-		IF_LE( GEOFENCE_STATUS,1 )      // ok to start a new thermal in status 1, status 0 is ok anayway
+		IF_LE( GEOFENCE_STATUS,1 )      // ok to start a new thermal in status 1, status 0 is ok anyway
 			IF_EQ( MOTOR_OFF_TIMER,0 )  //motor has stopped more than 4 secons ago
+			//IF_EQ(READ_F_LAND,1)
 				//glided into a thermal
 				IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)  //>= 0.2 m/s climb is the trigger, also check GEOFENCE
 					//lift found
@@ -1495,6 +1509,50 @@ const struct logoInstructionDef instructions[] = {
 
 // Motor Climb  routines
 
+
+
+	TO (TAKEOFF)    //use motor if too low, switch off if too high , check geofence
+
+		//start motor
+		//wait a few seconds
+		//check climb >0.3 and < 1.0 m/s
+		//else glide
+		//new mc will start at MOTOR_ON_TRIGGER_ALT
+
+		//direct to goal, add to target to prevent throttle down until altitude reached
+
+		// modified use of F_LAND
+		// set target higher and F_LAND off: motor starts        (used in motorclimb)
+		// set target higher and F_LAND on : gliding             (used in looking for thermals, and thermalling below max)
+		// set target lower and F_LAND off : gliding             (not used - maintain minimal alt)
+		// set target lower and F_LAND on : brakes will be used  (used close to max alt and while landing)
+
+		//FLAG_OFF(F_LAND)	 //Motor on
+		//SET_ALT(MAX_THERMALLING_ALT-10) // normally use a average climb of 0.7m/s to climb to MOTOR_OFF_TRIGGER_ALT	
+										// this allows for detecting thermals with motor running at constant power
+
+		//PEN_DOWN
+		//remember we are in motorclimb
+		//SET_SPEED(DESIRED_SPEED_NORMAL_F0)
+
+		//settle into climb before testing climbrate
+		//allow for level takeoff in current direection when in autonmous mode
+	   	IF_LT(ALT, 10)  //below: auto takeoff / hand launch with motor on in Autonomous mode
+			//if relative angle is much different from turtle,correct
+   		    REPEAT(60)
+   				IF_LT(ALT, 10)  //below: auto takeoff / hand launch with motor on in Autonomous mode
+   		   	    	LEVEL_1S  //allow heading to stabilize on takeoff
+					DO (RESET_NAVIGATION)
+      			END
+   			END
+			EXEC (LOGO_MAIN)
+		END
+		//DO (MOTOR_CLIMB_FORWARD)
+	END
+	END
+
+
+/*
 	// main program when motor is on
 
 	TO (MOTOR_CLIMB)    //use motor if too low, switch off if too high , check geofence
@@ -1548,13 +1606,13 @@ const struct logoInstructionDef instructions[] = {
 				//FLAG_ON(F_LAND)	//Motor off
 				//settle into gliding
 				
-				/*  //add MOTOR_OFF_TIMER  in logo
+				/  //add MOTOR_OFF_TIMER  in logo
 				REPEAT(6)
 					DO (CHECKS)
 					DO (SOFT_CHECKS)
 					DO (CRUISE)   // prevent overshoots
 				END
-				*/
+				/
 				
 				EXEC (LOGO_MAIN)
 			END
@@ -1564,7 +1622,7 @@ const struct logoInstructionDef instructions[] = {
 			//if in an area with some lift, circle more , don't bother with soft gf
 			IF_LT(AIR_SPEED_Z,MOTOR_CLIMB_MAX - 30)	// > ~0.7 m/s climb is expected, circle if 0.9, exit if 1.2
 
-				//DO (CHECK_MC_SOFT_GEOFENCE)
+				//DO (RETURN_MC_SOFT_GEOFENCE)
 				DO (PLAN_SOFT_GEOFENCE)
 
 			END
@@ -1581,16 +1639,17 @@ const struct logoInstructionDef instructions[] = {
 		FLAG_ON(F_LAND)	//Motor off
 		//settle into gliding
 		
-		/*  //add MOTOR_OFF_TIMER  in logo
+		/  //add MOTOR_OFF_TIMER  in logo
 		REPEAT(6)
 			DO (CHECKS)
 			DO (SOFT_CHECKS)
 			DO (CRUISE)
 		END
-		*/
+		/
 		EXEC (LOGO_MAIN)
 	END
 	END
+*/
 
 
 	TO (RETURN_MC_GEOFENCE)         
@@ -1602,7 +1661,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 
-	TO (CHECK_MC_SOFT_GEOFENCE)
+	TO (RETURN_MC_SOFT_GEOFENCE)
 		FD(DESIRED_SPEED_NORMAL_F0/10)
 	END //geof
 	END
@@ -1668,8 +1727,8 @@ const struct logoInstructionDef instructions[] = {
 				//very low, must use motor
 		        IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
 
-  					EXEC (MOTOR_CLIMB) 					// if true, restart to main to avoid an extra nesting level
-  					//FLAG_OFF(F_LAND)	 //Motor on
+  					//EXEC (MOTOR_CLIMB) 					// if true, restart to main to avoid an extra nesting level
+  					FLAG_OFF(F_LAND)	 //Motor on
 					//SET_ALT(MAX_THERMALLING_ALT-10) // normally use a average climb of 0.7m/s to climb to MOTOR_OFF_TRIGGER_ALT	
 
 				END
@@ -1679,8 +1738,8 @@ const struct logoInstructionDef instructions[] = {
 				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)	// unless thermals
 					IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
 
-	  					EXEC (MOTOR_CLIMB) 					// if true, restart to main to avoid an extra nesting level
-						//FLAG_OFF(F_LAND)	 //Motor on
+	  					//EXEC (MOTOR_CLIMB) 					// if true, restart to main to avoid an extra nesting level
+						FLAG_OFF(F_LAND)	 //Motor on
 						//SET_ALT(MAX_THERMALLING_ALT-10) // normally use a average climb of 0.7m/s to climb to MOTOR_OFF_TRIGGER_ALT	
 						
 					END
@@ -1736,7 +1795,9 @@ const struct logoInstructionDef instructions[] = {
 		//reset on ail input
 		IF_LT(THROTTLE_INPUT_CHANNEL ,2400)
 			//stop motor, restart
-			EXEC (LOGO_MAIN)
+			//EXEC (LOGO_MAIN)
+			//settle into gliding
+			FLAG_ON(F_LAND)	//Motor off
 		END
 		IF_LT(BRAKE_THR_SEL_INPUT_CHANNEL ,2700)     // automode only
 			IF_GT(BRAKE_THR_SEL_INPUT_CHANNEL ,1700) // abstract flightplan workaround: only real low, ignore 0
@@ -1748,7 +1809,10 @@ const struct logoInstructionDef instructions[] = {
 			//settle into gliding
 			SET_ALT(MOTOR_OFF_TRIGGER_ALT)
 		END
-		IF_LT(BATTERY_VOLTAGE, VOLTAGE_SENSOR_ALARM)     // land automatically when battery is low, usefull when no telemetry is available
+		IF_GT(ALT,MOTOR_OFF_TRIGGER_ALT)             //settle into gliding
+			FLAG_ON(F_LAND)	//Motor off
+		END
+		IF_LT(BATTERY_VOLTAGE, VOLTAGE_SENSOR_ALARM) // land automatically when battery is low, usefull when no telemetry is available
 			EXEC (LOITER_LAND)
 		END
 		IF_LT(AILERON_INPUT_CHANNEL ,2850)
@@ -1765,19 +1829,26 @@ const struct logoInstructionDef instructions[] = {
 	TO (SOFT_CHECKS_MC)           //see if calling subroutine needs to end
 	    //not allowed to be called by RETURN_GEOFENCE
 
-		IF_GT(ALT,MOTOR_OFF_TRIGGER_ALT)           //prevent overshooting in s/w gf turns. Margin 5; only if normal code fails.
+		IF_GT(ALT,MOTOR_OFF_TRIGGER_ALT)           //settle into gliding
 			//settle into gliding
+			FLAG_ON(F_LAND)	//Motor off
 			EXEC (LOGO_MAIN)
 		END
 
 		IF_EQ( GEOFENCE_STATUS,2 )
 			DO (PLAN_RETURN_GEOFENCE) //act if needed
 		END
+		/*
 		IF_GT(AIR_SPEED_Z, MOTOR_CLIMB_MAX) //Skip when in a thermal
 			// lift found
+			//settle into gliding
+			FLAG_ON(F_LAND)	//Motor off
 			EXEC (LOGO_MAIN)
  		END
+		*/
 		IF_LT(AIR_SPEED_Z, MOTOR_CLIMB_MIN) //limit sink to -1 m/s,	if so, stop motor, exit the sink
+			//settle into gliding
+			FLAG_ON(F_LAND)	//Motor off
 			EXEC (LOGO_MAIN)
 		END
 	END	
@@ -1824,7 +1895,9 @@ const struct logoInstructionDef instructions[] = {
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 			END
 		END
-		EXEC (MOTOR_CLIMB)
+		
+		//EXEC (MOTOR_CLIMB)
+		EXEC (LOGO_MAIN)	
 	END
 	END
 

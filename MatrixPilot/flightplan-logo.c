@@ -1691,7 +1691,7 @@ void areaGeoScore(int16_t metersAhead, int16_t windSeconds)   // windSeconds; tr
 		y = (float)turtleLocations[PLANE].y._.W1 + (float)windSeconds * (float)(estimatedWind[1])/100.0;       // in m
 	
 		//code for LT() or RT()
-		cangle = turtleAngles[currentTurtle]-40;   //left   // 0-359 (clockwise, 0=North)
+		cangle = turtleAngles[currentTurtle]-30;   //left   // 0-359 (clockwise, 0=North)
 		while (cangle < 0) cangle += 360;
 		while (cangle >= 360) cangle -= 360;
 	
@@ -1711,7 +1711,7 @@ void areaGeoScore(int16_t metersAhead, int16_t windSeconds)   // windSeconds; tr
 			{
 				result *= geoPreference(x,y,shapeIndex);
 			}
-			geofenceScore.geoScoreLeft = result * 1.0;
+			geofenceScore.geoScoreLeft = result * 1.01;
 		}
 		else
 		{		
@@ -1721,7 +1721,7 @@ void areaGeoScore(int16_t metersAhead, int16_t windSeconds)   // windSeconds; tr
 			{
 				result *= geoPreference(x,y,shapeIndex+2);  //use the smaller shapes
 			}
-			geofenceScore.geoScoreLeft = result * 1.0;
+			geofenceScore.geoScoreLeft = result * 1.01;
 		}
 		
 		//Right score
@@ -1729,7 +1729,7 @@ void areaGeoScore(int16_t metersAhead, int16_t windSeconds)   // windSeconds; tr
 		y = (float)turtleLocations[PLANE].y._.W1 + (float)windSeconds * (float)(estimatedWind[1])/100.0;       // in m
 	
 		//code for LT() or RT()
-		cangle = turtleAngles[currentTurtle]+40;   //right   // 0-359 (clockwise, 0=North)
+		cangle = turtleAngles[currentTurtle]+30;   //right   // 0-359 (clockwise, 0=North)
 		while (cangle < 0) cangle += 360;
 		while (cangle >= 360) cangle -= 360;
 	
@@ -1770,9 +1770,9 @@ void areaGeoScore(int16_t metersAhead, int16_t windSeconds)   // windSeconds; tr
 // test geofence shapes from strictest to least strict, does more tests if needed
 // calls areaGeoScore() several times with  metersAhead  and  windSeconds
 // 	status  				advice mandatory 
-//	   0, soft/wind gf 			   0                if new thermal, thermal , else do trun (soft)
-//	   1, wind gf  			       0	            ignore turn if in thermal, else turn 
-//	   2, geofence 			       1                alarm
+//	   0, soft/wind gf 			   0                if new thermal, thermal, else do turn (soft)
+//	   1, wind gf  			       0	            ignore if in thermal, else turn 
+//	   2, geofence 			       1                alarm, do geofence only
 void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, equivalent of x sec drift
 {
 	//float turn;     //0..1
@@ -1788,7 +1788,7 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 	else
 	{
 		//geofenceScore = 
-		areaGeoScore(40,20);  //int16_t metersAhead, int16_t windSeconds)
+		areaGeoScore(0,20);  //int16_t metersAhead, int16_t windSeconds)
 		if ( geofenceScore.geoScoreAhead > 1 )
 		{
 		    geoStatus = 1;
@@ -1796,16 +1796,18 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 		else
 		{
 			//geofenceScore = 
-			areaGeoScore(40,30);  //int16_t metersAhead, int16_t windSeconds)
 			geoStatus = 0;
+			areaGeoScore(40,20);  //int16_t metersAhead, int16_t windSeconds)
+			/*
 			if ( geofenceScore.geoScoreAhead > 1 )
 			{
 			}
 			else
 			{
 				//geofenceScore = 
-				areaGeoScore(40,40);  //int16_t metersAhead, int16_t windSeconds)
+				//areaGeoScore(40,40);  //int16_t metersAhead, int16_t windSeconds)
 			}
+			*/
 		}
 	}
 	geoSetTurn();	

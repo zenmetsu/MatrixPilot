@@ -234,7 +234,7 @@
 // Define USE_BAROMETER_ALTITUDE to be 1 to use barometer for altitude correction.
 // Otherwise, if set to 0 only the GPS will be used.
 #ifndef USE_BAROMETER_ALTITUDE
-#define USE_BAROMETER_ALTITUDE              1
+#define USE_BAROMETER_ALTITUDE              0
 #endif
 
 // Racing Mode
