@@ -1166,33 +1166,37 @@ const struct logoInstructionDef instructions[] = {
 			IF_LT(GEOFENCE_TURN, 0) 			// gf	angle < 0
 				REPEAT(4)
 			 	    LT(10)
-					IF_GT(GEOFENCE_TURN, 0) 			// gf	angle < 0
-				 	    RT(10)
-					END
 					IF_EQ(READ_F_LAND,1)
 						DO (RETURN_GEOFENCE)            //fly and checks
 					ELSE
 						DO (RETURN_MC_GEOFENCE)         //fly and checks
 					END 
 				END    
+			 	EXEC (LOGO_MAIN)
 			END
 			IF_GT(GEOFENCE_TURN, 0) 			// gf	angle < 0
 				//END
 				REPEAT(4)
-					//IF_GT(GEOFENCE_TURN, 0) 			// gf	angle < 0
 				 	RT(10)
-					//END
 					IF_EQ(READ_F_LAND,1)
 						DO (RETURN_GEOFENCE)            //fly and checks
 					ELSE
 						DO (RETURN_MC_GEOFENCE)         //fly and checks
 					END     
 				END
+			 	EXEC (LOGO_MAIN)
 			END
+			REPEAT(4)
+				IF_EQ(READ_F_LAND,1)
+					DO (RETURN_GEOFENCE)            //fly and checks
+				ELSE
+					DO (RETURN_MC_GEOFENCE)         //fly and checks
+				END     
+			END     
+	 	 	EXEC (LOGO_MAIN)
 			//SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 			//fix a hangup (prevent nesting?)
 			//IF_EQ(READ_F_LAND,1)
-			 	 EXEC (LOGO_MAIN)
 			//END
 	    END
 
