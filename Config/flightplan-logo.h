@@ -244,7 +244,7 @@
 // ANGLE_TO_GOAL        - in degrees. 0-359 (clockwise, 0=North)
 // REL_ANGLE_TO_HOME    - in degrees. -180-179 (0=heading directly towards Home. Home to the right of the nose of the plane is positive)
 // REL_ANGLE_TO_GOAL    - in degrees. -180-179 (0=heading directly towards Goal. Goal to the right of the nose of the plane is positive)
-// REL_ANGLE_TO_UPWIND_POINT - in degrees. -180-179 (0=heading directly towards Upwind point. Upwind point to the right of the nose of the plane is positive) (THERMALLING_MISSION)
+// REL_ANGLE_TO_OPPOSITE - in degrees. -180-179 (0=heading directly towards opposite point. (THERMALLING_MISSION)
 // GROUND_SPEED         - in cm/s
 // AIR_SPEED            - in cm/s
 // AIR_SPEED_Z          - in cm/s
@@ -1141,7 +1141,6 @@ const struct logoInstructionDef instructions[] = {
 			DO (TAKEOFF)             //keep level when low
 			DO (CHECKS_MC)           //is motor needed, landing requested, is pilot in control?
 			DO (SOFT_CHECKS_MC)      //see if calling subroutine needs to end; geofence, too high, sink
-			//DO (CHECK_THERMALS)	 //geofence will be monitored, end and restart if needed
 			DO (PLAN_SOFT_GEOFENCE)	 //soft geofence
 			DO (MOTOR_CLIMB_FORWARD) //prevent overshoots
 		END 
@@ -1223,10 +1222,7 @@ const struct logoInstructionDef instructions[] = {
 	TO (PLAN_SOFT_GEOFENCE)
 	    //assume not strict
 	    //only act if needed 
-		//IF_LT( GEOFENCE_STATUS,2 )                  // not strict
 		IF_NE(GEOFENCE_TURN, 0) 			// gf	angle <> 0
-			//REPEAT(4)
-				//IF_NE(GEOFENCE_TURN, 0) 			// gf	angle <> 0
 			IF_LT(GEOFENCE_TURN, 0) 			// gf	angle < 0
 				REPEAT(4)
 				    LT(10)
@@ -1244,9 +1240,7 @@ const struct logoInstructionDef instructions[] = {
 				END
 			ELSE
 				REPEAT(4)
-				//IF_GT(GEOFENCE_TURN, 0) 			// gf	angle > 0
 				    RT(10)
-					//END
 					IF_EQ(READ_F_LAND,1)
 	                    DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
 						DO (CHECKS)  //maintain min and max altitudes
@@ -1373,33 +1367,20 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (SINK)
-		//show in telemetry, then MAIN
-		//USE_CURRENT_ANGLE
-		//USE_CURRENT_POS	//clear accumulated turtle errors
-		//FD(WAYPOINT_RADIUS)	//waypoint margin: puts turtle on finishline
 		SET_SPEED(DESIRED_SPEED_FAST_FMIN4) //dm/s
-
-		//current method
-		//FD(DESIRED_SPEED_FAST_FMIN4/10)	//"SINK"
-
-		//new method: avoid flying in sink, assume sink area in front of aircraft
+		// method: avoid flying in sink, assume sink area in front of aircraft
 		// turn at least 120 deg while in sink, away from start heading
   		// choose l/r using gf code  (no matter if close to home, rare), because that (beyond home) heading leads to the biggest area where non-sinking air might be
-  		// complete gf turns while sink lasts in home direction
+  		// complete gf turns while sink lasts, towards home direction
 		// keep checking GF while responding to sink
 		// in mc: sink = exit to main
 		// when handling sink, do not call SOFT_CHECKS, this would cause SINK loops
 
-        //perform a precalculated turn and a level stretch  to aim 30 deg right of home (home @ -30)
-		LOAD_TO_PARAM(REL_ANGLE_TO_HOME)   // gf -180..179)
-		//perform a precalculated turn and a level stretch to aim 30 deg right of virtual upwind point (@ -30)
-		//LOAD_TO_PARAM(REL_ANGLE_TO_UPWIND_POINT)	// wgf !!!non-standard LOGO command!!! -	-180..179)
-
-		IF_LT(REL_ANGLE_TO_HOME, -30) 			// gf	angle < -30		(-31..-180) =   1-150 LL
-		//IF_LT(REL_ANGLE_TO_UPWIND_POINT, -30) // wgf	angle < -30 	0-140 L
+        //perform a precalculated turn and a level stretch to opposite side of area
+		LOAD_TO_PARAM(REL_ANGLE_TO_OPPOSITE)   // gf -180..179)
+		IF_LT(REL_ANGLE_TO_OPPOSITE, 0) 			// gf	angle < -30		(-31..-180) =   1-150 LL
 			//make the turn to Home a smooth one
 			PARAM_MUL(-1)
-			PARAM_SUB(30)
 			PARAM_DIV(10)
 			//special : force at least 12 = 120 deg turn to evade sink
 			IF_LT(PARAM,12)
@@ -1409,9 +1390,9 @@ const struct logoInstructionDef instructions[] = {
 				DO (CHECKS)  //maintain min and max altitudes
 
 				//don't let sink take you away from home...
-				IF_GT(DIST_TO_HOME, GEOFENCE_SIZE )
+				IF_EQ( GEOFENCE_STATUS,2 )
 					SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
-					EXEC (LOGO_MAIN)
+					EXEC (PLAN_RETURN_GEOFENCE)
 				END
 				//exit as soon as sink has gone
 				IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //> -1 m/s,	if so, exit
@@ -1420,68 +1401,32 @@ const struct logoInstructionDef instructions[] = {
 				END
 
 				LT(10)
-				//FD(DESIRED_SPEED_NORMAL_F0/10)
 				FD(DESIRED_SPEED_FAST_FMIN4/10)	//"SINK"
 			END
 		 ELSE
-			IF_GE(REL_ANGLE_TO_HOME, 150) 			 // gf  angle > 149	(150..179) =   179-150 L
-			//IF_GT(REL_ANGLE_TO_UPWIND_POINT, 150) // wgf  angle > 149	(150..179) =   179-150 L
-				PARAM_SUB(329)
-				PARAM_MUL(-1)
-				PARAM_DIV(10)
-				//special : force at least 12 = 120 deg turn to evade sink
-				IF_LT(PARAM,12)
-					PARAM_SET(12)
+			PARAM_DIV(10)
+			//special : force at least 12 = 120 deg turn to evade sink
+			IF_LT(PARAM,12)
+				PARAM_SET(12)
+			END
+			REPEAT_PARAM
+				DO (CHECKS)  //maintain min and max altitudes
+
+				//don't let sink take you away from home...
+				IF_EQ( GEOFENCE_STATUS,2 )
+					SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
+					EXEC (PLAN_RETURN_GEOFENCE)
 				END
-				REPEAT_PARAM
-					DO (CHECKS)  //maintain min and max altitudes
-
-					//don't let sink take you away from home...
-					IF_GT(DIST_TO_HOME, GEOFENCE_SIZE )
-						SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
-						EXEC (LOGO_MAIN)
-					END
-					//exit as soon as sink has gone
-					IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //> -1 m/s,	if so, exit
-					    SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
-						EXEC (LOGO_MAIN)
-					END
-
-					LT(10)
-					//FD(DESIRED_SPEED_NORMAL_F0/10)
-					FD(DESIRED_SPEED_FAST_FMIN4/10)	//"SINK"
+				//exit as soon as sink has gone
+				IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //> -1 m/s,	if so, exit
+				    SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
+					EXEC (LOGO_MAIN)
 				END
-			ELSE
-				IF_GE(REL_ANGLE_TO_HOME, -30) 			// gf	angle >= -30  (-30..149) = 0..179 R
-				//IF_GE(REL_ANGLE_TO_UPWIND_POINT, -30) // wgf	angle >= -30  (-30..149) = 0..179 R
-					PARAM_ADD(30)
-					PARAM_DIV(10)
-					//special : force at least 12 = 120 deg turn to evade sink
-					IF_LT(PARAM,12)
-						PARAM_SET(12)
-					END
-		
-					REPEAT_PARAM
-						DO (CHECKS)  //maintain min and max altitudes
 
-						//don't let sink take you away from home...
-						IF_GT(DIST_TO_HOME, GEOFENCE_SIZE )
-							SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
-							EXEC (LOGO_MAIN)
-						END
-						//exit as soon as sink has gone
-						IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //> -1 m/s,	if so, exit
-						    SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
-							EXEC (LOGO_MAIN)
-						END
-		
-						RT(10)
-						//FD(DESIRED_SPEED_NORMAL_F0/10)
-						FD(DESIRED_SPEED_FAST_FMIN4/10)	//"SINK"
-					END
-				END //-30
-			END //>150
-		END //-30
+				LT(10)
+				FD(DESIRED_SPEED_FAST_FMIN4/10)	//"SINK"
+			END //
+		END //
 
 		// end with straight (not likely) with checks
 		PARAM_SET(5)
@@ -1490,9 +1435,9 @@ const struct logoInstructionDef instructions[] = {
 			DO (CHECKS)  //maintain min and max altitudes
 
 			//don't let sink take you away from home...
-			IF_GT(DIST_TO_HOME, GEOFENCE_SIZE )
+			IF_EQ( GEOFENCE_STATUS,2 )
 				SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
-				EXEC (LOGO_MAIN)
+				EXEC (PLAN_RETURN_GEOFENCE)
 			END
 			//exit as soon as sink has gone
 			IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //limit sink to -1 m/s,	if so, exit the sink
@@ -1500,7 +1445,6 @@ const struct logoInstructionDef instructions[] = {
 				EXEC (LOGO_MAIN)
 			END
 
-			//FD(DESIRED_SPEED_NORMAL_F0/10)
 	        FD(DESIRED_SPEED_FAST_FMIN4/10)	//"SINK"
 		END
 
@@ -1513,33 +1457,7 @@ const struct logoInstructionDef instructions[] = {
 
 // Motor Climb  routines
 
-
-
 	TO (TAKEOFF)    //use motor if too low, switch off if too high , check geofence
-
-		//start motor
-		//wait a few seconds
-		//check climb >0.3 and < 1.0 m/s
-		//else glide
-		//new mc will start at MOTOR_ON_TRIGGER_ALT
-
-		//direct to goal, add to target to prevent throttle down until altitude reached
-
-		// modified use of F_LAND
-		// set target higher and F_LAND off: motor starts        (used in motorclimb)
-		// set target higher and F_LAND on : gliding             (used in looking for thermals, and thermalling below max)
-		// set target lower and F_LAND off : gliding             (not used - maintain minimal alt)
-		// set target lower and F_LAND on : brakes will be used  (used close to max alt and while landing)
-
-		//FLAG_OFF(F_LAND)	 //Motor on
-		//SET_ALT(MAX_THERMALLING_ALT-10) // normally use a average climb of 0.7m/s to climb to MOTOR_OFF_TRIGGER_ALT	
-										// this allows for detecting thermals with motor running at constant power
-
-		//PEN_DOWN
-		//remember we are in motorclimb
-		//SET_SPEED(DESIRED_SPEED_NORMAL_F0)
-
-		//settle into climb before testing climbrate
 		//allow for level takeoff in current direection when in autonmous mode
 	   	IF_LT(ALT, 10)  //below: auto takeoff / hand launch with motor on in Autonomous mode
 			//if relative angle is much different from turtle,correct
@@ -1551,109 +1469,9 @@ const struct logoInstructionDef instructions[] = {
    			END
 			EXEC (LOGO_MAIN)
 		END
-		//DO (MOTOR_CLIMB_FORWARD)
 	END
 	END
 
-
-/*
-	// main program when motor is on
-
-	TO (MOTOR_CLIMB)    //use motor if too low, switch off if too high , check geofence
-
-		//start motor
-		//wait a few seconds
-		//check climb >0.3 and < 1.0 m/s
-		//else glide
-		//new mc will start at MOTOR_ON_TRIGGER_ALT
-
-		//direct to goal, add to target to prevent throttle down until altitude reached
-
-		// modified use of F_LAND
-		// set target higher and F_LAND off: motor starts        (used in motorclimb)
-		// set target higher and F_LAND on : gliding             (used in looking for thermals, and thermalling below max)
-		// set target lower and F_LAND off : gliding             (not used - maintain minimal alt)
-		// set target lower and F_LAND on : brakes will be used  (used close to max alt and while landing)
-
-		FLAG_OFF(F_LAND)	 //Motor on
-		SET_ALT(MAX_THERMALLING_ALT-10) // normally use a average climb of 0.7m/s to climb to MOTOR_OFF_TRIGGER_ALT	
-										// this allows for detecting thermals with motor running at constant power
-
-		PEN_DOWN
-		//remember we are in motorclimb
-		SET_SPEED(DESIRED_SPEED_NORMAL_F0)
-
-		//settle into climb before testing climbrate
-		REPEAT(5)
-			//allow for level takeoff in current direection when in autonmous mode
-		   	IF_LT(ALT, 20)  //below: auto takeoff / hand launch with motor on in Autonomous mode
-				FLAG_OFF(F_LAND)	 //Motor on
-
-				//if relative angle is much different from turtle,correct
-   		        REPEAT(60)
-		   			IF_LT(ALT, 20)  //below: auto takeoff / hand launch with motor on in Autonomous mode
-   		   			    LEVEL_1S  //allow heading to stabilize on takeoff
-      				END
-   		        END
-				DO (RESET_NAVIGATION)
-				EXEC (LOGO_MAIN)
-			END
-			DO (CHECKS_MC)
-			//DO (MOTOR_CLIMB_FORWARD)
-			DO (SOFT_CHECKS_MC)
-			DO (MOTOR_CLIMB_FORWARD)
-		END
-		//no return to main until done (0-250, consecutive 40 sec max), no thermalling
-		REPEAT(300)
-			IF_GT(ALT,MOTOR_OFF_TRIGGER_ALT)
-				//settle into gliding
-				//FLAG_ON(F_LAND)	//Motor off
-				//settle into gliding
-				
-				/  //add MOTOR_OFF_TIMER  in logo
-				REPEAT(6)
-					DO (CHECKS)
-					DO (SOFT_CHECKS)
-					DO (CRUISE)   // prevent overshoots
-				END
-				/
-				
-				EXEC (LOGO_MAIN)
-			END
-
-			DO (CHECKS_MC)
-			DO (SOFT_CHECKS_MC)
-			//if in an area with some lift, circle more , don't bother with soft gf
-			IF_LT(AIR_SPEED_Z,MOTOR_CLIMB_MAX - 30)	// > ~0.7 m/s climb is expected, circle if 0.9, exit if 1.2
-
-				//DO (RETURN_MC_SOFT_GEOFENCE)
-				DO (PLAN_SOFT_GEOFENCE)
-
-			END
-			DO (MOTOR_CLIMB_FORWARD)    // prevent overshoots
-			//if in an area with some lift, circle more , don't bother with (soft) wind gf
-			IF_LT(AIR_SPEED_Z,MOTOR_CLIMB_MAX - 30)	// > ~0.7 m/s climb is expected, circle if 0.9, exit if 1.2
-				DO (PLAN_SOFT_GEOFENCE)
-			END
-			//FLAG_OFF(F_LAND)	//Motor on
-			DO (MOTOR_CLIMB_FORWARD)	// prevent overshoots
-		END
-		//timeout...
-		//settle into gliding
-		FLAG_ON(F_LAND)	//Motor off
-		//settle into gliding
-		
-		/  //add MOTOR_OFF_TIMER  in logo
-		REPEAT(6)
-			DO (CHECKS)
-			DO (SOFT_CHECKS)
-			DO (CRUISE)
-		END
-		/
-		EXEC (LOGO_MAIN)
-	END
-	END
-*/
 
 
 	TO (RETURN_MC_GEOFENCE)         
@@ -1671,7 +1489,7 @@ const struct logoInstructionDef instructions[] = {
 	END
 
 
-  //Mc Wind geofence routines
+//Misc functions
 
 
 	TO (MOTOR_CLIMB_FORWARD)
@@ -1692,12 +1510,12 @@ const struct logoInstructionDef instructions[] = {
 		//indicates lift while too high
 
 		//try to head upwind with every cycle
-		LOAD_TO_PARAM(REL_ANGLE_TO_UPWIND_POINT)	// wgf !!!non-standard LOGO command!!! -	-180..179)
+		LOAD_TO_PARAM(REL_ANGLE_TO_WIND)	// wgf !!!non-standard LOGO command!!! -	-180..179)
 
-		IF_LT(REL_ANGLE_TO_UPWIND_POINT, 0) // wgf	angle < -30		(-31..-180) =   1-150 L
+		IF_LT(REL_ANGLE_TO_WIND, 0) // wgf	angle < -30		(-31..-180) =   1-150 L
 			LT(10)
 		 ELSE
-			IF_GE(REL_ANGLE_TO_UPWIND_POINT, -30) // wgf	angle >= -30  (-30..149) = 0..179 R
+			IF_GE(REL_ANGLE_TO_WIND, -30) // wgf	angle >= -30  (-30..149) = 0..179 R
 				RT(10)
 			END 
 		END 
@@ -1712,9 +1530,6 @@ const struct logoInstructionDef instructions[] = {
 	TO (BETTER_LIFT)
 		//indicates lift is better then it was at the beginnning of the thermalling turn
 
-		//USE_CURRENT_ANGLE
-		//USE_CURRENT_POS	//clear accumulated turtle errors
-		//FD(WAYPOINT_RADIUS)	//waypoint margin: puts turtle on finishline
 		FD(DESIRED_SPEED_NORMAL_F0/10)
 		EXEC(LOGO_MAIN)
 	END
@@ -1842,14 +1657,6 @@ const struct logoInstructionDef instructions[] = {
 		IF_EQ( GEOFENCE_STATUS,2 )
 			DO (PLAN_RETURN_GEOFENCE) //act if needed
 		END
-		/*
-		IF_GT(AIR_SPEED_Z, MOTOR_CLIMB_MAX) //Skip when in a thermal
-			// lift found
-			//settle into gliding
-			FLAG_ON(F_LAND)	//Motor off
-			EXEC (LOGO_MAIN)
- 		END
-		*/
 		IF_LT(AIR_SPEED_Z, MOTOR_CLIMB_MIN) //limit sink to -1 m/s,	if so, stop motor, exit the sink
 			//settle into gliding
 			FLAG_ON(F_LAND)	//Motor off
@@ -1905,6 +1712,8 @@ const struct logoInstructionDef instructions[] = {
 	END
 	END
 
+
+//Landing 
 
 
 	TO (SET_ALT_ALT)
