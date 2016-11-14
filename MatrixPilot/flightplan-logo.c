@@ -1564,7 +1564,7 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 	static int8_t b_angle = 0;
 	//static geoScores geoScore; 
 
-	if (metersAhead == 0 || metersAhead == 400) 
+	if ( windSeconds == 0 ) 
 	{
 		strictGeofence = true;
 	}
@@ -1658,7 +1658,7 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 			{
 				result *= geoPreference(x,y,shapeIndex);
 			}
-			geofenceScore.geoScoreLeft = result * 1.0001;
+			geofenceScore.geoScoreLeft = result * 1.000;
 		}
 		else
 		{		
@@ -1696,7 +1696,7 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 		{
 			result *= geoPreference(x,y,shapeIndex);
 		}
-		geofenceScore.geoScoreRight = result * 1.0001;
+		geofenceScore.geoScoreRight = result * 1.000;
 	}
 	else
 	{		
@@ -1706,7 +1706,7 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 		{
 			result *= geoPreference(x,y,shapeIndex+2);  //use the smaller shapes
 		}
-		geofenceScore.geoScoreRight = result * 1.0001;
+		geofenceScore.geoScoreRight = result * 1.0001;  //small preference for ahead
 	}
 
 	// return geoScore; cannot pass this much data, unless using pointers, use global instead
