@@ -157,6 +157,9 @@
 #define DESIRED_SPEED                       10.83     // meters/second   39 km/h
 #endif
 
+// Variable altitude and airspeed
+#define GAINS_VARIABLE                      1
+#define ALTITUDE_GAINS_VARIABLE             1
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local Endurance Thermalling mission settings

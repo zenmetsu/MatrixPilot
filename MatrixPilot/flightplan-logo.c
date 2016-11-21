@@ -294,7 +294,7 @@ boolean regularFlyingField; // declared and used by flightplan-logo.c and set by
 #endif
 
 
-//Geofence 
+//Geofence
 
 // define a struct with geofence shapes
 typedef struct tag_geofenceShape {
@@ -342,6 +342,7 @@ typedef struct tag_geoScores {
 } geoScores;
 
 geoScores geofenceScore;
+geoScores geofenceScore_old;
 
 int16_t geoTurn;       //turn -40, 0, or 40 deg in 4 sec    scope: flightplan_logo.c
 int16_t geoStatus;     //0,1,2  0= soft/wind gf, 1=wind gf, 2 geofence (alarm)   scope: flightplan_logo.c  
@@ -350,6 +351,7 @@ int16_t bestFarScore = 0;          //of four directions, find the angle to the f
 int16_t bestFarScoreAngle = -1;
 int16_t angleToOpposite = 0;  
 
+#define AHEAD_PREFERENCE 1.0001    //used to give geofence turns less preference over straight ahead
 //definitions, should be in header file?
 float geoPreference(float x, float y, int16_t shapeNumb);   //use linear programmming to test position against a single geofence shape, return a score 0..1
 void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds);  //return three scores 40m ahead, one for left 40 deg, one ahead , and one for right 40 deg windSeconds; translate x and y downwind, equivalent of x sec drift
@@ -1018,7 +1020,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 						interruptStackBase = 0;
 					}
 					break;
-				
+
 				case 3: // Else
 					if (logoStack[logoStackIndex].frameType == LOGO_FRAME_TYPE_IF)
 					{
@@ -1548,8 +1550,8 @@ float geoPreference(float x, float y, int16_t shape)
 
 // this function returns one or three scores x m ahead, one for left 30 deg, one ahead, and one for right 30 deg, using wind drift (if not 0),
 // depending on options: 
-//    - only check geofencef (0,0,0)               (strictGeofence)
-//    - check ahead, left, right with wind         
+//    - only check geofence (30,0,0,0)               (strictGeofence)
+//    - check ahead, left, right with wind  angle is relatice to curent heading       
 //    - check one angle,0,90,180 or 270, at 400m distance (to find ANGLE_TO_FARTHEST_POINT) (strictGeofence)
 
 //calls geoPreference() per shape
@@ -1589,7 +1591,7 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 		
 			if (metersAhead == 400) 
 			{
-				 cangle = angle;  // 0,90,180 or 270 deg
+				 cangle = angle;  // 0,90,180 or 270 deg absolute
 			}
 			else
 			{	 
@@ -1631,14 +1633,14 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 
 	if (numbOfDirections >= 2);
 	{
-		geofenceScore.geoScoreLeft = 1.0001;
-		geofenceScore.geoScoreRight = 1.0001;
+		geofenceScore.geoScoreLeft = AHEAD_PREFERENCE;
+		geofenceScore.geoScoreRight = AHEAD_PREFERENCE;
 		//Left score
 		x = (float)turtleLocations[PLANE].x._.W1 + (float)windSeconds * (float)(estimatedWind[0])/100.0;       // in m  windSeconds; translate x and y downwind, equivalent of x sec drift
 		y = (float)turtleLocations[PLANE].y._.W1 + (float)windSeconds * (float)(estimatedWind[1])/100.0;       // in m
 	
 		//code for LT() or RT()
-		cangle = turtleAngles[currentTurtle]-30;   //left   // 0-359 (clockwise, 0=North)
+		cangle = turtleAngles[currentTurtle]-angle;   //left   // 0-359 (clockwise, 0=North)
 		while (cangle < 0) cangle += 360;
 		while (cangle >= 360) cangle -= 360;
 	
@@ -1668,7 +1670,7 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 			{
 				result *= geoPreference(x,y,shapeIndex+2);  //use the smaller shapes
 			}
-			geofenceScore.geoScoreLeft = result * 1.0001;
+			geofenceScore.geoScoreLeft = result * AHEAD_PREFERENCE;
 		}
 		
 		//Right score
@@ -1676,7 +1678,7 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 		y = (float)turtleLocations[PLANE].y._.W1 + (float)windSeconds * (float)(estimatedWind[1])/100.0;       // in m
 	
 		//code for LT() or RT()
-		cangle = turtleAngles[currentTurtle]+30;   //right   // 0-359 (clockwise, 0=North)
+		cangle = turtleAngles[currentTurtle]+angle;   //right   // 0-359 (clockwise, 0=North)
 		while (cangle < 0) cangle += 360;
 		while (cangle >= 360) cangle -= 360;
 	
@@ -1706,7 +1708,7 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 		{
 			result *= geoPreference(x,y,shapeIndex+2);  //use the smaller shapes
 		}
-		geofenceScore.geoScoreRight = result * 1.0001;  //small preference for ahead
+		geofenceScore.geoScoreRight = result * AHEAD_PREFERENCE;  //small preference for ahead
 	}
 
 	// return geoScore; cannot pass this much data, unless using pointers, use global instead
@@ -1726,59 +1728,92 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 	//int16_t geoStatus;     //0,1,2
 	//int16_t geoTurn;       //turn -40, 0, or 40 deg in 4 sec    scope: flightplan_logo.c
 	//geofenceScore = 
-	areaGeoScore(0,1,0,0);  //angle, numbOfDirections, metersAhead, windSeconds)   strict
+	areaGeoScore(30,1,0,0);  //angle, numbOfDirections, metersAhead, windSeconds)   strict
 	if ( geofenceScore.geoScoreAhead > 1 )  //out
 	{
+		geofenceScore.geoScoreAhead = 2;  //ahead must be avoided, will in some cases cause flying far, brake the balance
 		geoStatus = 2;                             // geofence crossed, not good...
 		//now check what to do, act on soft -not strict- geofence only
-		areaGeoScore(0,1,40,0);  // - look ahead -soft-, what action?
+		areaGeoScore(30,1,40,0);  // - look ahead -soft-, what action?
 		//if no problem ahead (allmost back) then do nothing 
 		
 		/*if ( geofenceScore.geoScoreAhead == 1 )                  
 		{
-			//areaGeoScore(0,3,40,20);            //check wind too  
-			//areaGeoScore(0,2,40,0);             // l/r     no turn
+			//areaGeoScore(30,3,40,20);            //check wind too  
+			//areaGeoScore(30,2,40,0);             // l/r     no turn
 		}
 		else                                      //inside, upwind side, now check what to do
 		{
 		*/
 		if ( geofenceScore.geoScoreAhead > 1 )    // action needed              
 		{										  // what action?                  
-			areaGeoScore(0,2,40,0);               // l/r
+			areaGeoScore(30,2,40,0);               // l/r
 		}
+		geoSetTurn();	
 	}
 	else                                          //inside, now check what to do
 	{
-		areaGeoScore(0,1,40,0);  //  - look ahead, what action?
-		if ( geofenceScore.geoScoreAhead > 1 )    // no room for a new thermal turn
+ 		//now check ">=1 escape radius" -  maintain room for a 120+ turn on at least one side
+		areaGeoScore(60,2,150,20);
+
+        geoSetTurn();
+        static float turnWithRoom;
+        turnWithRoom = geoTurn; //keep it    
+		
+		if (geofenceScore.geoScoreLeft > AHEAD_PREFERENCE && geofenceScore.geoScoreRight > AHEAD_PREFERENCE ) 
 		{
-		    geoStatus = 1;                        // assume no room for a new thermal turn 
-			areaGeoScore(0,2,40,0);               // now act (upwind side), regardless wind
-		}
-		else
+		   geofenceScore.geoScoreAhead = 2;	      //not ahead, take best turn to maintain radius
+		}	
+		else   //ok
 		{
-			// upwind side ok, now check downwind side
-			areaGeoScore(0,1,40,20);  //- look ahead, what action?
-			if ( geofenceScore.geoScoreAhead == 1 )  //no problem ahead + wind 
+			//keep old score
+		    //geofenceScore_old = geofenceScore;
+
+			areaGeoScore(30,1,50,0);  //  - look ahead, what action?
+			if ( geofenceScore.geoScoreAhead > 1 )    // no room for a new thermal turn
 			{
-				geoStatus = 0;                        // no action, there is room for a new thermal turn  
-				areaGeoScore(0,2,40,20);  			 //- look ahead, what action?
+			    geoStatus = 1;                        // assume no room for a new thermal turn 
+				areaGeoScore(30,2,50,0);              // now act (upwind side), regardless wind
 			}
 			else
 			{
-				geoStatus = 1;                        // no room for a new thermal turn , act  
-				areaGeoScore(0,2,40,20);  			  //- look ahead, what action?
+				// upwind side ok, now check downwind side
+				areaGeoScore(30,1,50,20);  //- look ahead, what action?
+				if ( geofenceScore.geoScoreAhead == 1 )  //no problem ahead + wind 
+				{
+					geoStatus = 0;                        // no action, there is room for a new thermal turn  
+					areaGeoScore(30,2,50,20);  			 //- look ahead, what action?
+				}
+				else
+				{
+					geoStatus = 1;                        // no room for a new thermal turn , act  
+					areaGeoScore(30,2,50,20);  			  //- look ahead, what action?
+				}
 			}
+			//geofenceScore.geoScoreAhead *= geofenceScore_old.geoScoreAhead; //mix with 60 deg score
+			// geofenceScore.geoScoreLeft *= geofenceScore_old.geoScoreLeft; //mix with 60 deg score
+			//geofenceScore.geoScoreRight *= geofenceScore_old.geoScoreRight; //mix with 60 deg score
+            
+            geoSetTurn();
+			//one more check
+            //in the rare case that that direction has no room, take the other side
+			if ( (geoTurn == -40) && (turnWithRoom == 40) )
+			{
+				geoTurn = turnWithRoom;
+			}	          
+			if ( (geoTurn == 40) && (turnWithRoom == -40) )
+			{
+				geoTurn = turnWithRoom;
+			}	
 		}
 	}
-	geoSetTurn();	
 }	
 
 
 void geoSetTurn()   // set geoTurn;   //-40, 0 or 40 deg
 {
 	// geoScoreAhead lowest value 1 allways wins
-	// geoScoreLeft, geoScoreRight lowest values are 1.0001 
+	// geoScoreLeft, geoScoreRight lowest values are AHEAD_PREFERENCE 
 	if ( (geofenceScore.geoScoreAhead < geofenceScore.geoScoreLeft) && (geofenceScore.geoScoreAhead < geofenceScore.geoScoreRight) )
 	{
 		geoTurn = 0;

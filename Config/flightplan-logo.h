@@ -1418,12 +1418,12 @@ const struct logoInstructionDef instructions[] = {
 					EXEC (PLAN_RETURN_GEOFENCE)
 				END
 				//exit as soon as sink has gone
-				IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //> -1 m/s,	if so, exit
+				IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //> -1 m/s,	if so, exit sink routine
 				    SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
 					EXEC (LOGO_MAIN)
 				END
 
-				LT(10)
+				RT(10)
 				FD(DESIRED_SPEED_FAST_FMIN4/10)	//"SINK"
 			END //
 		END //
@@ -1440,7 +1440,7 @@ const struct logoInstructionDef instructions[] = {
 				EXEC (PLAN_RETURN_GEOFENCE)
 			END
 			//exit as soon as sink has gone
-			IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //limit sink to -1 m/s,	if so, exit the sink
+			IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //limit sink to -1 m/s,	if so, exit sink routine
 				SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
 				EXEC (LOGO_MAIN)
 			END
