@@ -325,10 +325,10 @@ typedef struct tag_geofenceShape {
 #define NUMB_OF_GEO_SHAPES 	   2  //per set
 geofenceShape geofenceShapes[NUMB_OF_GEO_SHAPES * 2]=
 {
-	{0.0000013,0.0000013,0,0,0,0.78,1},  //circle, Lageweg, 400m radius
+	{0.0000013,0.0000013,0,0,0,0.793,1},  //circle, Lageweg, 400m radius
     {0,0,0,0.0015,0.00285,0.96,1},       //line, Lageweg, through Home, powerlines,  angle > 296 || angle < 116 
 	{0.0000013,0.0000013,0,0,0,0.84,1},  //circle, Lageweg, ~350m radius
-    {0,0,0,0.0015,0.00285,1.14,1}        //line, Lageweg, below Home, powerlines,  angle > 296 || angle < 116 
+    {0,0,0,0.0015,0.00285,1.159,1}        //line, Lageweg, below Home, powerlines,  angle > 296 || angle < 116 
 };
 //},
 //geofenceShape geofenceShapesWind[NUMB_OF_GEO_SHAPES]=

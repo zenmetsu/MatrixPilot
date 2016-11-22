@@ -1084,7 +1084,7 @@ const struct logoInstructionDef instructions[] = {
 #define SINK                                 19
 
 //Motor
-#define TAKEOFF                          	 21    // keep level when low
+#define TAKEOFF                              21    // keep level when low
 #define RETURN_MC_GEOFENCE                   23
 #define CHECK_MC_SOFT_WIND_GEOFENCE          25
 #define MOTOR_CLIMB_FORWARD                  27
@@ -1160,28 +1160,27 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (PLAN_RETURN_GEOFENCE)
-	    //CLEAR_INTERRUPT  //don't change navigation
 		IF_EQ( GEOFENCE_STATUS,2 )
+			//CLEAR_INTERRUPT  //don't change navigation
 			IF_LT(GEOFENCE_TURN, 0) 			// gf	angle < 0
 				REPEAT(4)
-			 	    LT(10)
+					LT(10)
 					IF_EQ(READ_F_LAND,1)
 						DO (RETURN_GEOFENCE)            //fly and checks
 					ELSE
 						DO (RETURN_MC_GEOFENCE)         //fly and checks
 					END 
-				END    
+				END
 			 	EXEC (LOGO_MAIN)
 			END
-			IF_GT(GEOFENCE_TURN, 0) 			// gf	angle < 0
-				//END
+			IF_GT(GEOFENCE_TURN, 0)                     // gf	angle < 0
 				REPEAT(4)
-				 	RT(10)
+					RT(10)
 					IF_EQ(READ_F_LAND,1)
 						DO (RETURN_GEOFENCE)            //fly and checks
 					ELSE
 						DO (RETURN_MC_GEOFENCE)         //fly and checks
-					END     
+					END
 				END
 			 	EXEC (LOGO_MAIN)
 			END
@@ -1190,15 +1189,10 @@ const struct logoInstructionDef instructions[] = {
 					DO (RETURN_GEOFENCE)            //fly and checks
 				ELSE
 					DO (RETURN_MC_GEOFENCE)         //fly and checks
-				END     
-			END     
-	 	 	EXEC (LOGO_MAIN)
-			//SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
-			//fix a hangup (prevent nesting?)
-			//IF_EQ(READ_F_LAND,1)
-			//END
-	    END
-
+				END
+			END
+			EXEC (LOGO_MAIN)
+		END
 	END //geof
 	END
 
@@ -1227,7 +1221,7 @@ const struct logoInstructionDef instructions[] = {
 				REPEAT(4)
 				    LT(10)
 					IF_EQ(READ_F_LAND,1)
-	                    DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
+						DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
 						DO (CHECKS)  //maintain min and max altitudes
 						DO (SOFT_CHECKS)
 						DO (CHECK_THERMALS)
@@ -1242,7 +1236,7 @@ const struct logoInstructionDef instructions[] = {
 				REPEAT(4)
 				    RT(10)
 					IF_EQ(READ_F_LAND,1)
-	                    DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
+						DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
 						DO (CHECKS)  //maintain min and max altitudes
 						DO (SOFT_CHECKS)
 						DO (CHECK_THERMALS)
@@ -1376,7 +1370,7 @@ const struct logoInstructionDef instructions[] = {
 		// in mc: sink = exit to main
 		// when handling sink, do not call SOFT_CHECKS, this would cause SINK loops
 
-        //perform a precalculated turn and a level stretch to opposite side of area
+		//perform a precalculated turn and a level stretch to opposite side of area
 		LOAD_TO_PARAM(REL_ANGLE_TO_OPPOSITE)   // gf -180..179)
 		IF_LT(REL_ANGLE_TO_OPPOSITE, 0) 			// gf	angle < -30		(-31..-180) =   1-150 LL
 			//make the turn to Home a smooth one
@@ -1445,7 +1439,7 @@ const struct logoInstructionDef instructions[] = {
 				EXEC (LOGO_MAIN)
 			END
 
-	        FD(DESIRED_SPEED_FAST_FMIN4/10)	//"SINK"
+			FD(DESIRED_SPEED_FAST_FMIN4/10)	//"SINK"
 		END
 
 		SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
@@ -1459,14 +1453,14 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (TAKEOFF)    //use motor if too low, switch off if too high , check geofence
 		//allow for level takeoff in current direection when in autonmous mode
-	   	IF_LT(ALT, 10)  //below: auto takeoff / hand launch with motor on in Autonomous mode
+		IF_LT(ALT, 10)  //below: auto takeoff / hand launch with motor on in Autonomous mode
 			//if relative angle is much different from turtle,correct
-   		    REPEAT(60)
-   				IF_LT(ALT, 10)  //below: auto takeoff / hand launch with motor on in Autonomous mode
-   		   	    	LEVEL_1S  //allow heading to stabilize on takeoff
+			REPEAT(60)
+				IF_LT(ALT, 10)  //below: auto takeoff / hand launch with motor on in Autonomous mode
+					LEVEL_1S  //allow heading to stabilize on takeoff
 					DO (RESET_NAVIGATION)
-      			END
-   			END
+				END
+			END
 			EXEC (LOGO_MAIN)
 		END
 	END
@@ -1474,7 +1468,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 
-	TO (RETURN_MC_GEOFENCE)         
+	TO (RETURN_MC_GEOFENCE)
 		FD(DESIRED_SPEED_NORMAL_F0/10)
 		DO (CHECKS_MC)
 	END //geof
@@ -1544,10 +1538,10 @@ const struct logoInstructionDef instructions[] = {
 	//IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not too low  check every cycle
 		   	IF_LT(ALT, MOTOR_ON_IN_SINK_ALT)    // not too low  check every cycle
 				//very low, must use motor
-		        IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
+		 		IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
 
-  					//EXEC (MOTOR_CLIMB) 					// if true, restart to main to avoid an extra nesting level
-  					FLAG_OFF(F_LAND)	 //Motor on
+					//EXEC (MOTOR_CLIMB) 					// if true, restart to main to avoid an extra nesting level
+					FLAG_OFF(F_LAND)	 //Motor on
 					//SET_ALT(MAX_THERMALLING_ALT-10) // normally use a average climb of 0.7m/s to climb to MOTOR_OFF_TRIGGER_ALT	
 
 				END
@@ -1588,12 +1582,12 @@ const struct logoInstructionDef instructions[] = {
 	   	//see if calling subroutine needs to end; geofence, too high, sink
 
 		//used by main, xgf an thermal
-	    //not allowed to be called by RETURN_GEOFENCE  
+	 	//not allowed to be called by RETURN_GEOFENCE  
 		IF_EQ( GEOFENCE_STATUS,2 )
 			SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
 			EXEC (PLAN_RETURN_GEOFENCE)
 		END
-	   	IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)    // not too low  check every cycle
+		IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)    // not too low  check every cycle
 			//avoid extra nesting level?
 			IF_GT(ALT,MAX_THERMALLING_ALT )	    // not too high
 				EXEC (TOO_HIGH)					// if true, restart to main to avoid an extra nesting level
@@ -1646,7 +1640,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (SOFT_CHECKS_MC)           //see if calling subroutine needs to end
-	    //not allowed to be called by RETURN_GEOFENCE
+		//not allowed to be called by RETURN_GEOFENCE
 
 		IF_GT(ALT,MOTOR_OFF_TRIGGER_ALT)           //settle into gliding
 			//settle into gliding
@@ -2094,19 +2088,51 @@ const struct logoInstructionDef instructions[] = {
 
    	TO (INT_FORCE_TARGET_AHEAD)  //interrupt routine
 		//check if relative angle is much different from planes angle, if so, correct
-		IF_LT(REL_ANGLE_TO_GOAL,-90)
-			PEN_UP
-				USE_CURRENT_ANGLE
-				USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
-				FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
-			PEN_DOWN
+		IF_EQ( GEOFENCE_STATUS,2 )              //outside geofence
+
+			IF_LT(GEOFENCE_TURN, 0) 			// gf	angle < 0
+				//REPEAT(4)
+					//insert extra second, move target more in front, but maintain the turn	   
+				PEN_UP
+					LT(10)
+					FD(DESIRED_SPEED_NORMAL_F0/10)
+				PEN_DOWN
+				//END
+			 	//EXEC (LOGO_MAIN)
+			END
+			IF_GT(GEOFENCE_TURN, 0)                     // gf	angle < 0
+				//REPEAT(4)
+					//insert extra second, move target more in front, but maintain the turn	   
+				PEN_UP
+					RT(10)
+					FD(DESIRED_SPEED_NORMAL_F0/10)
+				PEN_DOWN
+				//END
+			 	//EXEC (LOGO_MAIN)
+			END
+			IF_EQ(GEOFENCE_TURN, 0)                     // gf	angle == 0
+			//REPEAT(4)
+					//insert extra second, move target more in front, but maintain heading	   
+				PEN_UP
+					FD(DESIRED_SPEED_NORMAL_F0/10)
+				PEN_DOWN
+			//END
+			//EXEC (LOGO_MAIN)
 		ELSE
-			IF_GT(REL_ANGLE_TO_GOAL,90)
+			IF_LT(REL_ANGLE_TO_GOAL,-90)
 				PEN_UP
 					USE_CURRENT_ANGLE
 					USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
 					FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
 				PEN_DOWN
+			ELSE
+				IF_GT(REL_ANGLE_TO_GOAL,90)
+					PEN_UP
+						USE_CURRENT_ANGLE
+						USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
+						FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
+					PEN_DOWN
+				END
 			END
 		END
 	END
