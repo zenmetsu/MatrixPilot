@@ -39,7 +39,7 @@
 // X is Logitude in degrees * 10^7
 // Y is Latitude in degrees * 10^7
 // Z is altitude above sea level, in meters, as a floating point value.
-// 
+//
 // If you are using waypoints for an autonomous landing, it is a good idea to set the altitude value
 // to be the altitude of the landing point, and then express the heights of all of the waypoints with
 // respect to the landing point.
@@ -53,15 +53,15 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // UDB LOGO Flight Planning definitions
-// 
+//
 // The UDB Logo flight plan language lets you use a language similar to Logo, aka Turtle graphics, to
 // control your plane.  You are commanding an imaginary "turtle" to move to specific locations, and the
 // plane will head towards the turtle.
-// 
+//
 // You can also control the camera targeting code by switching from the plane turtle, to the camera turtle
 // by using the SET_TURTLE(CAMERA) command.  Then logo commands will move the location that the camera
 // is targeting, instead of the location to aim the plane.
-// 
+//
 // Each time you enter waypoint mode, the state is reset and your logo program starts from the top.  If
 // you enter RTL mode, the state is reset and your RTL logo program is run instead.
 // The following state is cleared when entering waypoint mode or RTL mode: (but not when your program
@@ -70,7 +70,7 @@
 //   - Both turtles begin pointing in the plane's current heading.
 //   - The flags are all turned off.
 //   - The pen is down, and the PLANE turtle is active.
-// 
+//
 // To use UDB Logo, set FLIGHT_PLAN_TYPE to FP_LOGO in options.h.
 
 //NOTE: WAYPOINT_PROXIMITY_RADIUS, USE_FIXED_ORIGIN, FIXED_ORIGIN_LOCATION are now defined in options.h
@@ -92,7 +92,7 @@
 // X is Longitude in degrees * 10^7
 // Y is Latitude in degrees * 10^7
 // Z is altitude above sea level, in meters, as a floating point value.
-// 
+//
 // If you are using waypoints for an autonomous landing, it is a good idea to set the altitude value
 // to be the altitude of the landing point, and then express the heights of all of the waypoints with
 // respect to the landing point.
@@ -106,11 +106,11 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-// 
+//
 // Use the following commands to create your logo paths:
-// 
+//
 // HOME                 - Return the turtle to the origin, aiming North.
-// 
+//
 // FD(x)                - Move the turtle forward x meters, in the turtle's current direction.
 // BK(x)                - Move the turtle backwards x meters, in the turtle's current direction.
 // USE_CURRENT_POS      - Move the turtle to the plane's current {X,Y} position.  Mostly useful
@@ -127,11 +127,11 @@
 // EAST(x)              - Move the turtle x meters East.
 // WEST(x)              - Move the turtle x meters West.
 // SET_X_POS(x)         - Set the X value of the turtle (meters East of the origin) to x.
-// 
+//
 // NORTH(y)             - Move the turtle y meters North.
 // SOUTH(y)             - Move the turtle y meters South.
 // SET_Y_POS(y)         - Set the Y value of the turtle (meters North of the origin) to y.
-// 
+//
 // SET_POS(x, y)        - Set both x and y at the same time.
 // SET_ABS_POS(x, y)    - Set absolute X,Y location (long,lat) in degrees * 10^7
 
@@ -148,16 +148,16 @@
 // END                  - End the current REPEAT loop or Subroutine definition
 
 // IF_EQ(val, x)        - Looks up a system value (listed below) and checks if it's equal to x.
-//                        If so, runs commands until reaching ELSE or END.  If not, skips to ELSE 
+//                        If so, runs commands until reaching ELSE or END.  If not, skips to ELSE
 //                        and runs until END, or just skips to END if there's no ELSE.
-//                        Available IF commands: IF_EQ(equal), IF_NE(not equal), 
+//                        Available IF commands: IF_EQ(equal), IF_NE(not equal),
 //                        IF_GT(val>x), IF_LT(val<x),IF_GE(val>=x), IF_LE(val<=x).
 // ELSE                 - Starts a list of commands that get run if the preceding IF failed.
 
 // PEN_UP               - While the pen is up, logo code execution does not stop to wait for the
 //                        plane to move to each new position of the turtle before continuing.
 //                        This allows you to use multiple logo instructions to get the turtle to
-//                        the next goal location before commanding the plane to fly there by 
+//                        the next goal location before commanding the plane to fly there by
 //                        putting the pen back down.
 // PEN_DOWN             - When the pen is down, the plane moves to each new position of the turtle
 //                        before more logo instructions are interpereted.
@@ -168,18 +168,18 @@
 
 
 // Commands for Modifying Flags
-// 
+//
 // FLAG_ON(F)           - Turn on flag F.  (See below for a list of flags.)
 // FLAG_OFF(F)          - Turn off flag F.
 // FLAG_TOGGLE(F)       - Toggle flag F.
-// 
+//
 // The supported flags are the following:
-// 
+//
 // F_TAKEOFF            - More quickly gain altitude at takeoff.
 // F_INVERTED           - Fly with the plane upside down. (only if STABILIZE_INVERTED_FLIGHT is set to 1 in options.h)
 // F_HOVER              - Hover the plane with the nose up. (only if STABILIZE_HOVER is set to 1 in options.h)
 //                        NOTE: while hovering, no navigation is performed, and throttle is under manual control.
-// F_TRIGGER            - Trigger an action to happen at this point in the flight.  (See the Trigger Action section of the options.h file.) 
+// F_TRIGGER            - Trigger an action to happen at this point in the flight.  (See the Trigger Action section of the options.h file.)
 // F_ALTITUDE_GOAL      - Climb or descend to the given altitude.
 // F_CROSS_TRACK        - Navigate using cross-tracking.  Best used for longer flight legs.
 // F_LAND               - Fly with the throttle off.
@@ -198,7 +198,7 @@
 // EXEC(LOGO_MAIN)      - Restart at the top of the LOGO program
 // DO_ARG(FUNC, PARAM)  - Run subroutine FUNC, using an integer value as a parameter.
 // EXEC_ARG(FUNC, PARAM)- Exec subroutine FUNC, using an integer value as a parameter.
-// 
+//
 // FD_PARAM             - From within a subroutine, call the FD command using the parameter
 //                        passed to this subroutine as the distance.
 // RT_PARAM             - From within a subroutine, call the RT command using the parameter
@@ -207,20 +207,20 @@
 //                        number of times to repeat.
 // DO_PARAM(FUNC)       - Call subroutine FUNC with a parameter equal to the current subroutine's
 //                        parameter value.
-// 
+//
 // PARAM_ADD(x)         - Adds x to the current subroutine's current parameter value.  Fun
 //                        inside repeats inside subroutines!
 // PARAM_SUB(x)         - Subtracts x from the current subroutine's current parameter value.
 // PARAM_MUL(x)         - Multiplies the current subroutine's current parameter value by x.
 // PARAM_DIV(x)         - Divides the current subroutine's current parameter value by x.
 // PARAM_SET(x)         - Sets the current subroutine's current parameter value to x.
-// 
+//
 // LOAD_TO_PARAM(val)   - Loads a system value (listed below) into the current subroutine's parameter value.
-// 
-// All parameter-related commands: 
-//        FD_PARAM, BK_PARAM, RT_PARAM, LT_PARAM, SET_ANGLE_PARAM, 
-//        EAST_PARAM, WEST_PARAM, NORTH_PARAM, SOUTH_PARAM, ALT_UP_PARAM, ALT_DOWN_PARAM, 
-//        SET_X_POS_PARAM, SET_Y_POS_PARAM, SET_ALT_PARAM, 
+//
+// All parameter-related commands:
+//        FD_PARAM, BK_PARAM, RT_PARAM, LT_PARAM, SET_ANGLE_PARAM,
+//        EAST_PARAM, WEST_PARAM, NORTH_PARAM, SOUTH_PARAM, ALT_UP_PARAM, ALT_DOWN_PARAM,
+//        SET_X_POS_PARAM, SET_Y_POS_PARAM, SET_ALT_PARAM,
 //        SPEED_INCREASE_PARAM, SPEED_DECREASE_PARAM, SET_SPEED_PARAM
 //        REPEAT_PARAM, DO_PARAM(FUNC), EXEC_PARAM(FUNC)
 //        PARAM_SET(x), PARAM_ADD(x), PARAM_SUB(x), PARAM_MUL(x), PARAM_DIV(x)
@@ -235,7 +235,7 @@
 
 
 // System Values for use with LOAD_TO_PARAM(val) and IF_XX() commands
-// 
+//
 // DIST_TO_HOME         - in m
 // DIST_TO_GOAL         - in m
 // ALT                  - in m
@@ -274,9 +274,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Define the main flight plan as:
-// 
+//
 // #define FOO 1
-// 
+//
 // const struct logoInstructionDef instructions[] = {
 //		instruction1
 //		instruction2
@@ -287,11 +287,11 @@
 //			etc.
 //		END
 //	};
-// 
+//
 // and the Failsafe RTL course as:
-// 
+//
 // #define BAR 2
-// 
+//
 // const struct logoInstructionDef rtlInstructions[] = {
 //		instruction1
 //		instruction2
@@ -333,7 +333,7 @@ const struct logoInstructionDef instructions[] = {
 
 ////////////////////////////////////////////////////////////////////////////////
 // RTL Flight Plan
-// 
+//
 // On entering RTL mode, turn off the engine, fly home, and circle indefinitely until touching down
 
 const struct logoInstructionDef rtlInstructions[] = {
@@ -359,7 +359,7 @@ const struct logoInstructionDef rtlInstructions[] = {
 			FD(8)
 		END
 	END
-	
+
 };
 */
 
@@ -461,7 +461,7 @@ const struct logoInstructionDef rtlInstructions[] = {
 #define FWD_100_MINUS_PARAM_OVER_2  3
 
 const struct logoInstructionDef instructions[] = {
-	
+
 DO_ARG(SPIRAL_IN, 10)
 RT(100)
 DO_ARG(SPIRAL_OUT,  70)
@@ -602,7 +602,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	//Main  -  main program when motor is off
-    SET_ALT(100)
+	SET_ALT(100)
 
 	//takeoff
 	REPEAT(15)
@@ -610,7 +610,7 @@ const struct logoInstructionDef instructions[] = {
 		FD(12)
 	END
 
-    DO_ARG(SQUARE, 300)
+	DO_ARG(SQUARE, 300)
 	DO (LOITER_LAND)
 
 	TO (SQUARE)
@@ -663,7 +663,7 @@ const struct logoInstructionDef instructions[] = {
 		//Motor may be activated (slider up) if < 80m and if the charge level of the battery is sufficient
 		//Glide if > 80m
 		//When close to the entry point;
- 		//If high, circle down to 80m
+		//If high, circle down to 80m
 		//if low (<50m) go straight for an "emergency" final, this may be with tailwind (dont know if the charge level of the battery is sufficient)
 		CLEAR_INTERRUPT
 		FLAG_ON(F_CROSS_TRACK)
@@ -681,40 +681,40 @@ const struct logoInstructionDef instructions[] = {
 
 			// Get circuit hand and heading  - configure these headings for your flying field
 			// -270 == Lefthand circuit, final heading West 270, 270 == Righthand circuit, final heading West 270
-			//	  NE	E	|	SE		S   ||   SW	     W   |   NW		 N|
+			//    NE	E	|	SE		S   ||   SW        W   |   NW       N|
 			//  23-67,68-112,113-157,158-202, 203-247,248-292,293-337,338-22
 			//                                 wind FROM
-			IF_LT(WIND_FROM_ANGLE,203)                    //  NE	  E		 SE		 S   (N)
-				IF_LT(WIND_FROM_ANGLE,113)                //  NE	  E   (N)
+			IF_LT(WIND_FROM_ANGLE,203)                    //  NE     E       SE       S   (N)
+				IF_LT(WIND_FROM_ANGLE,113)                //  NE     E   (N)
 					IF_LT(WIND_FROM_ANGLE,64)             //  N(E)
 						IF_LT(WIND_FROM_ANGLE,22)         //  0..22
-						   PARAM_SET(-326)  	//  N
+							PARAM_SET(-326)      //  N
 						ELSE
-						   PARAM_SET(64)    	//  NE
+							PARAM_SET(64)        //  NE
 						END
 					ELSE
-						PARAM_SET(64)        	//  E
+						PARAM_SET(64)            //  E
 					END
-				ELSE                            //  SE		 S
+				ELSE                            //  SE       S
 					IF_LT(WIND_FROM_ANGLE,158)
-						PARAM_SET(148)       	//  SE
+						PARAM_SET(148)           //  SE
 					ELSE
-						PARAM_SET(148)       	//  S
+						PARAM_SET(148)           //  S
 					END
 				END
 			ELSE
-				//>= 203                        //  SW	  W      NW		 N
-				IF_LT(WIND_FROM_ANGLE,293)               	//  SW	  W
+				//>= 203                        //  SW     W      NW       N
+				IF_LT(WIND_FROM_ANGLE,293)                   //  SW     W
 					IF_LT(WIND_FROM_ANGLE,248)
-						PARAM_SET(-243)      	//  SW
+						PARAM_SET(-243)          //  SW
 					ELSE
-						PARAM_SET(-243)      	//  W
+						PARAM_SET(-243)          //  W
 					END
-				ELSE                            //  NW		 N
+				ELSE                             //  NW       N
 					IF_LT(WIND_FROM_ANGLE,338)
-						PARAM_SET(-326)      	//  NW
+						PARAM_SET(-326)          //  NW
 					ELSE
-						PARAM_SET(-326)      	//  N
+						PARAM_SET(-326)          //  N
 					END
 				END
 			END
@@ -801,7 +801,7 @@ const struct logoInstructionDef instructions[] = {
 				//DO_PARAM (FS_FINAL)
 
 			END // 70m
- 		END // repeat
+		END // repeat
 	END
 	END
 
@@ -874,7 +874,7 @@ const struct logoInstructionDef instructions[] = {
 				RT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 				IF_GT(ALT,FINAL_ALT*2-5)
-				    ALT_DOWN(1)
+					ALT_DOWN(1)
 				END
 			END
 		ELSE
@@ -899,11 +899,11 @@ const struct logoInstructionDef instructions[] = {
 		FLAG_OFF(F_LAND)    // no brakes in turn
 		IF_GE(PARAM,0)  //param => 0
 			//right hand circuit
-			REPEAT(5)            
+			REPEAT(5)
 				RT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 				IF_GT(ALT,FINAL_ALT-5)
-				    ALT_DOWN(2)
+					ALT_DOWN(2)
 				END
 			END
 		ELSE
@@ -912,8 +912,8 @@ const struct logoInstructionDef instructions[] = {
 				LT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 				IF_GT(ALT,FINAL_ALT-5)
-				    ALT_DOWN(2)
-				END    
+					ALT_DOWN(2)
+				END
 			END
 		END
 	END
@@ -934,8 +934,8 @@ const struct logoInstructionDef instructions[] = {
 				RT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 				IF_GT(ALT,FINAL_ALT)
-				    ALT_DOWN(2)
-				END    
+					ALT_DOWN(2)
+				END
 			END
 		ELSE
 			//left hand circuit
@@ -943,8 +943,8 @@ const struct logoInstructionDef instructions[] = {
 				LT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 				IF_GT(ALT,FINAL_ALT)
-				    ALT_DOWN(2)
-				END    
+					ALT_DOWN(2)
+				END
 			END
 		END
 
@@ -958,7 +958,7 @@ const struct logoInstructionDef instructions[] = {
 			//compensate offset in flighttrack vs waypoint for precise landing
 			IF_GE(PARAM,0)  //param => 0
 				//right hand circuit
-				RT(10)    
+				RT(10)
 			ELSE
 				//left hand circuit
 				LT(10)
@@ -1007,7 +1007,7 @@ const struct logoInstructionDef instructions[] = {
 //2. #define WAYPOINT_RADIUS           40
 //
 // select AIRFRAME_TYPE  AIRFRAME_GLIDER   (required)
-// 		for pure gliders setup THROTTLE_INPUT_CHANNEL  UNUSED; the code for motor control will be disabled
+//		for pure gliders setup THROTTLE_INPUT_CHANNEL  UNUSED; the code for motor control will be disabled
 //		configure mixer settings in servomix.c  (after changing mixer settings only this module will need recompilation.)
 // For this mission GLIDE_AIRSPEED_CONTROL is recommended
 // To enable GLIDE_AIRSPEED_CONTROL setup the following options:
@@ -1041,7 +1041,7 @@ const struct logoInstructionDef instructions[] = {
 #define MOTOR_CLIMB_MAX               120  // cm/sec maximal climbrate that is expected   else start thermalling
 
 #define FINAL_ALT                      22  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
-#else 
+#else
 //Dutch rules outside of Knvvl fields...
 #define MOTOR_ON_TRIGGER_ALT           80  // in meters
 #define MOTOR_ON_IN_SINK_ALT           50  // in meters, set low. Altitude where ground objects must be avoided using motor despite sink
@@ -1058,7 +1058,7 @@ const struct logoInstructionDef instructions[] = {
 #define FINAL_ALT                      16  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
 #else   //Fantasy
 #define FINAL_ALT                      18  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
-#endif   
+#endif
 #endif
 
 
@@ -1123,27 +1123,27 @@ const struct logoInstructionDef instructions[] = {
 
 	//Main  -  main program when motor is off
 	//LOGO_MAIN
-	
+
 		//cleanup
 		SET_ALT(MAX_THERMALLING_ALT-10)    // the last 20m will be used to gradually apply brakes  - depends on brake gain
-//		FLAG_ON(F_LAND)	 //Motor off
+//		FLAG_ON(F_LAND)    //Motor off
 		SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
 		PEN_DOWN
 		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 
 		IF_EQ(READ_F_LAND,1)
-			DO (CHECKS)           	 //is motor needed, landing requested, is pilot in control?
-			DO (SOFT_CHECKS)      	 //see if calling subroutine needs to end; geofence, too high, sink
-			DO (CHECK_THERMALS)	  	 //geofence will be monitored, end and restart if needed
-			DO (PLAN_SOFT_GEOFENCE)	 //soft geofence
+			DO (CHECKS)                //is motor needed, landing requested, is pilot in control?
+			DO (SOFT_CHECKS)           //see if calling subroutine needs to end; geofence, too high, sink
+			DO (CHECK_THERMALS)          //geofence will be monitored, end and restart if needed
+			DO (PLAN_SOFT_GEOFENCE)    //soft geofence
 			DO (CRUISE)   // prevent overshoots
 		ELSE
 			DO (TAKEOFF)             //keep level when low
 			DO (CHECKS_MC)           //is motor needed, landing requested, is pilot in control?
 			DO (SOFT_CHECKS_MC)      //see if calling subroutine needs to end; geofence, too high, sink
-			DO (PLAN_SOFT_GEOFENCE)	 //soft geofence
+			DO (PLAN_SOFT_GEOFENCE)    //soft geofence
 			DO (MOTOR_CLIMB_FORWARD) //prevent overshoots
-		END 
+		END
 	END
 	END
 
@@ -1162,16 +1162,16 @@ const struct logoInstructionDef instructions[] = {
 	TO (PLAN_RETURN_GEOFENCE)
 		IF_EQ( GEOFENCE_STATUS,2 )
 			//CLEAR_INTERRUPT  //don't change navigation
-			IF_LT(GEOFENCE_TURN, 0) 			// gf	angle < 0
+			IF_LT(GEOFENCE_TURN, 0)                     // gf	angle < 0
 				REPEAT(4)
 					LT(10)
 					IF_EQ(READ_F_LAND,1)
 						DO (RETURN_GEOFENCE)            //fly and checks
 					ELSE
 						DO (RETURN_MC_GEOFENCE)         //fly and checks
-					END 
+					END
 				END
-			 	EXEC (LOGO_MAIN)
+				EXEC (LOGO_MAIN)
 			END
 			IF_GT(GEOFENCE_TURN, 0)                     // gf	angle < 0
 				REPEAT(4)
@@ -1182,7 +1182,7 @@ const struct logoInstructionDef instructions[] = {
 						DO (RETURN_MC_GEOFENCE)         //fly and checks
 					END
 				END
-			 	EXEC (LOGO_MAIN)
+				EXEC (LOGO_MAIN)
 			END
 			REPEAT(4)
 				IF_EQ(READ_F_LAND,1)
@@ -1214,12 +1214,12 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (PLAN_SOFT_GEOFENCE)
-	    //assume not strict
-	    //only act if needed 
-		IF_NE(GEOFENCE_TURN, 0) 			// gf	angle <> 0
-			IF_LT(GEOFENCE_TURN, 0) 			// gf	angle < 0
-				REPEAT(4)
-				    LT(10)
+		//assume not strict
+		//only act if needed
+		IF_NE(GEOFENCE_TURN, 0)           // gf	angle <> 0
+			IF_LT(GEOFENCE_TURN, 0)           // gf	angle < 0
+				REPEAT(5)
+					LT(10)
 					IF_EQ(READ_F_LAND,1)
 						DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
 						DO (CHECKS)  //maintain min and max altitudes
@@ -1233,8 +1233,8 @@ const struct logoInstructionDef instructions[] = {
 					END
 				END
 			ELSE
-				REPEAT(4)
-				    RT(10)
+				REPEAT(5)
+					RT(10)
 					IF_EQ(READ_F_LAND,1)
 						DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
 						DO (CHECKS)  //maintain min and max altitudes
@@ -1255,20 +1255,19 @@ const struct logoInstructionDef instructions[] = {
 
 
 
-    //Thermalling routines
+	//Thermalling routines
 
 
 	TO (CHECK_THERMALS)
 		//check for thermals
 		IF_LE( GEOFENCE_STATUS,1 )      // ok to start a new thermal in status 1, status 0 is ok anyway
 			IF_EQ( MOTOR_OFF_TIMER,0 )  //motor has stopped more than 4 secons ago
-			//IF_EQ(READ_F_LAND,1)
 				//glided into a thermal
 				IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)  //>= 0.2 m/s climb is the trigger, also check GEOFENCE
 					//lift found
 					//keep flying straight until decreasing lift
 					//wait for decrease of lift
-					DO (WAIT_DECREASE_CLIMBRATE)	  //wait up to 6 sec for the climbrate decrease, keep the best climbrate
+					DO (WAIT_DECREASE_CLIMBRATE)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
 					//current is less
 					//now beyond the best climbrate..
 					//turn up to 270 deg + 3sec straight if not better
@@ -1283,7 +1282,7 @@ const struct logoInstructionDef instructions[] = {
 					//lift found
 					//keep flying straight until decreasing lift
 					//wait for decrease of lift
-					DO (WAIT_DECREASE_CLIMBRATE)	  //wait up to 6 sec for the climbrate decrease, keep the best climbrate
+					DO (WAIT_DECREASE_CLIMBRATE)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
 					//current is less
 					//now beyond the best climbrate..
 					//turn up to 270 deg + 3sec straight if not better
@@ -1304,12 +1303,12 @@ const struct logoInstructionDef instructions[] = {
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta
 		FD(DESIRED_SPEED_SLOW_F4/10)    //1 sec
-		REPEAT(5)    //6 sec 
-			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s	
-		    IF_GE(PARAM,0)
+		REPEAT(5)    //6 sec
+			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
+			IF_GE(PARAM,0)
 				FD(DESIRED_SPEED_SLOW_F4/10)    //still increasing, wait ~1 sec
-			END	
-		END	    
+			END
+		END
 		//return.. check not cruise..
 	END
 	END
@@ -1320,13 +1319,13 @@ const struct logoInstructionDef instructions[] = {
 	TO (THERMALLING_TURN)
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
 		LOAD_TO_PARAM(AIR_SPEED_Z)    //to detect better lift
-		PARAM_ADD(50)				  //add a margin
+		PARAM_ADD(50)                 //add a margin
 		//do while turn upto 270 deg if climb does not improve irt startvalue	if improves: race to exit
 		REPEAT(9) //14 sec =~ 270 deg = 9 * "30 deg per loop"
 			IF_GE(AIR_SPEED_Z_VS_START,50) //even better than at start of turn so start over
 				EXEC (BETTER_LIFT)  // report just once, start new thermalling cycle
-			END		
-			
+			END
+
 			//Custom solution using new command RT_BANK()
 			RT_BANK(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
 			DO (RESET_NAVIGATION)
@@ -1364,15 +1363,15 @@ const struct logoInstructionDef instructions[] = {
 		SET_SPEED(DESIRED_SPEED_FAST_FMIN4) //dm/s
 		// method: avoid flying in sink, assume sink area in front of aircraft
 		// turn at least 120 deg while in sink, away from start heading
-  		// choose l/r using gf code  (no matter if close to home, rare), because that (beyond home) heading leads to the biggest area where non-sinking air might be
-  		// complete gf turns while sink lasts, towards home direction
+		// choose l/r using gf code  (no matter if close to home, rare), because that (beyond home) heading leads to the biggest area where non-sinking air might be
+		// complete gf turns while sink lasts, towards home direction
 		// keep checking GF while responding to sink
 		// in mc: sink = exit to main
 		// when handling sink, do not call SOFT_CHECKS, this would cause SINK loops
 
 		//perform a precalculated turn and a level stretch to opposite side of area
 		LOAD_TO_PARAM(REL_ANGLE_TO_OPPOSITE)   // gf -180..179)
-		IF_LT(REL_ANGLE_TO_OPPOSITE, 0) 			// gf	angle < -30		(-31..-180) =   1-150 LL
+		IF_LT(REL_ANGLE_TO_OPPOSITE, 0)          // gf	angle < -30		(-31..-180) =   1-150 LL
 			//make the turn to Home a smooth one
 			PARAM_MUL(-1)
 			PARAM_DIV(10)
@@ -1397,7 +1396,7 @@ const struct logoInstructionDef instructions[] = {
 				LT(10)
 				FD(DESIRED_SPEED_FAST_FMIN4/10)	//"SINK"
 			END
-		 ELSE
+		ELSE
 			PARAM_DIV(10)
 			//special : force at least 12 = 120 deg turn to evade sink
 			IF_LT(PARAM,12)
@@ -1413,7 +1412,7 @@ const struct logoInstructionDef instructions[] = {
 				END
 				//exit as soon as sink has gone
 				IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //> -1 m/s,	if so, exit sink routine
-				    SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
+					SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
 					EXEC (LOGO_MAIN)
 				END
 
@@ -1490,7 +1489,7 @@ const struct logoInstructionDef instructions[] = {
 		//start/continue a slow climb with motor
 
 		//if in an area with some lift, circle more
-		IF_GT(AIR_SPEED_Z,MOTOR_CLIMB_MAX - 30)	// > ~0.7 m/s climb is expected, circle if 0.9, exit if 1.2
+		IF_GT(AIR_SPEED_Z,MOTOR_CLIMB_MAX - 30)    // > ~0.7 m/s climb is expected, circle if 0.9, exit if 1.2
 			RT(10)
 		END
 
@@ -1504,16 +1503,16 @@ const struct logoInstructionDef instructions[] = {
 		//indicates lift while too high
 
 		//try to head upwind with every cycle
-		LOAD_TO_PARAM(REL_ANGLE_TO_WIND)	// wgf !!!non-standard LOGO command!!! -	-180..179)
+		LOAD_TO_PARAM(REL_ANGLE_TO_WIND)    // wgf !!!non-standard LOGO command!!! -	-180..179)
 
 		IF_LT(REL_ANGLE_TO_WIND, 0) // wgf	angle < -30		(-31..-180) =   1-150 L
 			LT(10)
-		 ELSE
+		ELSE
 			IF_GE(REL_ANGLE_TO_WIND, -30) // wgf	angle >= -30  (-30..149) = 0..179 R
 				RT(10)
-			END 
-		END 
-		
+			END
+		END
+
 		FD(DESIRED_SPEED_NORMAL_F0/10)
 		EXEC (LOGO_MAIN)
 	END
@@ -1531,30 +1530,30 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (CHECKS)        // is motor needed, landing requested, is pilot in control?
-	   	//see if calling subroutine needs to end
+		//see if calling subroutine needs to end
 
 #if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
-	   	IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not too low  check every cycle
+		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not too low  check every cycle
 	//IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not too low  check every cycle
-		   	IF_LT(ALT, MOTOR_ON_IN_SINK_ALT)    // not too low  check every cycle
+			IF_LT(ALT, MOTOR_ON_IN_SINK_ALT)    // not too low  check every cycle
 				//very low, must use motor
-		 		IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
+				IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
 
-					//EXEC (MOTOR_CLIMB) 					// if true, restart to main to avoid an extra nesting level
-					FLAG_OFF(F_LAND)	 //Motor on
-					//SET_ALT(MAX_THERMALLING_ALT-10) // normally use a average climb of 0.7m/s to climb to MOTOR_OFF_TRIGGER_ALT	
+					//EXEC (MOTOR_CLIMB)                // if true, restart to main to avoid an extra nesting level
+					FLAG_OFF(F_LAND)    //Motor on
+					//SET_ALT(MAX_THERMALLING_ALT-10) // normally use a average climb of 0.7m/s to climb to MOTOR_OFF_TRIGGER_ALT
 
 				END
 			END
-			//IF_GT(AIR_SPEED_Z,MOTOR_CLIMB_MIN - 90)	// > ?? m/s if not too much sink, start motor
-			IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)	// > ?? m/s if not too much sink, start motor
-				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)	// unless thermals
+			//IF_GT(AIR_SPEED_Z,MOTOR_CLIMB_MIN - 90)    // > ?? m/s if not too much sink, start motor
+			IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)    // > ?? m/s if not too much sink, start motor
+				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)    // unless thermals
 					IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
 
-	  					//EXEC (MOTOR_CLIMB) 					// if true, restart to main to avoid an extra nesting level
-						FLAG_OFF(F_LAND)	 //Motor on
-						//SET_ALT(MAX_THERMALLING_ALT-10) // normally use a average climb of 0.7m/s to climb to MOTOR_OFF_TRIGGER_ALT	
-						
+						//EXEC (MOTOR_CLIMB)                    // if true, restart to main to avoid an extra nesting level
+						FLAG_OFF(F_LAND)    //Motor on
+						//SET_ALT(MAX_THERMALLING_ALT-10) // normally use a average climb of 0.7m/s to climb to MOTOR_OFF_TRIGGER_ALT
+
 					END
 				END
 			END
@@ -1578,30 +1577,30 @@ const struct logoInstructionDef instructions[] = {
 	END
 
 
-	TO (SOFT_CHECKS)           
-	   	//see if calling subroutine needs to end; geofence, too high, sink
+	TO (SOFT_CHECKS)
+        //see if calling subroutine needs to end; geofence, too high, sink
 
 		//used by main, xgf an thermal
-	 	//not allowed to be called by RETURN_GEOFENCE  
+		//not allowed to be called by RETURN_GEOFENCE
 		IF_EQ( GEOFENCE_STATUS,2 )
 			SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
 			EXEC (PLAN_RETURN_GEOFENCE)
 		END
 		IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)    // not too low  check every cycle
 			//avoid extra nesting level?
-			IF_GT(ALT,MAX_THERMALLING_ALT )	    // not too high
-				EXEC (TOO_HIGH)					// if true, restart to main to avoid an extra nesting level
+			IF_GT(ALT,MAX_THERMALLING_ALT )     // not too high
+				EXEC (TOO_HIGH)                 // if true, restart to main to avoid an extra nesting level
 			END
 		END
 		IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //limit sink to -1 m/s,	if so, exit the sink
 			EXEC (SINK)
 		END
-	END	
+	END
 	END
 
 
 
-	TO (CHECKS_MC)      // is motor still needed, landing requested, is pilot in control?   
+	TO (CHECKS_MC)      // is motor still needed, landing requested, is pilot in control?
 		//remember we are MotorClimb mode , use DO 's
 
 		//MotorClimb -- Interrupt routine
@@ -1656,7 +1655,7 @@ const struct logoInstructionDef instructions[] = {
 			FLAG_ON(F_LAND)	//Motor off
 			EXEC (LOGO_MAIN)
 		END
-	END	
+	END
 
 
 
@@ -1700,14 +1699,98 @@ const struct logoInstructionDef instructions[] = {
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 			END
 		END
-		
+
 		//EXEC (MOTOR_CLIMB)
-		EXEC (LOGO_MAIN)	
+		EXEC (LOGO_MAIN)
 	END
 	END
 
 
-//Landing 
+
+	TO (INT_FORCE_TARGET_AHEAD)  //interrupt routine
+		//check if relative angle is much different from planes angle, if so, correct
+		IF_EQ( GEOFENCE_STATUS,2 )              //outside geofence
+			IF_LT(REL_ANGLE_TO_GOAL,-90)
+				IF_LT(GEOFENCE_TURN, 0)          // gf	angle < 0
+					//REPEAT(4)
+					//insert extra second, move target more in front, but maintain the turn
+					PEN_UP
+						LT(10)
+						FD(DESIRED_SPEED_NORMAL_F0/10)
+					PEN_DOWN
+					//END
+					//EXEC (LOGO_MAIN)
+				END
+				IF_GT(GEOFENCE_TURN, 0)                     // gf	angle < 0
+					//REPEAT(4)
+					//insert extra second, move target more in front, but maintain the turn
+					PEN_UP
+						RT(10)
+						FD(DESIRED_SPEED_NORMAL_F0/10)
+					PEN_DOWN
+					//END
+					//EXEC (LOGO_MAIN)
+				END
+				IF_EQ(GEOFENCE_TURN, 0)                     // gf	angle == 0
+				//REPEAT(4)
+					//insert extra second, move target more in front, but maintain heading
+					PEN_UP
+						FD(DESIRED_SPEED_NORMAL_F0/10)
+					PEN_DOWN
+				END
+			END
+			IF_GT(REL_ANGLE_TO_GOAL,90)
+				IF_LT(GEOFENCE_TURN, 0)          // gf	angle < 0
+					//REPEAT(4)
+					//insert extra second, move target more in front, but maintain the turn
+					PEN_UP
+						LT(10)
+						FD(DESIRED_SPEED_NORMAL_F0/10)
+					PEN_DOWN
+					//END
+					//EXEC (LOGO_MAIN)
+				END
+				IF_GT(GEOFENCE_TURN, 0)                     // gf	angle < 0
+					//REPEAT(4)
+					//insert extra second, move target more in front, but maintain the turn
+					PEN_UP
+						RT(10)
+						FD(DESIRED_SPEED_NORMAL_F0/10)
+					PEN_DOWN
+					//END
+					//EXEC (LOGO_MAIN)
+				END
+				IF_EQ(GEOFENCE_TURN, 0)                     // gf	angle == 0
+				//REPEAT(4)
+					//insert extra second, move target more in front, but maintain heading
+					PEN_UP
+						FD(DESIRED_SPEED_NORMAL_F0/10)
+					PEN_DOWN
+				END
+			END
+			//EXEC (LOGO_MAIN)
+		ELSE
+			IF_LT(REL_ANGLE_TO_GOAL,-90)
+				PEN_UP
+					USE_CURRENT_ANGLE
+					USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
+					FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
+				PEN_DOWN
+			ELSE
+				IF_GT(REL_ANGLE_TO_GOAL,90)
+					PEN_UP
+						USE_CURRENT_ANGLE
+						USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
+						FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
+					PEN_DOWN
+				END
+			END
+		END
+	END
+	END
+
+
+//Landing
 
 
 	TO (SET_ALT_ALT)
@@ -1730,7 +1813,7 @@ const struct logoInstructionDef instructions[] = {
 			//turn
 			REPEAT(18)
 				IF_GT(ALT,FINAL_ALT*3+5)
-		  			DO (SET_ALT_ALT)    //keep aware of current altitude
+					DO (SET_ALT_ALT)    //keep aware of current altitude
 					ALT_DOWN(8)  //keep going down  , this and FD controls brakes
 					FLAG_ON(F_LAND) //brake if you have to
 				ELSE
@@ -1752,7 +1835,7 @@ const struct logoInstructionDef instructions[] = {
 		//Motor may be activated (slider up) if < 80m and if the charge level of the battery is sufficient
 		//Glide if > 80m
 		//When close to the entry point;
- 		//If high, circle down to 80m
+		//If high, circle down to 80m
 		//if low (<50m) go straight for an "emergency" final, this may be with tailwind (dont know if the charge level of the battery is sufficient)
 		CLEAR_INTERRUPT
 		FLAG_ON(F_CROSS_TRACK)
@@ -1765,14 +1848,14 @@ const struct logoInstructionDef instructions[] = {
 			END
 		END
 		FD(DESIRED_SPEED_NORMAL_F0/10)
-		ALT_DOWN(10)  //start going down  
+		ALT_DOWN(10)  //start going down
 		//SET_ALT((FINAL_ALT*3)+0)
 
 		//Motor may be activated if low (But not too low) and if the charge level of the battery is sufficient
 		//decide if brakes or motor are needed most here
 		//high: brakes if needed, <final: brakes, else motor + glide
 		//downside: heavy thermals are not adressed, will be only after arrival above entry point
-		FLAG_ON(F_LAND)  //brakes	
+		FLAG_ON(F_LAND)  //brakes
 		IF_LT(ALT,FINAL_ALT*3+40) //won't make it gliding (this does not change arrival point altitude)
 			IF_GT(ALT,FINAL_ALT)
 				FLAG_OFF(F_LAND)  //Motor on if needed, no brakes
@@ -1788,40 +1871,40 @@ const struct logoInstructionDef instructions[] = {
 
 			// Get circuit hand and heading  - configure these headings for your flying field
 			// -270 == Lefthand circuit, final heading West 270, 270 == Righthand circuit, final heading West 270
-			//	  NE	E	|	SE		S   ||   SW	     W   |   NW		 N|
+			//     NE	E	|	SE		S   ||   SW        W   |   NW       N|
 			//  23-67,68-112,113-157,158-202, 203-247,248-292,293-337,338-22
 			//                                 wind FROM
-			IF_LT(WIND_FROM_ANGLE,203)                    //  NE	  E		 SE		 S   (N)
-				IF_LT(WIND_FROM_ANGLE,113)                //  NE	  E   (N)
+			IF_LT(WIND_FROM_ANGLE,203)                    //  NE     E       SE       S   (N)
+				IF_LT(WIND_FROM_ANGLE,113)                //  NE     E   (N)
 					IF_LT(WIND_FROM_ANGLE,64)             //  N(E)
 						IF_LT(WIND_FROM_ANGLE,22)         //  0..22
-						   PARAM_SET(-326)  	//  N
+							PARAM_SET(-326)    //  N
 						ELSE
-						   PARAM_SET(64)    	//  NE
+							PARAM_SET(64)      //  NE
 						END
 					ELSE
-						PARAM_SET(64)        	//  E
+						PARAM_SET(64)          //  E
 					END
-				ELSE                            //  SE		 S
+				ELSE                            //  SE       S
 					IF_LT(WIND_FROM_ANGLE,158)
-						PARAM_SET(148)       	//  SE
+						PARAM_SET(148)         //  SE
 					ELSE
-						PARAM_SET(148)       	//  S
+						PARAM_SET(148)         //  S
 					END
 				END
 			ELSE
-				//>= 203                        //  SW	  W      NW		 N
-				IF_LT(WIND_FROM_ANGLE,293)               	//  SW	  W
+				//>= 203                        //  SW     W      NW       N
+				IF_LT(WIND_FROM_ANGLE,293)                 //  SW     W
 					IF_LT(WIND_FROM_ANGLE,248)
-						PARAM_SET(-243)      	//  SW
+						PARAM_SET(-243)        //  SW
 					ELSE
-						PARAM_SET(-243)      	//  W
+						PARAM_SET(-243)        //  W
 					END
-				ELSE                            //  NW		 N
+				ELSE                            //  NW       N
 					IF_LT(WIND_FROM_ANGLE,338)
-						PARAM_SET(-326)      	//  NW
+						PARAM_SET(-326)        //  NW
 					ELSE
-						PARAM_SET(-326)      	//  N
+						PARAM_SET(-326)        //  N
 					END
 				END
 			END
@@ -1908,7 +1991,7 @@ const struct logoInstructionDef instructions[] = {
 				//DO_PARAM (FS_FINAL)
 
 			END // 70m
- 		END // repeat
+		END // repeat
 	END
 	END
 
@@ -1981,7 +2064,7 @@ const struct logoInstructionDef instructions[] = {
 				RT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 				IF_GT(ALT,FINAL_ALT*2-5)
-				    ALT_DOWN(1)
+					ALT_DOWN(1)
 				END
 			END
 			RT(5)
@@ -2008,11 +2091,11 @@ const struct logoInstructionDef instructions[] = {
 		FLAG_OFF(F_LAND)    // no brakes in turn
 		IF_GE(PARAM,0)  //param => 0
 			//right hand circuit
-			REPEAT(5)            
+			REPEAT(5)
 				RT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 				IF_GT(ALT,FINAL_ALT-5)
-				    ALT_DOWN(2)
+					ALT_DOWN(2)
 				END
 			END
 			RT(5)
@@ -2022,8 +2105,8 @@ const struct logoInstructionDef instructions[] = {
 				LT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 				IF_GT(ALT,FINAL_ALT-5)
-				    ALT_DOWN(2)
-				END    
+					ALT_DOWN(2)
+				END
 			END
 			LT(5)
 		END
@@ -2045,8 +2128,8 @@ const struct logoInstructionDef instructions[] = {
 				RT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 				IF_GT(ALT,FINAL_ALT)
-				    ALT_DOWN(2)
-				END    
+					ALT_DOWN(2)
+				END
 			END
 		ELSE
 			//left hand circuit
@@ -2054,8 +2137,8 @@ const struct logoInstructionDef instructions[] = {
 				LT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 				IF_GT(ALT,FINAL_ALT)
-				    ALT_DOWN(2)
-				END    
+					ALT_DOWN(2)
+				END
 			END
 		END
 
@@ -2069,7 +2152,7 @@ const struct logoInstructionDef instructions[] = {
 			//compensate offset in flighttrack vs waypoint for precise landing
 			IF_GE(PARAM,0)  //param => 0
 				//right hand circuit
-				RT(12)    
+				RT(12)
 			ELSE
 				//left hand circuit
 				LT(12)
@@ -2086,73 +2169,19 @@ const struct logoInstructionDef instructions[] = {
 	END
 
 
-   	TO (INT_FORCE_TARGET_AHEAD)  //interrupt routine
-		//check if relative angle is much different from planes angle, if so, correct
-		IF_EQ( GEOFENCE_STATUS,2 )              //outside geofence
-
-			IF_LT(GEOFENCE_TURN, 0) 			// gf	angle < 0
-				//REPEAT(4)
-					//insert extra second, move target more in front, but maintain the turn	   
-				PEN_UP
-					LT(10)
-					FD(DESIRED_SPEED_NORMAL_F0/10)
-				PEN_DOWN
-				//END
-			 	//EXEC (LOGO_MAIN)
-			END
-			IF_GT(GEOFENCE_TURN, 0)                     // gf	angle < 0
-				//REPEAT(4)
-					//insert extra second, move target more in front, but maintain the turn	   
-				PEN_UP
-					RT(10)
-					FD(DESIRED_SPEED_NORMAL_F0/10)
-				PEN_DOWN
-				//END
-			 	//EXEC (LOGO_MAIN)
-			END
-			IF_EQ(GEOFENCE_TURN, 0)                     // gf	angle == 0
-			//REPEAT(4)
-					//insert extra second, move target more in front, but maintain heading	   
-				PEN_UP
-					FD(DESIRED_SPEED_NORMAL_F0/10)
-				PEN_DOWN
-			//END
-			//EXEC (LOGO_MAIN)
-		ELSE
-			IF_LT(REL_ANGLE_TO_GOAL,-90)
-				PEN_UP
-					USE_CURRENT_ANGLE
-					USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
-					FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
-				PEN_DOWN
-			ELSE
-				IF_GT(REL_ANGLE_TO_GOAL,90)
-					PEN_UP
-						USE_CURRENT_ANGLE
-						USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
-						FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
-					PEN_DOWN
-				END
-			END
-		END
-	END
-	END
-
-
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 // RTL Flight Plan
-// 
+//
 // On entering RTL mode, turn off the engine, fly home, and circle indefinitely until touching down
 
 const struct logoInstructionDef rtlInstructions[] = {
 
 
-    EXEC (FS_LOITER_LAND)
-    END
-    END
+	EXEC (FS_LOITER_LAND)
+	END
+	END
 
 
 
@@ -2199,7 +2228,7 @@ const struct logoInstructionDef rtlInstructions[] = {
 		//Motor may be activated (slider up) if < 80m and if the charge level of the battery is sufficient
 		//Glide if > 80m
 		//When close to the entry point;
- 		//If high, circle down to 80m
+		//If high, circle down to 80m
 		//if low (<50m) go straight for an "emergency" final, this may be with tailwind (dont know if the charge level of the battery is sufficient)
 		CLEAR_INTERRUPT
 		FLAG_ON(F_CROSS_TRACK)
@@ -2213,14 +2242,14 @@ const struct logoInstructionDef rtlInstructions[] = {
 			END
 		END
 		FD(DESIRED_SPEED_NORMAL_F0/10)
-		ALT_DOWN(10)  //start going down  
+		ALT_DOWN(10)  //start going down
 		//SET_ALT((FINAL_ALT*3)+0)
 
 		//Motor may be activated if low (But not too low) and if the charge level of the battery is sufficient
 		//decide if brakes or motor are needed most here
 		//high: brakes if needed, <final: brakes, else motor + glide
 		//downside: heavy thermals are not adressed, will be only after arrival above entry point
-		FLAG_ON(F_LAND)  //brakes	
+		FLAG_ON(F_LAND)  //brakes
 		IF_LT(ALT,FINAL_ALT*3+40) //won't make it gliding (this does not change arrival point altitude)
 			IF_GT(ALT,FINAL_ALT)
 				FLAG_OFF(F_LAND)  //Motor on if needed, no brakes
@@ -2236,40 +2265,40 @@ const struct logoInstructionDef rtlInstructions[] = {
 
 			// Get circuit hand and heading  - configure these headings for your flying field
 			// -270 == Lefthand circuit, final heading West 270, 270 == Righthand circuit, final heading West 270
-			//	  NE	E	|	SE		S   ||   SW	     W   |   NW		 N|
+			//     NE	E	|	SE		S   ||   SW        W   |   NW       N|
 			//  23-67,68-112,113-157,158-202, 203-247,248-292,293-337,338-22
 			//                                 wind FROM
-			IF_LT(WIND_FROM_ANGLE,203)                    //  NE	  E		 SE		 S   (N)
-				IF_LT(WIND_FROM_ANGLE,113)                //  NE	  E   (N)
+			IF_LT(WIND_FROM_ANGLE,203)                    //  NE     E       SE       S   (N)
+				IF_LT(WIND_FROM_ANGLE,113)                //  NE     E   (N)
 					IF_LT(WIND_FROM_ANGLE,64)             //  N(E)
 						IF_LT(WIND_FROM_ANGLE,22)         //  0..22
-						   PARAM_SET(-326)  	//  N
+							PARAM_SET(-326)    //  N
 						ELSE
-						   PARAM_SET(64)    	//  NE
+							PARAM_SET(64)      //  NE
 						END
 					ELSE
-						PARAM_SET(64)        	//  E
+						PARAM_SET(64)          //  E
 					END
-				ELSE                            //  SE		 S
+				ELSE                            //  SE       S
 					IF_LT(WIND_FROM_ANGLE,158)
-						PARAM_SET(148)       	//  SE
+						PARAM_SET(148)         //  SE
 					ELSE
-						PARAM_SET(148)       	//  S
+						PARAM_SET(148)         //  S
 					END
 				END
 			ELSE
-				//>= 203                        //  SW	  W      NW		 N
-				IF_LT(WIND_FROM_ANGLE,293)               	//  SW	  W
+				//>= 203                        //  SW     W      NW       N
+				IF_LT(WIND_FROM_ANGLE,293)                 //  SW     W
 					IF_LT(WIND_FROM_ANGLE,248)
-						PARAM_SET(-243)      	//  SW
+						PARAM_SET(-243)        //  SW
 					ELSE
-						PARAM_SET(-243)      	//  W
+						PARAM_SET(-243)        //  W
 					END
-				ELSE                            //  NW		 N
+				ELSE                            //  NW       N
 					IF_LT(WIND_FROM_ANGLE,338)
-						PARAM_SET(-326)      	//  NW
+						PARAM_SET(-326)        //  NW
 					ELSE
-						PARAM_SET(-326)      	//  N
+						PARAM_SET(-326)        //  N
 					END
 				END
 			END
@@ -2356,7 +2385,7 @@ const struct logoInstructionDef rtlInstructions[] = {
 				DO_PARAM (FS_FINAL)
 
 			END // 70m
- 		END // repeat
+		END // repeat
 	END
 	END
 
@@ -2429,7 +2458,7 @@ const struct logoInstructionDef rtlInstructions[] = {
 				RT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 				IF_GT(ALT,FINAL_ALT*2-5)
-				    ALT_DOWN(1)
+					ALT_DOWN(1)
 				END
 			END
 			RT(5)
@@ -2456,11 +2485,11 @@ const struct logoInstructionDef rtlInstructions[] = {
 		FLAG_OFF(F_LAND)    // no brakes in turn
 		IF_GE(PARAM,0)  //param => 0
 			//right hand circuit
-			REPEAT(5)            
+			REPEAT(5)
 				RT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 				IF_GT(ALT,FINAL_ALT-5)
-				    ALT_DOWN(2)
+					ALT_DOWN(2)
 				END
 			END
 			RT(5)
@@ -2470,8 +2499,8 @@ const struct logoInstructionDef rtlInstructions[] = {
 				LT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 				IF_GT(ALT,FINAL_ALT-5)
-				    ALT_DOWN(2)
-				END    
+					ALT_DOWN(2)
+				END
 			END
 			LT(5)
 		END
@@ -2493,8 +2522,8 @@ const struct logoInstructionDef rtlInstructions[] = {
 				RT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 				IF_GT(ALT,FINAL_ALT)
-				    ALT_DOWN(2)
-				END    
+					ALT_DOWN(2)
+				END
 			END
 		ELSE
 			//left hand circuit
@@ -2502,8 +2531,8 @@ const struct logoInstructionDef rtlInstructions[] = {
 				LT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 				IF_GT(ALT,FINAL_ALT)
-				    ALT_DOWN(2)
-				END    
+					ALT_DOWN(2)
+				END
 			END
 		END
 
@@ -2517,7 +2546,7 @@ const struct logoInstructionDef rtlInstructions[] = {
 			//compensate offset in flighttrack vs waypoint for precise landing
 			IF_GE(PARAM,0)  //param => 0
 				//right hand circuit
-				RT(12)    
+				RT(12)
 			ELSE
 				//left hand circuit
 				LT(12)
