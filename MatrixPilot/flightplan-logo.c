@@ -104,8 +104,8 @@ enum {
 
 #define _FD(x, fl, pr)          {3,   fl,  pr,  0,   x},
 #if ( THERMALLING_MISSION == 1 )
-#define _RT_BANK(x, fl, pr)  	{3,   fl,  pr,  1,	 x},  //custom command
-#define _LEVEL_1S(fl)		  	{3,	  fl,  0,   2,	 0},  //custom command
+#define _RT_BANK(x, fl, pr)     {3,   fl,  pr,  1,   x},  //custom command
+#define _LEVEL_1S(fl)           {3,   fl,  0,   2,   0},  //custom command
 #endif
 
 #define _RT(x, pr)              {4,   0,   pr,  0,   x},
@@ -164,7 +164,7 @@ enum {
 
 #if ( THERMALLING_MISSION == 1 )
 #define RT_BANK(x)              _RT_BANK(x, 1, 0)           //custom command
-#define LEVEL_1S	            _LEVEL_1S(1) 		    //custom command
+#define LEVEL_1S                _LEVEL_1S(1)             //custom command
 #endif
 
 #define RT(x)                   _RT(x, 0)
@@ -640,21 +640,21 @@ void flightplan_logo_update(void)
 	geoHeartbeat++;
 	if ( geoHeartbeat % 40 == 0 )   //1Hz
 	{
-		geoSetStatus();	     //read geofencee status and update status system value
+		geoSetStatus();         //read geofencee status and update status system value
 
 		if (motorOffTimer > 0)   //monitor motor run
 		{
-		    motorOffTimer--;
+			motorOffTimer--;
 		}
 		if ((desired_behavior.W & F_LAND) == 0) // set to 4 as long as motor runs, to know time after stopping motor
 		{
-		    motorOffTimer = 4;  // start timer, wait 4 sec before detecting thermals, used by system value MOTOR_OFF_TIMER
+			motorOffTimer = 4;  // start timer, wait 4 sec before detecting thermals, used by system value MOTOR_OFF_TIMER
 		}
 	}
-	//calculate heading to where there is more room, for REL_ANGLE_TO_OPPOSITE... 
+	//calculate heading to where there is room to fly 400m, for REL_ANGLE_TO_OPPOSITE... 
 	if ( geoHeartbeat % 40 == 10 )   //1Hz
 	{
-		bestFarScore = 0;
+		bestFarScore = 2;   //start bad
 		bestFarScoreAngle = -1;
 		areaGeoScore(0,1,400,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
 		// score 
@@ -691,11 +691,21 @@ void flightplan_logo_update(void)
 			bestFarScoreAngle = 270;
 		}
 		
+		//is bestFarScore inside gf?
+		if ( bestFarScore > 1 )
+		{
+			bestFarScoreAngle = turtleAngles[currentTurtle]; //just fly ahead
+		} 
+		else
+		{
+			angleToOpposite = bestFarScoreAngle;
+		} 
 		//calculate heading to where there is more room, for REL_ANGLE_TO_OPPOSITE... 
-		angleToOpposite = turtleAngles[currentTurtle] + bestFarScoreAngle;   
-		while (angleToOpposite < 0) angleToOpposite += 360;
-		while (angleToOpposite >= 360) angleToOpposite -= 360;
-	    //used by REL_ANGLE_TO_OPPOSITE; calculates relative angle to simplify LOGO script    
+		//angleToOpposite = bestFarScoreAngle;   
+		//angleToOpposite = turtleAngles[currentTurtle] + bestFarScoreAngle;   
+		//while (angleToOpposite < 0) angleToOpposite += 360;
+		//while (angleToOpposite >= 360) angleToOpposite -= 360;
+		//used by REL_ANGLE_TO_OPPOSITE; calculates relative angle to simplify LOGO script    
 	}
 #endif
 }
@@ -848,23 +858,23 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		}
 
 #if ( THERMALLING_MISSION == 1 )
-		case REL_ANGLE_TO_OPPOSITE: // in degrees. -180-179 (0=heading directly towards home. clockwise offset is positive)
+		case REL_ANGLE_TO_OPPOSITE: // in degrees. -180..179 (0=heading directly towards goal. clockwise offset is positive)
 		{
-			int16_t angle = get_current_angle() - angleToOpposite;
-			angle += 180;
-			if (angle < -180) angle += 360 ;
-			if (angle >= 180) angle -= 360 ;
+			int16_t angle = angleToOpposite - get_current_angle();
+			//angle += 180;
+			if (angle < -180) angle += 360;
+			if (angle >= 180) angle -= 360;
 
-			return -angle ;
+			return angle;
 		}
 		case REL_ANGLE_TO_WIND: // in degrees. -180-179 (0=heading directly towards home. clockwise offset is positive)
 		{
 			int16_t angle = get_current_angle() - get_angle_to_point(estimatedWind[0], estimatedWind[1]);
 			angle += 180;
-			if (angle < -180) angle += 360 ;
-			if (angle >= 180) angle -= 360 ;
+			if (angle < -180) angle += 360;
+			if (angle >= 180) angle -= 360;
 
-			return -angle ;
+			return -angle;
 		}
 #endif
 
@@ -878,7 +888,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 #if ( THERMALLING_MISSION != 1 )
 			return IMUvelocityz._.W1 - estimatedWind[2];
 #else
-			return vario;	 // in cm/s
+			return vario;     // in cm/s
 #endif
 
 		case WIND_SPEED: // in cm/s
@@ -1020,7 +1030,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 						interruptStackBase = 0;
 					}
 					break;
-
+				
 				case 3: // Else
 					if (logoStack[logoStackIndex].frameType == LOGO_FRAME_TYPE_IF)
 					{
@@ -1104,7 +1114,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 
 					fixedBankDeg = instr.arg;  //controls roll and yaw,
 					fixedBankActiveCounter = 240; //40Hz = 4s
-					fixedBankActive = true;	 //controls roll and yaw, will be reset when rotation is reached
+					fixedBankActive = true;     //controls roll and yaw, will be reset when rotation is reached
 					break;
 				}
 				case 2: // LEVEL_1S
@@ -1125,7 +1135,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					//this is a fly command, based on time only
 					fixedBankDeg = 0;  //controls roll and yaw, level
 					fixedBankActiveCounter = 40; //40Hz = 1s
-					fixedBankActive = true;	 //controls roll and yaw, will end after one sec
+					fixedBankActive = true;     //controls roll and yaw, will end after one sec
 					break;
 				}
 #endif  //THERMALLING_MISSION
@@ -1202,16 +1212,16 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					{
 /*
 #if ( HILSIM == 1 )
-					   turtleLocations[currentTurtle].x._.W0 = 0;
-					   turtleLocations[currentTurtle].x._.W1 = -425;
-					   turtleLocations[currentTurtle].y._.W0 = 0;
-					   turtleLocations[currentTurtle].y._.W1 = -300;
+						turtleLocations[currentTurtle].x._.W0 = 0;
+						turtleLocations[currentTurtle].x._.W1 = -425;
+						turtleLocations[currentTurtle].y._.W0 = 0;
+						turtleLocations[currentTurtle].y._.W1 = -300;
 #else
 */
-					   turtleLocations[currentTurtle].x._.W0 = 0;
-					   turtleLocations[currentTurtle].x._.W1 = 45;
-					   turtleLocations[currentTurtle].y._.W0 = 0;
-					   turtleLocations[currentTurtle].y._.W1 = -39;
+						turtleLocations[currentTurtle].x._.W0 = 0;
+						turtleLocations[currentTurtle].x._.W1 = 45;
+						turtleLocations[currentTurtle].y._.W0 = 0;
+						turtleLocations[currentTurtle].y._.W1 = -39;
 //#endif
 					}
 #endif
@@ -1344,7 +1354,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 						{
 							if ( instr.arg == DESIRED_SPEED_SLOW_F4 )
 							{
-								 desiredSpeed = instr.arg; //dm/s
+								desiredSpeed = instr.arg; //dm/s
 							}
 							else
 							{
@@ -1357,18 +1367,18 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					} //if
 					else
 					{
-						//	 org code, needs 2 indents;
+						//    org code, needs 2 indents;
 						desiredSpeed = instr.arg * 10;
 						//
 					} //else
 					//limits
 					if (desiredSpeed < DESIRED_SPEED_SLOW_F4)
 					{
-						 desiredSpeed = DESIRED_SPEED_SLOW_F4;
+						desiredSpeed = DESIRED_SPEED_SLOW_F4;
 					}
 					if (desiredSpeed > DESIRED_SPEED_FAST_FMIN4)
 					{
-						  desiredSpeed = DESIRED_SPEED_FAST_FMIN4;
+						desiredSpeed = DESIRED_SPEED_FAST_FMIN4;
 					}
 					break;
 				}//case1
@@ -1591,7 +1601,7 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 
 			if (metersAhead == 400)
 			{
-				 cangle = angle;  // 0,90,180 or 270 deg absolute
+				cangle = angle;  // 0,90,180 or 270 deg absolute
 			}
 			else
 			{
@@ -1718,10 +1728,10 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 // LOGO then will use geoTurn to plan the turn
 // test geofence shapes from strictest to least strict, does more tests if needed
 // calls areaGeoScore() several times with  metersAhead  and  windSeconds
-// 	status               advice mandatory
-//	   0, soft/wind gf     0             if new thermal, thermal, else do turn (soft)
-//	   1, wind gf          0             ignore if in thermal, else turn
-//	   2, geofence         1             alarm, do geofence only
+// status               advice mandatory
+//    0, soft/wind gf     0             if new thermal, thermal, else do turn (soft)
+//    1, wind gf          0             ignore if in thermal, else turn
+//    2, geofence         1             alarm, do geofence only
 void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, equivalent of x sec drift
 {
 	//float turn;     //0..1
@@ -1746,7 +1756,7 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 		{
 		*/
 		if ( geofenceScore.geoScoreAhead > 1 )    // action needed
-		{										  // what action?
+		{                                         // what action?
 			areaGeoScore(30,2,40,0);               // l/r
 		}
 		geoSetTurn();
@@ -1762,17 +1772,17 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 
 		if (geofenceScore.geoScoreLeft > AHEAD_PREFERENCE && geofenceScore.geoScoreRight > AHEAD_PREFERENCE )
 		{
-			geofenceScore.geoScoreAhead = 2;	      //not ahead, take best turn to maintain radius
+			geofenceScore.geoScoreAhead = 2;          //not ahead, take best turn to maintain radius
 		}
 		else   //ok
 		{
 			//keep old score
-		    //geofenceScore_old = geofenceScore;
+			//geofenceScore_old = geofenceScore;
 
 			areaGeoScore(30,1,50,0);  //  - look ahead, what action?
 			if ( geofenceScore.geoScoreAhead > 1 )    // no room for a new thermal turn
 			{
-			    geoStatus = 1;                        // assume no room for a new thermal turn
+				geoStatus = 1;                        // assume no room for a new thermal turn
 				areaGeoScore(30,2,50,0);              // now act (upwind side), regardless wind
 			}
 			else
@@ -1791,7 +1801,7 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 				}
 			}
 			//geofenceScore.geoScoreAhead *= geofenceScore_old.geoScoreAhead; //mix with 60 deg score
-			// geofenceScore.geoScoreLeft *= geofenceScore_old.geoScoreLeft; //mix with 60 deg score
+			//geofenceScore.geoScoreLeft  *= geofenceScore_old.geoScoreLeft; //mix with 60 deg score
 			//geofenceScore.geoScoreRight *= geofenceScore_old.geoScoreRight; //mix with 60 deg score
 
 			geoSetTurn();
