@@ -2,7 +2,7 @@
 //
 //    http://code.google.com/p/gentlenav/
 //
-// Copyright 2009-2011 MatrixPilot Team
+// Copyright 2009-2016 MatrixPilot Team
 // See the AUTHORS.TXT file for a list of authors of MatrixPilot.
 //
 // MatrixPilot is free software: you can redistribute it and/or modify
@@ -246,7 +246,7 @@ static void gps_id3(uint8_t gpschar)
 	else if (id1 == 'G' && id2 == 'G' && gpschar == 'A') // "$GPGGA"
 	{
 		gga_counter = 1;                    // Next gga message after the comma
-		msg_parse = &gps_comma;             // A comma ',' is expected now	
+		msg_parse = &gps_comma;             // A comma ',' is expected now
 #ifdef DEBUG_NMEA
 		GGApos = 6;
 //		msg_parse = &msg_start;
@@ -495,7 +495,7 @@ static void gps_rmc7(uint8_t gpschar)       // Speed over ground
 	XOR ^= gpschar;
 	if (gpschar == ',')
 	{
-		sog_gps_.BB = sog_gps_.BB >> 1;     // knots*100/2? almost cm/s. 1 knot ˜ 50cm/s
+		sog_gps_.BB = sog_gps_.BB >> 1;     // knots*100/2? almost cm/s. 1 knot Â˜ 50cm/s
 		rmc_counter = 8;
 		cog_gps_.BB = 0;
 		msg_parse = &gps_rmc8;

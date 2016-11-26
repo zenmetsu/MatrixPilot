@@ -405,3 +405,5 @@ void LogFile::AppendString(string& AddString)
 {
 	mLogFile << AddString;
 }
+
+LogFile LoggingFile;
