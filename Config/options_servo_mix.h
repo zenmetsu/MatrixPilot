@@ -112,8 +112,8 @@
 
 #define RUDDER_OUTPUT_OFFSET                                0          // right = +  surface moves right, seen from behind
 #define ELEVATOR_OUTPUT_OFFSET                              0          // trailing edge up = +  trailing edge/nose up
-#define AILERON_LEFT_OUTPUT_OFFSET                          0          // trailing edge up = +
-#define AILERON_RIGHT_OUTPUT_OFFSET                         0          // trailing edge up = +
+#define AILERON_LEFT_OUTPUT_OFFSET                         30          // trailing edge up = +
+#define AILERON_RIGHT_OUTPUT_OFFSET                       -30          // trailing edge up = +
 #define FLAP_LEFT_OUTPUT_OFFSET                           900          // trailing edge up = +
 #define FLAP_RIGHT_OUTPUT_OFFSET                          900          // increase = +
 //                                                           
@@ -187,7 +187,7 @@
 
 #define RUDDER_OUTPUT_OFFSET                              -60          // right = +  surface moves right, seen from behind
 #define ELEVATOR_OUTPUT_OFFSET                            150          // trailing edge up = +  trailing edge/nose up
-#define AILERON_LEFT_OUTPUT_OFFSET                         40          // trailing edge up = +
+#define AILERON_LEFT_OUTPUT_OFFSET                         70          // trailing edge up = +
 #define AILERON_RIGHT_OUTPUT_OFFSET                        50          // trailing edge up = +
 #define FLAP_LEFT_OUTPUT_OFFSET                           830          // trailing edge up = +
 #define FLAP_RIGHT_OUTPUT_OFFSET                          900          // increase = +

@@ -349,7 +349,7 @@ int16_t geoStatus;     //0,1,2  0= soft/wind gf, 1=wind gf, 2 geofence (alarm)  
 static int16_t geoHeartbeat;  //to get 1Hz timebase
 int16_t bestFarScore = 0;          //of four directions, find the angle to the farthest point possible
 int16_t bestFarScoreAngle = -1;
-int16_t angleToOpposite = 0;  
+int16_t relAngleToOpposite = 0;  
 
 #define AHEAD_PREFERENCE 1.0001    //used to give geofence turns less preference over straight ahead
 //definitions, should be in header file?
@@ -656,56 +656,50 @@ void flightplan_logo_update(void)
 	{
 		bestFarScore = 2;   //start bad
 		bestFarScoreAngle = -1;
-		areaGeoScore(0,1,400,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
+		areaGeoScore(-150,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
 		// score 
-		if ( geofenceScore.geoScoreAhead < bestFarScore )
+		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
 		{
 			bestFarScore = geofenceScore.geoScoreAhead;
-			bestFarScoreAngle = 0;
+			bestFarScoreAngle = -150;
 		}
 	}
 	if ( geoHeartbeat % 40 == 20 )   //1Hz
 	{
-		areaGeoScore(90,1,400,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
-		if ( geofenceScore.geoScoreAhead < bestFarScore )
+		areaGeoScore(150,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
+		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
 		{
 			bestFarScore = geofenceScore.geoScoreAhead;
-			bestFarScoreAngle = 90;
+			bestFarScoreAngle = 150;
 		}
 	}
 	if ( geoHeartbeat % 40 == 25 )   //1Hz
 	{
-		areaGeoScore(180,1,400,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
-		if ( geofenceScore.geoScoreAhead < bestFarScore )
+		areaGeoScore(-90,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
+		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
 		{
 			bestFarScore = geofenceScore.geoScoreAhead;
-			bestFarScoreAngle = 180;
+			bestFarScoreAngle = -90;
 		}
 	}
 	if ( geoHeartbeat % 40 == 30 )   //1Hz
 	{
-		areaGeoScore(270,1,400,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
-		if ( geofenceScore.geoScoreAhead < bestFarScore )
+		areaGeoScore(90,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
+		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
 		{
 			bestFarScore = geofenceScore.geoScoreAhead;
-			bestFarScoreAngle = 270;
+			bestFarScoreAngle = 90;
 		}
-		
-		//is bestFarScore inside gf?
-		if ( bestFarScore > 1 )
+				
+		if ( bestFarScore > 1 )      //is bestFarScore inside gf?
 		{
-			bestFarScoreAngle = turtleAngles[currentTurtle]; //just fly ahead
+			bestFarScoreAngle = 0;   //no, just fly ahead
 		} 
 		else
 		{
-			angleToOpposite = bestFarScoreAngle;
+			relAngleToOpposite = bestFarScoreAngle; //yes
 		} 
-		//calculate heading to where there is more room, for REL_ANGLE_TO_OPPOSITE... 
-		//angleToOpposite = bestFarScoreAngle;   
-		//angleToOpposite = turtleAngles[currentTurtle] + bestFarScoreAngle;   
-		//while (angleToOpposite < 0) angleToOpposite += 360;
-		//while (angleToOpposite >= 360) angleToOpposite -= 360;
-		//used by REL_ANGLE_TO_OPPOSITE; calculates relative angle to simplify LOGO script    
+		//used by REL_ANGLE_TO_OPPOSITE;    
 	}
 #endif
 }
@@ -860,12 +854,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 #if ( THERMALLING_MISSION == 1 )
 		case REL_ANGLE_TO_OPPOSITE: // in degrees. -180..179 (0=heading directly towards goal. clockwise offset is positive)
 		{
-			int16_t angle = angleToOpposite - get_current_angle();
-			//angle += 180;
-			if (angle < -180) angle += 360;
-			if (angle >= 180) angle -= 360;
-
-			return angle;
+			return relAngleToOpposite;
 		}
 		case REL_ANGLE_TO_WIND: // in degrees. -180-179 (0=heading directly towards home. clockwise offset is positive)
 		{
@@ -1599,15 +1588,9 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 			x = (float)turtleLocations[PLANE].x._.W1 + (float)windSeconds * (float)(estimatedWind[0])/100.0;       // in m  windSeconds; translate x and y downwind, equivalent of x sec drift
 			y = (float)turtleLocations[PLANE].y._.W1 + (float)windSeconds * (float)(estimatedWind[1])/100.0;       // in m
 
-			if (metersAhead == 400)
-			{
-				cangle = angle;  // 0,90,180 or 270 deg absolute
-			}
-			else
-			{
-				//code for LT() or RT()
-				cangle = turtleAngles[currentTurtle]+0;   //ahead   // 0-359 (clockwise, 0=North)
-			}
+			//code for LT() or RT()
+			cangle = turtleAngles[currentTurtle]+angle;   //ahead   // 0-359 (clockwise, 0=North)
+			//}
 			while (cangle < 0) cangle += 360;
 			while (cangle >= 360) cangle -= 360;
 

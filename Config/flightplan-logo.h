@@ -1371,14 +1371,11 @@ const struct logoInstructionDef instructions[] = {
 
 		//perform a precalculated turn and a level stretch to opposite side of area
 		LOAD_TO_PARAM(REL_ANGLE_TO_OPPOSITE)   // gf -180..179)
-		IF_LT(REL_ANGLE_TO_OPPOSITE, 0)          // gf	angle < -30		(-31..-180) =   1-150 LL
+		IF_LT(REL_ANGLE_TO_OPPOSITE, -10)          //
 			//make the turn to Home a smooth one
 			PARAM_MUL(-1)
 			PARAM_DIV(10)
 			//special : force at least 12 = 120 deg turn to evade sink
-			IF_LT(PARAM,12)
-				PARAM_SET(12)
-			END
 			REPEAT_PARAM
 				DO (CHECKS)  //maintain min and max altitudes
 
@@ -1396,12 +1393,9 @@ const struct logoInstructionDef instructions[] = {
 				LT(10)
 				FD(DESIRED_SPEED_FAST_FMIN4/10)	//"SINK"
 			END
-		ELSE
+		END
+		IF_GT(REL_ANGLE_TO_OPPOSITE, 10)          //
 			PARAM_DIV(10)
-			//special : force at least 12 = 120 deg turn to evade sink
-			IF_LT(PARAM,12)
-				PARAM_SET(12)
-			END
 			REPEAT_PARAM
 				DO (CHECKS)  //maintain min and max altitudes
 
