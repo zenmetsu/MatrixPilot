@@ -1748,14 +1748,23 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 	{
 		//now check ">=1 escape radius" -  maintain room for a 120+ turn on at least one side
 		areaGeoScore(60,2,150,20);
-
-		geoSetTurn();
+/*
 		static float turnWithRoom;
-		turnWithRoom = geoTurn; //keep it
-
-		if (geofenceScore.geoScoreLeft > AHEAD_PREFERENCE && geofenceScore.geoScoreRight > AHEAD_PREFERENCE )
+        turnWithRoom = 0;
+        // if both test show no room, then choose the best one
+*/
+		if ( (geofenceScore.geoScoreAhead > AHEAD_PREFERENCE) && (geofenceScore.geoScoreAhead > AHEAD_PREFERENCE) )
 		{
-			geofenceScore.geoScoreAhead = 2;          //not ahead, take best turn to maintain radius
+/*			if (geofenceScore.geoScoreLeft < geofenceScore.geoScoreRight)
+			{
+				turnWithRoom = -40;
+			}
+			else
+			{
+				turnWithRoom = 40;
+			}
+*/
+			geofenceScore.geoScoreAhead = 2;          //not ahead, take best turn to maintain room for turning
 		}
 		else   //ok
 		{
@@ -1786,19 +1795,21 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 			//geofenceScore.geoScoreAhead *= geofenceScore_old.geoScoreAhead; //mix with 60 deg score
 			//geofenceScore.geoScoreLeft  *= geofenceScore_old.geoScoreLeft; //mix with 60 deg score
 			//geofenceScore.geoScoreRight *= geofenceScore_old.geoScoreRight; //mix with 60 deg score
-
-			geoSetTurn();
-			//one more check
-			//in the rare case that that direction has no room, take the other side
-			if ( (geoTurn == -40) && (turnWithRoom == 40) )
-			{
-				geoTurn = turnWithRoom;
-			}
-			if ( (geoTurn == 40) && (turnWithRoom == -40) )
-			{
-				geoTurn = turnWithRoom;
-			}
 		}
+
+		geoSetTurn();
+/*
+		//one more check
+		//in the rare case that that direction has no room, take the other side
+		if ( (geoTurn == -40) && (turnWithRoom == 40) )
+		{
+			geoTurn = turnWithRoom;
+		}
+		if ( (geoTurn == 40) && (turnWithRoom == -40) )
+		{
+			geoTurn = turnWithRoom;
+		}
+*/
 	}
 }
 
