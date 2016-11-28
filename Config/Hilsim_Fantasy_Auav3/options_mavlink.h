@@ -22,7 +22,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // mavlink_options.h
 //
-							  
+
 #ifndef USE_MAVLINK
 #define USE_MAVLINK                         1          //the intended new method for configuring Mavlink
 #define MAVLINK_BAUD                        57600      //the intended new method for configuring Mavlink
@@ -55,7 +55,6 @@
 
 // Matrixpilot specific data rates
 #define MAVLINK_RATE_SUE                    8   // SERIAL_UDB_EXTRA data rate on channel EXTRA1
-#define MAVLINK_RATE_FORCE                  4   // Send FORCE on plane (Aerodynamic force)
 #define MAVLINK_RATE_POSITION_SENSORS       0   // Using channel EXTRA2
 
 // Send VFR_HUD message at position rate, 1=yes, 0=no.  Needed for correct mavproxy state
@@ -73,4 +72,4 @@
 // 1 = Yes, 0 = No
 #define QGROUNDCTONROL_PID_COMPATIBILITY    1
 
-#define MAVLINK_EXTERNAL_RX_STATUS	    1
+#define MAVLINK_EXTERNAL_RX_STATUS          1
