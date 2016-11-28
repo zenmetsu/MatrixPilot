@@ -535,7 +535,7 @@ static void serial_output(const char* format, ...)
 }
 #endif // USE_TELELOG
 
-//me SERIAL3_OUTPUT_FORMAT == SERIAL_UDB
+#if SERIAL3_OUTPUT_FORMAT == SERIAL_UDB
 static void serial3_output(const char* format, ...)
 {
 	int16_t start_index;
@@ -560,7 +560,7 @@ static void serial3_output(const char* format, ...)
 
 	va_end(arglist);
 }
-//me
+#endif //SERIAL3_OUTPUT_FORMAT == SERIAL_UDB
 
 int16_t udb_serial_callback_get_byte_to_send(void)
 {
@@ -578,6 +578,7 @@ int16_t udb_serial_callback_get_byte_to_send(void)
 	return -1;
 }
 
+#if SERIAL3_OUTPUT_FORMAT == SERIAL_UDB
 int16_t udb_serial3_callback_get_byte_to_send(void)
 {
 	uint8_t txchar = serial3_buffer[ sb3_index++ ];
@@ -593,6 +594,7 @@ int16_t udb_serial3_callback_get_byte_to_send(void)
 	}
 	return -1;
 }
+#endif //SERIAL3_OUTPUT_FORMAT == SERIAL_UDB
 
 static int16_t telemetry_counter = 13;
 
