@@ -225,9 +225,11 @@ static void configurePPS(void)  // This method assigns all PPS registers
 
 	UART_TO_PORT(1, GPS_PORT)
 	UART_TO_PORT(2, TLM_PORT)
-//me
+            
+#ifdef SERIAL3_OUTPUT_FORMAT
 	UART_TO_PORT(3, AUX_PORT)
-//me
+#endif //SERIAL3_OUTPUT_FORMAT
+            
 	#if (CONSOLE_UART != 0) && (CONSOLE_UART != 9)
 		UART_TO_PORT(CONSOLE_UART, DBG_PORT)
 	#endif // CONSOLE_UART
