@@ -22,7 +22,7 @@
 #ifndef _SERVOMIX_OPTIONS_H_
 #define _SERVOMIX_OPTIONS_H_
 
-/*
+#ifndef MY_PERSONAL_OPTIONS
 #if (AIRFRAME_TYPE == AIRFRAME_GLIDER)
 
 //for pure gliders: set THROTTLE_INPUT_CHANNEL = CHANNEL_UNUSED and change the FAILSAFE_INPUT_CHANNEL 
@@ -95,7 +95,8 @@
 #define THROTTLE_FACTOR                                     1.00       //Reduce throttle
 
 #endif // AIRFRAME_GLIDER
-*/
+
+#endif // MY_PERSONAL_OPTIONS
 
 #if (AIRFRAME_TYPE == AIRFRAME_GLIDER)
 

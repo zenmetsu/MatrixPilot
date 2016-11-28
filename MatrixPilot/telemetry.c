@@ -175,10 +175,12 @@ void telemetry_init(void)
 // 1 SUE or UDB       via serial  (no mavl)
 // 2 mavlink + UDB.via AUX (use serial)
 // 3 SUE via serial & UDB.via AUX  (no mavl)
+#if (SERIAL3_OUTPUT_FORMAT == SERIAL_UDB)
 #ifndef SERIAL3_BAUDRATE
 #define SERIAL3_BAUDRATE 9600 // default
 #warning SERIAL3_BAUDRATE set to default value of 9600 bps
 #endif
+#endif //ser3
 
 #if (USE_MAVLINK != 1)
 #if (CONSOLE_UART != 2)

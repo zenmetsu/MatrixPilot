@@ -1530,6 +1530,7 @@ void flightplan_logo_live_commit(void)
 		logo_inject_pos = 0;
 	}
 }
+#if ( THERMALLING_MISSION == 1 )
 
 //use linear programmming to test position against a set of geofence shapes
 //float geoPreference(float x, float y, geofenceShape geoshape)
@@ -1836,7 +1837,7 @@ void geoSetTurn()   // set geoTurn;   //-40, 0 or 40 deg
 
 
 
-// me #endif //THERMALLING_MISSION
+#endif //THERMALLING_MISSION
 
 
 

@@ -90,9 +90,10 @@ void estAltitude(void)
 		{
 			
 			barometer_alt = 44330.0f * ((1-pow((pressure_ambient/sea_level_pressure),(1/5.255f)))); // Meters
-//me
+
+#ifdef MY_PERSONAL_OPTIONS
 			barometer_vert_velocity = (long)(barometer_alt * 1000) - barometer_altitude;  //new-old for vario  millimeters/sec
-//me
+#endif // MY_PERSONAL_OPTIONS
 			barometer_altitude = (long)(barometer_alt * 1000); // millimeters
 #ifdef USE_DEBUG_IO
 			// estimate sea level pressure assuming we're still on the ground

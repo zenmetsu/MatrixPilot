@@ -20,48 +20,16 @@
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// UDB LOGO Waypoint handling
-
-// Move on to the next waypoint when getting within this distance of the current goal (in meters)
-//#define WAYPOINT_RADIUS         40      // moved to flightplan.h
-
-#define LOG_WAYPOINT_PER_SUBROUTINE     1  // Odd numbered Logo subroutines are logged as a waypoint. Recommended for THERMALLING_MISSION
-
-// Origin Location
-// When using relative waypoints, the default is to interpret those waypoints as relative to the
-// plane's power-up location.  Here you can choose to use any specific, fixed 3D location as the
-// origin point for your relative waypoints.
-//
-// USE_FIXED_ORIGIN should be 0 to use the power-up location as the origin for relative waypoints.
-// Set it to 1 to use a fixed location as the origin, no matter where you power up.
-// FIXED_ORIGIN_LOCATION is the location to use as the origin for relative waypoints.  It uses the
-// format { X, Y, Z } where:
-// X is Logitude in degrees * 10^7
-// Y is Latitude in degrees * 10^7
-// Z is altitude above sea level, in meters, as a floating point value.
-//
-// If you are using waypoints for an autonomous landing, it is a good idea to set the altitude value
-// to be the altitude of the landing point, and then express the heights of all of the waypoints with
-// respect to the landing point.
-// If you are using OpenLog, an easy way to determine the altitude of your landing point is to
-// examine the telemetry after a flight, take a look in the .csv file, it will be easy to spot the
-// altitude, expressed in meters.
-
-//#define USE_FIXED_ORIGIN        0
-//#define FIXED_ORIGIN_LOCATION   { -1219950467, 374124664, 2.00 }    // A point in Baylands Park in Sunnyvale, CA
-
-
-////////////////////////////////////////////////////////////////////////////////
 // UDB LOGO Flight Planning definitions
-//
+// 
 // The UDB Logo flight plan language lets you use a language similar to Logo, aka Turtle graphics, to
 // control your plane.  You are commanding an imaginary "turtle" to move to specific locations, and the
 // plane will head towards the turtle.
-//
+// 
 // You can also control the camera targeting code by switching from the plane turtle, to the camera turtle
 // by using the SET_TURTLE(CAMERA) command.  Then logo commands will move the location that the camera
 // is targeting, instead of the location to aim the plane.
-//
+// 
 // Each time you enter waypoint mode, the state is reset and your logo program starts from the top.  If
 // you enter RTL mode, the state is reset and your RTL logo program is run instead.
 // The following state is cleared when entering waypoint mode or RTL mode: (but not when your program
@@ -70,7 +38,7 @@
 //   - Both turtles begin pointing in the plane's current heading.
 //   - The flags are all turned off.
 //   - The pen is down, and the PLANE turtle is active.
-//
+// 
 // To use UDB Logo, set FLIGHT_PLAN_TYPE to FP_LOGO in options.h.
 
 //NOTE: WAYPOINT_PROXIMITY_RADIUS, USE_FIXED_ORIGIN, FIXED_ORIGIN_LOCATION are now defined in options.h
@@ -92,7 +60,7 @@
 // X is Longitude in degrees * 10^7
 // Y is Latitude in degrees * 10^7
 // Z is altitude above sea level, in meters, as a floating point value.
-//
+// 
 // If you are using waypoints for an autonomous landing, it is a good idea to set the altitude value
 // to be the altitude of the landing point, and then express the heights of all of the waypoints with
 // respect to the landing point.
@@ -106,11 +74,11 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-//
+// 
 // Use the following commands to create your logo paths:
-//
+// 
 // HOME                 - Return the turtle to the origin, aiming North.
-//
+// 
 // FD(x)                - Move the turtle forward x meters, in the turtle's current direction.
 // BK(x)                - Move the turtle backwards x meters, in the turtle's current direction.
 // USE_CURRENT_POS      - Move the turtle to the plane's current {X,Y} position.  Mostly useful
@@ -127,11 +95,11 @@
 // EAST(x)              - Move the turtle x meters East.
 // WEST(x)              - Move the turtle x meters West.
 // SET_X_POS(x)         - Set the X value of the turtle (meters East of the origin) to x.
-//
+// 
 // NORTH(y)             - Move the turtle y meters North.
 // SOUTH(y)             - Move the turtle y meters South.
 // SET_Y_POS(y)         - Set the Y value of the turtle (meters North of the origin) to y.
-//
+// 
 // SET_POS(x, y)        - Set both x and y at the same time.
 // SET_ABS_POS(x, y)    - Set absolute X,Y location (long,lat) in degrees * 10^7
 
@@ -148,16 +116,16 @@
 // END                  - End the current REPEAT loop or Subroutine definition
 
 // IF_EQ(val, x)        - Looks up a system value (listed below) and checks if it's equal to x.
-//                        If so, runs commands until reaching ELSE or END.  If not, skips to ELSE
+//                        If so, runs commands until reaching ELSE or END.  If not, skips to ELSE 
 //                        and runs until END, or just skips to END if there's no ELSE.
-//                        Available IF commands: IF_EQ(equal), IF_NE(not equal),
+//                        Available IF commands: IF_EQ(equal), IF_NE(not equal), 
 //                        IF_GT(val>x), IF_LT(val<x),IF_GE(val>=x), IF_LE(val<=x).
 // ELSE                 - Starts a list of commands that get run if the preceding IF failed.
 
 // PEN_UP               - While the pen is up, logo code execution does not stop to wait for the
 //                        plane to move to each new position of the turtle before continuing.
 //                        This allows you to use multiple logo instructions to get the turtle to
-//                        the next goal location before commanding the plane to fly there by
+//                        the next goal location before commanding the plane to fly there by 
 //                        putting the pen back down.
 // PEN_DOWN             - When the pen is down, the plane moves to each new position of the turtle
 //                        before more logo instructions are interpereted.
@@ -168,18 +136,18 @@
 
 
 // Commands for Modifying Flags
-//
+// 
 // FLAG_ON(F)           - Turn on flag F.  (See below for a list of flags.)
 // FLAG_OFF(F)          - Turn off flag F.
 // FLAG_TOGGLE(F)       - Toggle flag F.
-//
+// 
 // The supported flags are the following:
-//
+// 
 // F_TAKEOFF            - More quickly gain altitude at takeoff.
 // F_INVERTED           - Fly with the plane upside down. (only if STABILIZE_INVERTED_FLIGHT is set to 1 in options.h)
 // F_HOVER              - Hover the plane with the nose up. (only if STABILIZE_HOVER is set to 1 in options.h)
 //                        NOTE: while hovering, no navigation is performed, and throttle is under manual control.
-// F_TRIGGER            - Trigger an action to happen at this point in the flight.  (See the Trigger Action section of the options.h file.)
+// F_TRIGGER            - Trigger an action to happen at this point in the flight.  (See the Trigger Action section of the options.h file.) 
 // F_ALTITUDE_GOAL      - Climb or descend to the given altitude.
 // F_CROSS_TRACK        - Navigate using cross-tracking.  Best used for longer flight legs.
 // F_LAND               - Fly with the throttle off.
@@ -198,7 +166,7 @@
 // EXEC(LOGO_MAIN)      - Restart at the top of the LOGO program
 // DO_ARG(FUNC, PARAM)  - Run subroutine FUNC, using an integer value as a parameter.
 // EXEC_ARG(FUNC, PARAM)- Exec subroutine FUNC, using an integer value as a parameter.
-//
+// 
 // FD_PARAM             - From within a subroutine, call the FD command using the parameter
 //                        passed to this subroutine as the distance.
 // RT_PARAM             - From within a subroutine, call the RT command using the parameter
@@ -207,20 +175,20 @@
 //                        number of times to repeat.
 // DO_PARAM(FUNC)       - Call subroutine FUNC with a parameter equal to the current subroutine's
 //                        parameter value.
-//
+// 
 // PARAM_ADD(x)         - Adds x to the current subroutine's current parameter value.  Fun
 //                        inside repeats inside subroutines!
 // PARAM_SUB(x)         - Subtracts x from the current subroutine's current parameter value.
 // PARAM_MUL(x)         - Multiplies the current subroutine's current parameter value by x.
 // PARAM_DIV(x)         - Divides the current subroutine's current parameter value by x.
 // PARAM_SET(x)         - Sets the current subroutine's current parameter value to x.
-//
+// 
 // LOAD_TO_PARAM(val)   - Loads a system value (listed below) into the current subroutine's parameter value.
-//
-// All parameter-related commands:
-//        FD_PARAM, BK_PARAM, RT_PARAM, LT_PARAM, SET_ANGLE_PARAM,
-//        EAST_PARAM, WEST_PARAM, NORTH_PARAM, SOUTH_PARAM, ALT_UP_PARAM, ALT_DOWN_PARAM,
-//        SET_X_POS_PARAM, SET_Y_POS_PARAM, SET_ALT_PARAM,
+// 
+// All parameter-related commands: 
+//        FD_PARAM, BK_PARAM, RT_PARAM, LT_PARAM, SET_ANGLE_PARAM, 
+//        EAST_PARAM, WEST_PARAM, NORTH_PARAM, SOUTH_PARAM, ALT_UP_PARAM, ALT_DOWN_PARAM, 
+//        SET_X_POS_PARAM, SET_Y_POS_PARAM, SET_ALT_PARAM, 
 //        SPEED_INCREASE_PARAM, SPEED_DECREASE_PARAM, SET_SPEED_PARAM
 //        REPEAT_PARAM, DO_PARAM(FUNC), EXEC_PARAM(FUNC)
 //        PARAM_SET(x), PARAM_ADD(x), PARAM_SUB(x), PARAM_MUL(x), PARAM_DIV(x)
@@ -235,7 +203,7 @@
 
 
 // System Values for use with LOAD_TO_PARAM(val) and IF_XX() commands
-//
+// 
 // DIST_TO_HOME         - in m
 // DIST_TO_GOAL         - in m
 // ALT                  - in m
@@ -274,9 +242,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Define the main flight plan as:
-//
+// 
 // #define FOO 1
-//
+// 
 // const struct logoInstructionDef instructions[] = {
 //		instruction1
 //		instruction2
@@ -287,11 +255,11 @@
 //			etc.
 //		END
 //	};
-//
+// 
 // and the Failsafe RTL course as:
-//
+// 
 // #define BAR 2
-//
+// 
 // const struct logoInstructionDef rtlInstructions[] = {
 //		instruction1
 //		instruction2
@@ -304,7 +272,8 @@
 //	};
 
 
-/*
+#ifndef THERMALLING_MISSION
+
 ////////////////////////////////////////////////////////////////////////////////
 // Main Flight Plan
 //
@@ -333,7 +302,7 @@ const struct logoInstructionDef instructions[] = {
 
 ////////////////////////////////////////////////////////////////////////////////
 // RTL Flight Plan
-//
+// 
 // On entering RTL mode, turn off the engine, fly home, and circle indefinitely until touching down
 
 const struct logoInstructionDef rtlInstructions[] = {
@@ -359,9 +328,9 @@ const struct logoInstructionDef rtlInstructions[] = {
 			FD(8)
 		END
 	END
-
+	
 };
-*/
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -461,7 +430,7 @@ const struct logoInstructionDef rtlInstructions[] = {
 #define FWD_100_MINUS_PARAM_OVER_2  3
 
 const struct logoInstructionDef instructions[] = {
-
+	
 DO_ARG(SPIRAL_IN, 10)
 RT(100)
 DO_ARG(SPIRAL_OUT,  70)
@@ -975,7 +944,7 @@ const struct logoInstructionDef instructions[] = {
 
 };
 */
-
+#ifdef THERMALLING_MISSION
 
 // ****************************************************************
 //    LET e-glider mission - 2016
@@ -2559,3 +2528,4 @@ const struct logoInstructionDef rtlInstructions[] = {
 
 };
 
+#endif
