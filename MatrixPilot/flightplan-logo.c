@@ -1318,13 +1318,12 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 			switch (instr.subcmd)
 			{
 				case 0: // Increase Speed
-					desiredSpeed += instr.arg * 10;
+					desiredSpeed += instr.arg * 1;
 					break;
 				case 1: // Set Speed
-
-
-#if (THERMALLING_MISSION != 1)
-					desiredSpeed = instr.arg * 10;
+					
+#if (THERMALLING_MISSION == 1)
+					desiredSpeed = instr.arg * 1;
 #else
 				{
 					//command changed to dm/s

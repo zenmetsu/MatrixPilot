@@ -169,7 +169,7 @@ static int32_t calc_airspeed_int_error(int16_t aspdError, int32_t aspd_integral)
 fractional gliding_airspeed_pitch_adjust(void)
 {
 	union longww accum;
-
+	
 	// linear interpolation between target airspeed and cruise airspeed.
 	// calculating demand airspeed to pitch feedforward
 	int16_t aspd_tc_delta = target_airspeed - cruise_airspeed;
@@ -263,6 +263,7 @@ void airspeedCntrl(void)
 #endif
 #if (THERMALLING_MISSION == 1 )
 	//if (!flags._.GPS_steering)
+	/*
 	if (!state_flags._.GPS_steering)
 	{
 		//no desiredSpeed control from LOGO, use FLAPS_INPUT_CHANNEL to set desiredSpeed
@@ -281,7 +282,7 @@ void airspeedCntrl(void)
 			desiredSpeed = DESIRED_SPEED_NORMAL_F0;   //dm/s
 		}
 		// set flaps to follow slider proportionally, so effect my be measured
-		flapsSelected = ( ((signed int)udb_pwIn[FLAPS_INPUT_CHANNEL]) - 3115 ) ;
+		flapsSelected = ( ((signed int)udb_pwIn[FLAPS_INPUT_CHANNEL]) - 3115 ) ;   
 
 	} //if not auto
 	else
@@ -305,6 +306,7 @@ void airspeedCntrl(void)
 			flapsSelected = 0;//no camber
 		}
 	}
+	*/
 #endif //THERMALLING_MISSION
 
 	//Overspeed protection (overrules normal brakes when airspeed too high)
