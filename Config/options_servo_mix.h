@@ -22,7 +22,7 @@
 #ifndef _SERVOMIX_OPTIONS_H_
 #define _SERVOMIX_OPTIONS_H_
 
-#ifndef MY_PERSONAL_OPTIONS
+/*
 #if (AIRFRAME_TYPE == AIRFRAME_GLIDER)
 
 //for pure gliders: set THROTTLE_INPUT_CHANNEL = CHANNEL_UNUSED and change the FAILSAFE_INPUT_CHANNEL 
@@ -95,8 +95,7 @@
 #define THROTTLE_FACTOR                                     1.00       //Reduce throttle
 
 #endif // AIRFRAME_GLIDER
-
-#endif // MY_PERSONAL_OPTIONS
+*/
 
 #if (AIRFRAME_TYPE == AIRFRAME_GLIDER)
 
@@ -186,10 +185,10 @@
 // -  ALTITUDE_GAINS_VARIABLE 1
 // Overspeed brake is not active in manual mode 
 
-#define RUDDER_OUTPUT_OFFSET                              -60          // right = +  surface moves right, seen from behind
+#define RUDDER_OUTPUT_OFFSET                                0          // right = +  surface moves right, seen from behind
 #define ELEVATOR_OUTPUT_OFFSET                            150          // trailing edge up = +  trailing edge/nose up
-#define AILERON_LEFT_OUTPUT_OFFSET                         70          // trailing edge up = +
-#define AILERON_RIGHT_OUTPUT_OFFSET                        50          // trailing edge up = +
+#define AILERON_LEFT_OUTPUT_OFFSET                        -50          // trailing edge up = +
+#define AILERON_RIGHT_OUTPUT_OFFSET                       -50          // trailing edge up = +
 #define FLAP_LEFT_OUTPUT_OFFSET                           830          // trailing edge up = +
 #define FLAP_RIGHT_OUTPUT_OFFSET                          900          // increase = +
 //                                                             
