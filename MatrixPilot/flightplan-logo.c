@@ -88,6 +88,7 @@ enum {
  	GEOFENCE_STATUS,
 	GEOFENCE_TURN,
 	MOTOR_OFF_TIMER,	
+	READ_DESIRED_SPEED,
 #endif
 	PARAM
 };
@@ -922,6 +923,11 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		case READ_F_LAND: //  used for waiting for a decrease in climbrate in a thermal
 		{
 			return ((desired_behavior.W & F_LAND) > 0);
+		}
+		
+		case READ_DESIRED_SPEED: //  used for waiting for a decrease in climbrate in a thermal
+		{
+			return (desiredSpeed);
 		}
 		
 		case GEOFENCE_STATUS: //  used for Geofence

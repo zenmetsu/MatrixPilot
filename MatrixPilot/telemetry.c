@@ -760,8 +760,6 @@ void telemetry_output_8hz(void)
 				serial3_output("cpu%u:",
 				    (uint16_t)udb_cpu_load());
 
-				serial3_output("dsp%i:",
-				    target_airspeed);
 				serial3_output("dpi%i:",
 				    desiredPitch);
 				//serial3_output("apa%i:",
@@ -800,6 +798,8 @@ void telemetry_output_8hz(void)
 				    (int16_t)(get_barometer_altitude()/10) ); // height in centimeters
 */
 				//serial3_output("p2i%i:",udb_pwIn[2]);    //test channel
+				serial3_output("dsp%i:",
+				    desiredSpeed);
 				serial3_output("p9o%i:",get_flapsSelected() + SERVOCENTER);
 //				serial3_output("\r\n");
 				
