@@ -991,8 +991,8 @@ const struct logoInstructionDef instructions[] = {
 //
 
 #define GEOFENCE_SIZE                 400  // radius of circle to keep aircaft within line of sight
-#define UPWIND_POINT_FACTOR           0.5  // multiply "windspeed in cm/s" by factor for distance from home i.e. windspeed = 540 cm/s (3 bft) * 0.5 = 270 M from home
-#define UPWIND_POINT_DISTANCE_LIMIT   270  // in meters
+//#define UPWIND_POINT_FACTOR           0.5  // multiply "windspeed in cm/s" by factor for distance from home i.e. windspeed = 540 cm/s (3 bft) * 0.5 = 270 M from home
+//#define UPWIND_POINT_DISTANCE_LIMIT   270  // in meters
 
 
 #if( HILSIM == 1)
@@ -1500,26 +1500,16 @@ const struct logoInstructionDef instructions[] = {
 
 #if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
 		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not too low  check every cycle
-	//IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not too low  check every cycle
 			IF_LT(ALT, MOTOR_ON_IN_SINK_ALT)    // not too low  check every cycle
 				//very low, must use motor
 				IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
-
-					//EXEC (MOTOR_CLIMB)                // if true, restart to main to avoid an extra nesting level
 					FLAG_OFF(F_LAND)    //Motor on
-					//SET_ALT(MAX_THERMALLING_ALT-10) // normally use a average climb of 0.7m/s to climb to MOTOR_OFF_TRIGGER_ALT
-
 				END
 			END
-			//IF_GT(AIR_SPEED_Z,MOTOR_CLIMB_MIN - 90)    // > ?? m/s if not too much sink, start motor
 			IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)    // > ?? m/s if not too much sink, start motor
 				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)    // unless thermals
 					IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
-
-						//EXEC (MOTOR_CLIMB)                    // if true, restart to main to avoid an extra nesting level
 						FLAG_OFF(F_LAND)    //Motor on
-						//SET_ALT(MAX_THERMALLING_ALT-10) // normally use a average climb of 0.7m/s to climb to MOTOR_OFF_TRIGGER_ALT
-
 					END
 				END
 			END
@@ -1573,7 +1563,6 @@ const struct logoInstructionDef instructions[] = {
 		//reset on ail input
 		IF_LT(THROTTLE_INPUT_CHANNEL ,2400)
 			//stop motor, restart
-			//EXEC (LOGO_MAIN)
 			//settle into gliding
 			FLAG_ON(F_LAND)	//Motor off
 		END
@@ -1665,8 +1654,6 @@ const struct logoInstructionDef instructions[] = {
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 			END
 		END
-
-		//EXEC (MOTOR_CLIMB)
 		EXEC (LOGO_MAIN)
 	END
 	END
@@ -1678,27 +1665,20 @@ const struct logoInstructionDef instructions[] = {
 		IF_EQ( GEOFENCE_STATUS,2 )              //outside geofence
 			IF_LT(REL_ANGLE_TO_GOAL,-90)
 				IF_LT(GEOFENCE_TURN, 0)          // gf	angle < 0
-					//REPEAT(4)
 					//insert extra second, move target more in front, but maintain the turn
 					PEN_UP
 						LT(10)
 						FD(DESIRED_SPEED_NORMAL_F0/10)
 					PEN_DOWN
-					//END
-					//EXEC (LOGO_MAIN)
 				END
 				IF_GT(GEOFENCE_TURN, 0)                     // gf	angle < 0
-					//REPEAT(4)
 					//insert extra second, move target more in front, but maintain the turn
 					PEN_UP
 						RT(10)
 						FD(DESIRED_SPEED_NORMAL_F0/10)
 					PEN_DOWN
-					//END
-					//EXEC (LOGO_MAIN)
 				END
 				IF_EQ(GEOFENCE_TURN, 0)                     // gf	angle == 0
-				//REPEAT(4)
 					//insert extra second, move target more in front, but maintain heading
 					PEN_UP
 						FD(DESIRED_SPEED_NORMAL_F0/10)
@@ -1707,34 +1687,26 @@ const struct logoInstructionDef instructions[] = {
 			END
 			IF_GT(REL_ANGLE_TO_GOAL,90)
 				IF_LT(GEOFENCE_TURN, 0)          // gf	angle < 0
-					//REPEAT(4)
 					//insert extra second, move target more in front, but maintain the turn
 					PEN_UP
 						LT(10)
 						FD(DESIRED_SPEED_NORMAL_F0/10)
 					PEN_DOWN
-					//END
-					//EXEC (LOGO_MAIN)
 				END
 				IF_GT(GEOFENCE_TURN, 0)                     // gf	angle < 0
-					//REPEAT(4)
 					//insert extra second, move target more in front, but maintain the turn
 					PEN_UP
 						RT(10)
 						FD(DESIRED_SPEED_NORMAL_F0/10)
 					PEN_DOWN
-					//END
-					//EXEC (LOGO_MAIN)
 				END
 				IF_EQ(GEOFENCE_TURN, 0)                     // gf	angle == 0
-				//REPEAT(4)
 					//insert extra second, move target more in front, but maintain heading
 					PEN_UP
 						FD(DESIRED_SPEED_NORMAL_F0/10)
 					PEN_DOWN
 				END
 			END
-			//EXEC (LOGO_MAIN)
 		ELSE
 			IF_LT(REL_ANGLE_TO_GOAL,-90)
 				PEN_UP
