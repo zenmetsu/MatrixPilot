@@ -41,6 +41,9 @@
 // 
 // To use UDB Logo, set FLIGHT_PLAN_TYPE to FP_LOGO in options.h.
 
+//Personal option
+#define LOG_WAYPOINT_PER_SUBROUTINE     1  // Odd numbered Logo subroutines are logged as a waypoint. Recommended for THERMALLING_MISSION
+
 //NOTE: WAYPOINT_PROXIMITY_RADIUS, USE_FIXED_ORIGIN, FIXED_ORIGIN_LOCATION are now defined in options.h
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint handling
