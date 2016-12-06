@@ -70,7 +70,21 @@ void MAVUDBExtraOutput(void)
 	static int16_t pwIn_save[MAVLINK_SUE_CHANNEL_MAX_SIZE + 1];
 	static int16_t pwOut_save[MAVLINK_SUE_CHANNEL_MAX_SIZE + 1];
 	static int16_t pwTrim_save[MAVLINK_SUE_CHANNEL_MAX_SIZE + 1];
+
+#if (THERMALLING_MISSION == 1 )
+	static int16_t airspeed = 0;
+	static int16_t interval = 0;
 	
+	interval++;
+	//7/8 filter, 1Hz   to improve readability
+	if ( interval >= 8 )
+	{
+		interval = 0; 
+		airspeed = (airspeed * 7 + air_speed_3DIMU)/8; //7/8 filter, 1Hz
+	}
+#endif //THERMALLING_MISSION
+
+
 	switch  (mavlink_sue_telemetry_counter)
 	{
 		case 13:
@@ -229,7 +243,12 @@ void MAVUDBExtraOutput(void)
 						rmat[3], rmat[4], rmat[5],
 						rmat[6], rmat[7], rmat[8],
 						(uint16_t) cog_gps.BB, sog_gps.BB, (uint16_t) udb_cpu_load(),
+#if (THERMALLING_MISSION == 1 )
 						air_speed_3DIMU, estimatedWind[0], estimatedWind[1], estimatedWind[2],
+#else
+						airspeed, estimatedWind[0], estimatedWind[1], estimatedWind[2],
+#endif //THERMALLING_MISSION
+
 #if (MAG_YAW_DRIFT == 1)
 						magFieldEarth[0], magFieldEarth[1], magFieldEarth[2],
 #else
