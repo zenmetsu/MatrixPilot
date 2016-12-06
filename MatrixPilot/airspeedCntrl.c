@@ -85,7 +85,24 @@ int16_t target_airspeed     = 0;
 fractional last_aspd_pitch_adj       = 0;   // Remember last adjustment to limit rate of adjustment.
 union longww airspeed_error_integral = {0}; // Integral of airspeed error. lower word is underflow. upper word is output in degrees.
 
-
+#if (THERMALLING_MISSION == 1 )
+// Calculate the airspeed.
+// Note that this airspeed is a magnitude regardless of direction.
+// It is not a calculation of forward airspeed.
+static int16_t calc_airspeed(void)
+{
+	static int16_t interval = 0;
+	
+	interval++;
+	//7/8 filter, 1Hz
+	if ( interval >= 40 )
+	{
+		interval = 0; 
+		airspeed = ( airspeed * 7 + air_speed_3DIMU)/8; //7/8 filter, 1Hz
+	}
+	return airspeed;
+}
+#else
 // Calculate the airspeed.
 // Note that this airspeed is a magnitude regardless of direction.
 // It is not a calculation of forward airspeed.
@@ -107,6 +124,7 @@ static int16_t calc_airspeed(void)
 
 	return airspeed;
 }
+#endif //THERMALLING_MISSION
 
 // Calculate the groundspeed in cm/s
 static int16_t calc_groundspeed(void) // computes (1/2gravity)*(actual_speed^2 - desired_speed^2)

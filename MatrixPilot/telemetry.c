@@ -704,6 +704,16 @@ void telemetry_output_8hz(void)
 	static int16_t pwIn_save[NUM_INPUTS + 1];
 	static int16_t pwOut_save[NUM_OUTPUTS + 1];
 #endif
+	static int16_t airspeed = 0;
+	static int16_t interval = 0;
+	
+	interval++;
+	//7/8 filter, 1Hz   to improve readability
+	if ( interval >= 8 )
+	{
+		interval = 0; 
+		airspeed = (airspeed * 7 + air_speed_3DIMU)/8; //7/8 filter, 1Hz
+	}
 //me
 	
 //me - a copy of SERIAL_UDB  if/end
@@ -749,7 +759,7 @@ void telemetry_output_8hz(void)
 #else
 				IMUlocationz._.W1, waypointIndex, battery_voltage._.W1,     //imu z in m  uses barometer alt
 #endif
-				flightTimeUDB, air_speed_3DIMU, estimatedWind[0], estimatedWind[1], 
+				flightTimeUDB, airspeed, estimatedWind[0], estimatedWind[1], 
 				    //int_aspd_pitch_adj,
 				    state_flags.WW,	motorSecondsUDB, vario); 
 				for (i= 7; i <= NUM_OUTPUTS; i++)                //p7o, p8o  only
@@ -934,7 +944,7 @@ void telemetry_output_8hz(void)
 					    rmat[3], rmat[4], rmat[5],
 					    rmat[6], rmat[7], rmat[8],
 					    (uint16_t)cog_gps.BB, sog_gps.BB, (uint16_t)udb_cpu_load(), 
-					    air_speed_3DIMU,
+					    airspeed,
 					    estimatedWind[0], estimatedWind[1], estimatedWind[2],
 					    svs, hdop);
 #endif  //MY_PERSONAL_OPTIONS
