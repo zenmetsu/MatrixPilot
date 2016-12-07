@@ -1152,8 +1152,16 @@ const struct logoInstructionDef instructions[] = {
 		//climb, turn
 		FLAG_OFF(F_LAND) //Motor on
 		REPEAT(18)
-			DO (MOTOR_CLIMB_FORWARD)  
+			DO (RETURN_MC_SOFT_GEOFENCE)  
 			RT(10)
+		END
+
+		//add a circle if still too low
+		IF_LT(ALT, MOTOR_OFF_TRIGGER_ALT-20)    
+			REPEAT(36)
+				DO (RETURN_MC_SOFT_GEOFENCE)  
+				RT(10)
+			END
 		END
 
 		//settle into glide	 if high enough
@@ -1191,7 +1199,6 @@ const struct logoInstructionDef instructions[] = {
 	END
 
 
-
 	TO (CRUISE)
 		DO (CHECKS)
 		FD(11)
@@ -1201,9 +1208,17 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (MOTOR_CLIMB_FORWARD)
 		DO (CHECKS)
+		FD(11)
+	END
+	END
+	
+
+	TO (RETURN_MC_SOFT_GEOFENCE)   //use this for (wider) turns
+		DO (CHECKS)
 		FD(16)
 	END
 	END
+	
 
 	TO (CHECKS)        // is motor needed, landing requested, is pilot in control?
 		//see if calling subroutine needs to end
