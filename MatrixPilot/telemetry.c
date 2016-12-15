@@ -806,10 +806,10 @@ void telemetry_output_8hz(void)
 				    
 				serial3_output("bma%i:",
 				    (int16_t)(get_barometer_altitude()/10) ); // height in centimeters
-*/
-				//serial3_output("p2i%i:",udb_pwIn[2]);    //test channel
 				serial3_output("dsp%i:",
 				    desiredSpeed);
+*/
+				//serial3_output("p2i%i:",udb_pwIn[2]);    //test channel
 				serial3_output("p9o%i:",get_flapsSelected() + SERVOCENTER);
 //				serial3_output("\r\n");
 				
@@ -1031,6 +1031,8 @@ void telemetry_output_8hz(void)
 					//	motorSecondsSUE);
 					serial_output("bmv%i:",
 					    battery_voltage._.W1);
+					serial_output("dsp%i:",
+					    desiredSpeed);
 					//serial_output("bma%i:",
 					//	(int16_t)(get_barometer_altitude()/10) );          //from estAltitude.c   in cm
 #endif  //MY_PERSONAL_OPTIONS

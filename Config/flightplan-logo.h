@@ -1039,8 +1039,9 @@ const struct logoInstructionDef instructions[] = {
 
 #define MOTOR_ON_TRIGGER_ALT           40  // in meters
 #define MOTOR_OFF_TRIGGER_ALT         120  // in meters
-#define SPEED_MIN			          100  // in dm/h
-#define SPEED_MAX				      120  // in dm/h
+#define SPEED_MIN			          105  // in dm/h     38 km/h	10,56
+#define SPEED_MAX				      116  // in dm/h     42 km/h	11,67
+
 
 
 #define PATTERN 1
@@ -1106,48 +1107,30 @@ const struct logoInstructionDef instructions[] = {
 
 	//to starting point
 	FLAG_OFF(F_LAND) //Motor on
+	PEN_UP
+		HOME      // Go Home and point North
+		RT(118)   // this is also the correct angle
+		FD(250)
+	PEN_DOWN
 		
 	//PARAM_SET(SPEED_MIN)  //start with 1
     LOAD_TO_PARAM(READ_DESIRED_SPEED)      //make script restartable, continue with last desiredSpeed
     
 	REPEAT_FOREVER
-			PEN_UP
-				HOME      // Go Home and point North
-				RT(118)   // this is also the correct angle
-				FD(250)
-			PEN_DOWN
-			
-			IF_LT(PARAM,SPEED_MAX+0)
-				PARAM_ADD(1+0)          // Increases the target speed by x m/s   custom: 1 dm/s !
-			ELSE
-				PARAM_SET(SPEED_MIN)  //start over
-			END
-
-			SET_SPEED_PARAM
-			DO(PATTERN)	              // turn, settle, glide, settle
-
-			//FD(50)                    // make room voor nav reset
-			PEN_UP
-				HOME     // Go Home and point North
-				LT(86)   
-				FD(400)
-			PEN_DOWN
-			SET_ANGLE(118+180)
-			
-			IF_LT(PARAM,SPEED_MAX+0)
-				PARAM_ADD(1+0)          // Increases the target speed by x m/s   custom: 1 dm/s !
-			ELSE
-				PARAM_SET(SPEED_MIN)  //start over
-			END
-			SET_SPEED_PARAM
-			DO(PATTERN)	              // turn, settle, glide, settle
-
+		
+		IF_LT(PARAM,SPEED_MAX+0)
+			PARAM_ADD(1+0)          // Increases the target speed by x m/s   custom: 1 dm/s !
+		ELSE
+			PARAM_SET(SPEED_MIN)  //start over
 		END
+		SET_SPEED_PARAM
+		DO(PATTERN)	              // turn, settle, glide, settle
 
+	END
 	END
 
 	TO (PATTERN)
-		//C- --..-- - s++	
+		//C- [O] --..-- - 	
 
 		//climb, turn
 		FLAG_OFF(F_LAND) //Motor on
@@ -1172,7 +1155,7 @@ const struct logoInstructionDef instructions[] = {
 			END
 
 			//measure sinkrate with this speed
-			REPEAT(34)                               //100- 47/2 = 78m , = 47*11 = 500
+			REPEAT(39)                               //100- 47/2 = 78m , = 47*11 = 500
 				IF_EQ(READ_F_LAND,1)   //custom system value             
 					//check minimum alt	
 					IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)
@@ -1187,7 +1170,7 @@ const struct logoInstructionDef instructions[] = {
 			END
 		ELSE
 			//measure sinkrate with this speed
-			REPEAT(40)                         
+			REPEAT(45)                         
 				DO (MOTOR_CLIMB_FORWARD)  // should be rare
 			END
 		END
@@ -1215,7 +1198,7 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (RETURN_MC_SOFT_GEOFENCE)   //use this for (wider) turns
 		DO (CHECKS)
-		FD(16)
+		FD(25)
 	END
 	END
 	
@@ -1230,27 +1213,6 @@ const struct logoInstructionDef instructions[] = {
 		END
 		IF_LT(BATTERY_VOLTAGE, VOLTAGE_SENSOR_ALARM)     // land automatically when battery is low, usefull when no telemetry is available
 			EXEC (LOITER_LAND)
-		END
-		IF_LT(AILERON_INPUT_CHANNEL ,2850)
-			DO (PILOT_INPUT)
-		END
-		IF_GT(AILERON_INPUT_CHANNEL ,3150)
-			DO (PILOT_INPUT)
-		END
-	END
-	END
-
-
-	TO (PILOT_INPUT)
-		REPEAT(10)			//keep pilot control as long stick is off-centre,max 10 loops
-			IF_LT(AILERON_INPUT_CHANNEL ,2850)
-				//LT(10)                          //don't change the plan
-				FD(DESIRED_SPEED_NORMAL_F0/10)
-			END
-			IF_GT(AILERON_INPUT_CHANNEL,3150)
-				//RT(10)                          //don't change the plan
-				FD(DESIRED_SPEED_NORMAL_F0/10)
-			END
 		END
 	END
 	END
