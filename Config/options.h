@@ -488,7 +488,7 @@
 //  19200, 38400, 57600, 115200, 230400, 460800, 921600 // yes, it really will work at this rate
 //#define SERIAL_BAUDRATE                     19200
 //#define SERIAL_BAUDRATE                     9600 //for FrSky
-#define SERIAL_BAUDRATE                     57600 //
+#define SERIAL_BAUDRATE                     57600
 #define SERIAL3_BAUDRATE                     9600 //for FrSky
 
 
