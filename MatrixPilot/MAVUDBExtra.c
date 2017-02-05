@@ -76,11 +76,11 @@ void MAVUDBExtraOutput(void)
 	static int16_t interval = 0;
 	
 	interval++;
-	//7/8 filter, 1Hz   to improve readability
-	if ( interval >= 8 )
+	//7/8 filter, 4Hz   to improve readability
+	if ( interval >= 2 )
 	{
 		interval = 0; 
-		airspeed = (airspeed * 7 + air_speed_3DIMU)/8; //7/8 filter, 1Hz
+		airspeed = (airspeed * 7 + air_speed_3DIMU)/8; //7/8 filter, 4Hz
 	}
 #endif //THERMALLING_MISSION
 

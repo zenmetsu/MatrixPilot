@@ -94,11 +94,11 @@ static int16_t calc_airspeed(void)
 	static int16_t interval = 0;
 	
 	interval++;
-	//7/8 filter, 1Hz
-	if ( interval >= 40 )
+	//7/8 filter, 4Hz
+	if ( interval >= 10 )
 	{
 		interval = 0; 
-		airspeed = ( airspeed * 7 + air_speed_3DIMU)/8; //7/8 filter, 1Hz
+		airspeed = ( airspeed * 7 + air_speed_3DIMU)/8; //7/8 filter, 4Hz
 	}
 	return airspeed;
 }
