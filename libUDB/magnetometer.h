@@ -25,6 +25,7 @@
 
 extern int16_t udb_magFieldBody[];  // magnetic field in the body frame of reference 
 extern int16_t udb_magOffset[];     // magnetic offset in the body frame of reference
+extern int16_t udb_staticMagOffset[];     // magnetic static offsets in the body frame of reference
 extern int16_t magGain[];           // magnetometer calibration gains
 extern int16_t rawMagCalib[];
 extern int16_t magFieldRaw[];
@@ -33,8 +34,13 @@ extern int16_t I2messages;
 
 typedef void (*magnetometer_callback_funcptr)(void);
 
-void rxMagnetometer(magnetometer_callback_funcptr); // service the magnetometer
+uint8_t rxMagnetometer(magnetometer_callback_funcptr); // service the magnetometer
 void HILSIM_MagData(magnetometer_callback_funcptr);
+
+enum MAGNETOMETER_SERVICE_STATE {
+    MAGNETOMETER_SERVICE_CAN_PAUSE = 0, 
+    MAGNETOMETER_NEEDS_SERVICING  
+};
 
 
 #endif // MAGNETOMETER_H

@@ -29,20 +29,13 @@
 int16_t udb_magFieldBody[3];                    // magnetic field in the body frame of reference 
 int16_t udb_magOffset[3] = { 0 , 0 , 0 };       // magnetic offset in the body frame of reference
 // To use static offsets, Change the variable name udb_magOffset to udb_staticMagOffset on lines 169, 170, 171
-int16_t udb_staticMagOffset[3] = { 0 , 0 , 0 }; // Enter the static magnetic offset in the body frame of reference here.
+int16_t udb_staticMagOffset[3] = { MAG_STATIC_OFFSET_X , MAG_STATIC_OFFSET_Y , MAG_STATIC_OFFSET_Z }; 
 int16_t magGain[3] = { RMAX , RMAX , RMAX };    // magnetometer calibration gains
 int16_t rawMagCalib[3] = { 0 , 0 , 0 };
 int16_t magFieldRaw[3];
 int16_t magMessage = 0;                         // message type
 
 #if (MAG_YAW_DRIFT == 1)
-//#if (MAG_YAW_DRIFT == 1 && HILSIM != 1)
-
-// TODO: select magnetometer type, set MAGNETICDECLINATION,
-// and select orientation of the magnetometer, and remove the next 3 lines.
-#if (HILSIM != 1)
-#warning "Check magnetometer options."
-#endif
 
 static magnetometer_callback_funcptr magnetometer_callback = NULL;
 
@@ -65,22 +58,22 @@ static magnetometer_callback_funcptr magnetometer_callback = NULL;
 #error Undefined magnetometer I2C bus
 #endif
 
-// local (static) variables
-static uint8_t hmc5883read_index[]  = { 0x03 }; // Address of the first register to read
-static uint8_t hmc5883write_index[] = { 0x00 }; // Address of the first register to read
 
-static uint8_t enableMagRead[]        = { 0x10 , 0x20 , 0x00 }; // Continous measurament
-static uint8_t enableMagCalibration[] = { 0x11 , 0x20 , 0x01 }; // Positive bias (Self Test) and single measurament
-static uint8_t resetMagnetometer[]    = { 0x10 , 0x20 , 0x02 }; // Idle mode (Reset??)
 
 #if (HILSIM == 1)
 uint8_t magreg[6];              // magnetometer read-write buffer
 #else
 static uint8_t magreg[6];       // magnetometer read-write buffer
-#endif
 
+static uint8_t hmc5883read_index[]  = { 0x03 }; // Address of the first register to read
+static uint8_t hmc5883write_index[] = { 0x00 }; // Address of the first register to read
+
+static uint8_t enableMagRead[]        = { 0x10 , 0x20 , 0x00 }; // Continuous measurement
+static uint8_t enableMagCalibration[] = { 0x11 , 0x20 , 0x01 }; // Positive bias (Self Test) and single measurement
+static uint8_t resetMagnetometer[]    = { 0x10 , 0x20 , 0x02 }; // Idle mode (Reset??)
 static int16_t mrindex;         // index into the read write buffer 
 static int16_t magCalibPause = 0;
+#endif
 
 int16_t I2messages = 0;
 
@@ -88,7 +81,7 @@ int16_t I2messages = 0;
 static void I2C_callback(boolean I2CtrxOK);
 
 
-void rxMagnetometer(magnetometer_callback_funcptr callback)     // service the magnetometer
+uint8_t rxMagnetometer(magnetometer_callback_funcptr callback)     // service the magnetometer
 {
 	magnetometer_callback = callback;
 
@@ -109,7 +102,7 @@ void rxMagnetometer(magnetometer_callback_funcptr callback)     // service the m
 	{
 		magMessage = 0;         // start over again
 		I2C_Reset();            // reset the I2C
-		return;
+		return(MAGNETOMETER_NEEDS_SERVICING);
 	}
 
 	mrindex = 0;
@@ -125,36 +118,38 @@ void rxMagnetometer(magnetometer_callback_funcptr callback)     // service the m
 		{ 
 		case 1:     // read the magnetometer in case it is still sending data, so as to NACK it
 			I2C_Read(HMC5883_COMMAND, hmc5883read_index, 1, magreg, 6, &I2C_callback, I2C_MODE_WRITE_ADDR_READ); 
-			break;
-		case 2:     // put magnetomter into the power up defaults on a reset
+			return(MAGNETOMETER_SERVICE_CAN_PAUSE);
+		case 2:     // put magnetometer into the power up defaults on a reset
 			I2C_Write(HMC5883_COMMAND, hmc5883write_index, 1, resetMagnetometer, 3, NULL);
-			break;
+			return(MAGNETOMETER_NEEDS_SERVICING);
 		case 3:     // clear out any data that is still there
 			I2C_Read(HMC5883_COMMAND, hmc5883read_index, 1, magreg, 6, &I2C_callback, I2C_MODE_WRITE_ADDR_READ);
-			break;
+			return(MAGNETOMETER_SERVICE_CAN_PAUSE);
 		case 4:     // enable the calibration process
 			magCalibPause = 2;
 			I2C_Write(HMC5883_COMMAND, hmc5883write_index, 1, enableMagCalibration, 3, NULL);
-			break;
+			return(MAGNETOMETER_NEEDS_SERVICING);
 		case 5:     // read the calibration data
 			I2C_Read(HMC5883_COMMAND, hmc5883read_index, 1, magreg, 6, &I2C_callback, I2C_MODE_WRITE_ADDR_READ);
-			break;
+			return(MAGNETOMETER_SERVICE_CAN_PAUSE);
 		case 6:     // enable normal continuous readings
 			I2C_Write(HMC5883_COMMAND, hmc5883write_index, 1, enableMagRead, 3, NULL);
-			break;
+			return(MAGNETOMETER_NEEDS_SERVICING);
 		case 7:     // read the magnetometer data
 			I2C_Read(HMC5883_COMMAND, hmc5883read_index, 1, magreg, 6, &I2C_callback, I2C_MODE_WRITE_ADDR_READ);
-			break;
+			return(MAGNETOMETER_SERVICE_CAN_PAUSE);
 		default:
 			magMessage = 0;
-			break;
+			return(MAGNETOMETER_SERVICE_CAN_PAUSE);
 		}
 	}
 	else
 	{
 		magCalibPause--;
+		return(MAGNETOMETER_NEEDS_SERVICING);
 	}
 #endif  // (HILSIM != 1)
+return(MAGNETOMETER_SERVICE_CAN_PAUSE);	
 }
 
 // this is the callback function for when the I2C transaction is complete
@@ -173,10 +168,15 @@ static void I2C_callback(boolean I2CtrxOK)
 		}
 		if (magMessage == 7)
 		{
-			udb_magFieldBody[0] = MAG_X_SIGN((__builtin_mulsu((magFieldRaw[MAG_X_AXIS]), magGain[MAG_X_AXIS]))>>14) - (udb_magOffset[0]>>1); // To use static offsets, Change udb_magOffset to udb_staticMagOffset
-			udb_magFieldBody[1] = MAG_Y_SIGN((__builtin_mulsu((magFieldRaw[MAG_Y_AXIS]), magGain[MAG_Y_AXIS]))>>14) - (udb_magOffset[1]>>1); // To use static offsets, Change udb_magOffset to udb_staticMagOffset
-			udb_magFieldBody[2] = MAG_Z_SIGN((__builtin_mulsu((magFieldRaw[MAG_Z_AXIS]), magGain[MAG_Z_AXIS]))>>14) - (udb_magOffset[2]>>1); // To use static offsets, Change udb_magOffset to udb_staticMagOffset
-
+#ifdef MAG_STATIC_OFFSETS
+			udb_magFieldBody[0] = MAG_X_SIGN((__builtin_mulsu((magFieldRaw[MAG_X_AXIS]), magGain[MAG_X_AXIS]))>>14) - (udb_staticMagOffset[0]); 
+			udb_magFieldBody[1] = MAG_Y_SIGN((__builtin_mulsu((magFieldRaw[MAG_Y_AXIS]), magGain[MAG_Y_AXIS]))>>14) - (udb_staticMagOffset[1]);
+			udb_magFieldBody[2] = MAG_Z_SIGN((__builtin_mulsu((magFieldRaw[MAG_Z_AXIS]), magGain[MAG_Z_AXIS]))>>14) - (udb_staticMagOffset[2]);		
+#else
+			udb_magFieldBody[0] = MAG_X_SIGN((__builtin_mulsu((magFieldRaw[MAG_X_AXIS]), magGain[MAG_X_AXIS]))>>14) - (udb_magOffset[0]>>1);
+			udb_magFieldBody[1] = MAG_Y_SIGN((__builtin_mulsu((magFieldRaw[MAG_Y_AXIS]), magGain[MAG_Y_AXIS]))>>14) - (udb_magOffset[1]>>1);
+			udb_magFieldBody[2] = MAG_Z_SIGN((__builtin_mulsu((magFieldRaw[MAG_Z_AXIS]), magGain[MAG_Z_AXIS]))>>14) - (udb_magOffset[2]>>1);
+#endif	
 			if ((abs(udb_magFieldBody[0]) < MAGNETICMAXIMUM) &&
 			    (abs(udb_magFieldBody[1]) < MAGNETICMAXIMUM) &&
 			    (abs(udb_magFieldBody[2]) < MAGNETICMAXIMUM))
@@ -217,11 +217,4 @@ void HILSIM_MagData(magnetometer_callback_funcptr callback)
 	I2C_callback(true); // run the magnetometer computations
 }
 
-//#else
-//
-//void rxMagnetometer(magnetometer_callback_funcptr callback)
-//{
-//	magnetometer_callback = callback;
-//}
-//
 #endif // MAG_YAW_DRIFT
