@@ -1052,8 +1052,12 @@ def write_placemark_preamble_auto(open_waypoint,current_waypoint,filename,log_bo
     print >> filename, """        <description>waypoint""",
     print >> filename, logo_routines[current_waypoint],
     print >> filename, "</description>"
+    if log_book.entries[log_book_index].status == "011" : # We are in RTL, Return to Landind
+        bump_colour_index = 4  # choose a colour further on in the colour list to distinguish from normal Autonomous.
+    else :
+        bump_colour_index = 0
     temp_line = "     <styleUrl>#" +  \
-        mycolors.list[current_waypoint % 12][0] + "</styleUrl>"
+        mycolors.list[(current_waypoint + bump_colour_index) % 12][0] + "</styleUrl>"
     print >> filename, temp_line
     print >> filename, """        <LineString>
         <extrude>1</extrude>
@@ -1095,27 +1099,24 @@ def find_waypoint_start_and_end_times(log_book) :
     for entry in log_book.entries :
         if first_time_through_loop == True :
             a_flown_waypoint = flown_waypoint() # create new instance of flown_waypoint
-            current_status = log_book.entries[entry_index].status # normally manual e.g. 110
-            current_waypoint_index = log_book.entries[entry_index].waypointIndex
             a_flown_waypoint.start_time = log_book.entries[entry_index].tm
-            a_flown_waypoint.waypointIndex = current_waypoint_index
-            a_flown_waypoint.status = current_status
+            a_flown_waypoint.waypointIndex = log_book.entries[entry_index].waypointIndex
             first_time_through_loop = False
             if debug :
                 print "Processing waypoint times:..."
         else :
-            if ((log_book.entries[entry_index].status != current_status) or
-                    (log_book.entries[entry_index].waypointIndex != current_waypoint_index)) :
-                # Change of flight mode status or desired waypoint                
-                a_flown_waypoint.end_time = log_book.entries[entry_index].tm
+            if ((log_book.entries[entry_index].status != log_book.entries[entry_index - 1].status) or
+                    (log_book.entries[entry_index].waypointIndex != log_book.entries[entry_index - 1].waypointIndex)) :
+                # Change of flight mode status or desired waypoint, store the last waypoint segment               
+                a_flown_waypoint.end_time = log_book.entries[entry_index -1].tm
+                a_flown_waypoint.status =   log_book.entries[entry_index -1].status
                 log_book.flown_waypoints.append(a_flown_waypoint)
                 # Have stored everything about last waypoint route, now move onto the next one ....
-                a_flown_waypoint = flown_waypoint()
+                a_flown_waypoint = flown_waypoint() # create new flown waypoint structure
                 current_status = log_book.entries[entry_index].status # normally manual e.g. 110
-                current_waypoint_index = log_book.entries[entry_index].waypointIndex
                 a_flown_waypoint.start_time = log_book.entries[entry_index].tm
-                a_flown_waypoint.waypointIndex = current_waypoint_index
-                a_flown_waypoint.status = current_status
+                a_flown_waypoint.waypointIndex = log_book.entries[entry_index].waypointIndex
+                a_flown_waypoint.status =   log_book.entries[entry_index].status
         entry_index += 1
     a_flown_waypoint.end_time = log_book.entries[entry_index -1].tm
     log_book.flown_waypoints.append(a_flown_waypoint)
@@ -1314,14 +1315,15 @@ def write_flight_path_inner(log_book,flight_origin, filename,flight_clock,primar
             # or in stabilized or in Waypoint Mode.
             entry.status = "1111"
         # Waypoint mode can be matched by status .111 or status .11(New as of rev 327 of MatrixPIlot)
-        match = re.match("^.11",entry.status) 
-        if match :
+        match_autonomous = re.match("^111",entry.status)
+        match_RTL = re.match("^011", entry.status)
+        if match_autonomous :
             current_waypoint = entry.waypointIndex
             if first_waypoint :
                 write_placemark_preamble_auto(open_waypoint,current_waypoint,filename,log_book,flight_clock,log_book_index)
                 first_waypoint = False
-                last_status_auto = True
-            elif last_status_auto == False : # previous entry manual mode
+                last_status = "Auto"
+            elif last_status == "Manual" or last_status == "RTL" : 
                 line1 = "%f," % flight_origin.move_lon(entry.lon[primary_locator])
                 line2 = "%f," % flight_origin.move_lat(entry.lat[primary_locator])
                 line3 = "%f" %  flight_origin.move_alt(entry.alt[primary_locator])
@@ -1334,7 +1336,6 @@ def write_flight_path_inner(log_book,flight_origin, filename,flight_clock,primar
                 line3 = "%f" %  flight_origin.move_alt(entry.alt[primary_locator])
                 line = "          " + line1 + line2 + line3
                 print >> filename, line
-                last_status_auto = True
             else:       # Previous entry was also Auto Mode
                 # Are we still aiming for the same waypoint ?  No  
                 if  current_waypoint  != last_waypoint :
@@ -1356,16 +1357,58 @@ def write_flight_path_inner(log_book,flight_origin, filename,flight_clock,primar
                     line3 = "%f" %  flight_origin.move_alt(( entry.alt[primary_locator] - 2 ))
                     line = "          " + line1 + line2 + line3
                     print >> filename, line                  
-                    last_status_auto = True
             last_waypoint = current_waypoint
+            last_status = "Auto"
+        elif match_RTL: # We are currently in Return to Landing Mode
+            current_waypoint = entry.waypointIndex
+            if first_waypoint :
+                write_placemark_preamble_auto(open_waypoint,current_waypoint,filename,log_book,flight_clock,log_book_index)
+                first_waypoint = False
+                last_status = "RTL"
+            elif last_status == "Manual" or last_status == "Auto" :
+                line1 = "%f," % flight_origin.move_lon(entry.lon[primary_locator])
+                line2 = "%f," % flight_origin.move_lat(entry.lat[primary_locator])
+                line3 = "%f" %  flight_origin.move_alt(entry.alt[primary_locator])
+                line = "          " + line1 + line2 + line3
+                print >> filename, line
+                write_placemark_postamble(filename)
+                write_placemark_preamble_auto(open_waypoint,current_waypoint,filename,log_book,flight_clock,log_book_index)
+                line1 = "%f," % flight_origin.move_lon(entry.lon[primary_locator])
+                line2 = "%f," % flight_origin.move_lat(entry.lat[primary_locator])
+                line3 = "%f" %  flight_origin.move_alt(entry.alt[primary_locator])
+                line = "          " + line1 + line2 + line3
+                print >> filename, line
+            else:       # Previous entry was also RTL mode
+                # Are we still aiming for the same waypoint ?  No  
+                if  current_waypoint  != last_waypoint :
+                    line1 = "%f," % flight_origin.move_lon(entry.lon[primary_locator])
+                    line2 = "%f," % flight_origin.move_lat(entry.lat[primary_locator])
+                    line3 = "%f" %  flight_origin.move_alt(( entry.alt[primary_locator] - 2 ))
+                    line = "          " + line1 + line2 + line3
+                    print >> filename, line
+                    write_placemark_postamble(filename)
+                    write_placemark_preamble_auto(open_waypoint,current_waypoint,filename,log_book,flight_clock,log_book_index)
+                    line1 = "%f," % flight_origin.move_lon(entry.lon[primary_locator])
+                    line2 = "%f," % flight_origin.move_lat(entry.lat[primary_locator])
+                    line3 = "%f" %  flight_origin.move_alt(( entry.alt[primary_locator] - 2 ))
+                    line = "          " + line1 + line2 + line3
+                    print >> filename, line
+                else : # We are still aiming for the same waypoint
+                    line1 = "%f," % flight_origin.move_lon(entry.lon[primary_locator])
+                    line2 = "%f," % flight_origin.move_lat(entry.lat[primary_locator])
+                    line3 = "%f" %  flight_origin.move_alt(( entry.alt[primary_locator] - 2 ))
+                    line = "          " + line1 + line2 + line3
+                    print >> filename, line                  
+            last_waypoint = current_waypoint
+            last_status = "RTL"           
         else :  # we are currently in Manual Mode
             if first_waypoint :
                 manual_start_time = log_book.entries[log_book_index].tm
                 write_placemark_preamble_manual(open_waypoint,filename,log_book,flight_clock,log_book_index, \
                                                max_time_manual_entries, manual_start_time )
                 first_waypoint  = False
-                last_status_auto = False
-            if last_status_auto == True :  # We've just changed from auto to Manual.
+                last_status = "Manual"
+            if last_status == "Auto" or last_status == "RTL" :
                 manual_start_time = log_book.entries[log_book_index].tm
                 line1 = "%f," % flight_origin.move_lon(entry.lon[primary_locator])
                 line2 = "%f," % flight_origin.move_lat(entry.lat[primary_locator])
@@ -1381,7 +1424,6 @@ def write_flight_path_inner(log_book,flight_origin, filename,flight_clock,primar
                 line = "          " + line1 + line2 + line3
                 print >> filename, line
                 first_waypoint  = False
-                last_status_auto = False
             else : # We are still in manual, we were in manual last time.
                 # print intermediary points 
                 line1 = "%f," % flight_origin.move_lon(entry.lon[primary_locator])
@@ -1399,7 +1441,7 @@ def write_flight_path_inner(log_book,flight_origin, filename,flight_clock,primar
                     line3 = "%f" %  flight_origin.move_alt(( entry.alt[primary_locator] - 2 ))
                     line = "          " + line1 + line2 + line3
                     print >> filename, line
-            last_status_auto = False
+            last_status = "Manual"
         log_book_index += 1
     write_placemark_postamble(filename)
     return
@@ -1914,6 +1956,7 @@ class origin() :
 class flight_log_book:
     def __init__(self) :
         self.entries = [] # an empty list of entries  at the beginning.
+        self.F2 = "Empty"
         self.F4 = "Empty"
         self.F5 = "Empty"
         self.F6 = "Empty"
@@ -1928,6 +1971,8 @@ class flight_log_book:
         self.F18 = "Empty"
         self.F19 = "Empty"
         self.F20 = "Empty"
+        self.F21 = "Empty"
+        self.F22 = "Empty"
         self.ardustation_pos = "Empty"
         self.rebase_time_to_race_time = False
         self.waypoints_in_telemetry = False
@@ -2029,16 +2074,21 @@ def create_telemetry_kmz(options,log_book):
     flight_origin.relocate_init() # This calculation must occur after origin has been calculated
     calculate_headings_pitch_roll(log_book, flight_origin, options)
     write_document_preamble(log_book,f_pos,telemetry_filename)
-    if (options.waypoint_selector == 1):
-        find_waypoint_start_and_end_times(log_book)
-        create_flown_waypoint_kml_using_waypoint_file(waypoint_filename,flight_origin,f_pos,flight_clock,log_book)
-    else :
-        # Check whether waypoint information is embedded in every line (later versions of MatrixPilot)
-        if log_book.waypoints_in_telemetry == True and \
-               log_book.F14 == "Recorded": # Check we received F14 telemetry before checking flight_plan_type
-            if log_book.flight_plan_type == 2 : # Logo waypoint flight plan
-                print "Processing Waypoint locations that are embedded in telemetry stream"
-                create_flown_waypoint_kml_using_telemetry(flight_origin,f_pos,flight_clock,log_book)
+    if log_book.waypoints_in_telemetry == True and \
+           log_book.F14 == "Recorded": # Check we received F14 telemetry before checking flight_plan_type
+        if log_book.flight_plan_type == 2 : # Logo waypoint flight plan
+            print "Processing Logo Waypoint locations that are embedded in telemetry stream"
+            create_flown_waypoint_kml_using_telemetry(flight_origin,f_pos,flight_clock,log_book)
+            if (options.waypoint_selector == 1):
+                 showinfo(title = "Logo Waypoints embedded in teleemtry stream", message = \
+                          "There is no need to select a flightplan-waypoints.h file, or a "+
+                          "flightpan-logo.h file, when using Logo. This is because logo waypoints "+
+                          "are embedded in the actual telemetry stream when using Logo" )
+        elif  (options.waypoint_selector == 1):
+           find_waypoint_start_and_end_times(log_book)
+           print "Processing Waypoint locations from flightplan-waypoints.h file"
+           create_flown_waypoint_kml_using_waypoint_file(waypoint_filename,flight_origin,f_pos,flight_clock,log_book)
+        
     if log_book.primary_locator == GPS:
         print "Using GPS data for plotting waypoint routes"
     elif log_book.primary_locator == IMU :
@@ -2224,6 +2274,10 @@ def create_log_book(options) :
             log_book.number_of_input_channels = log.number_of_input_channels
             log_book.channel_trim_values = log.channel_trim_values
             log_book.F20 = "Recorded"
+        elif log.log_format == "F21" : # Number of Input Channels and Trim Values
+            pass # flan not yet using sensor offsets
+        elif log.log_format == "F22" : # Number of Input Channels and Trim Values
+            pass # flan not using sensor values measured at boot up time
         elif log.log_format == "ARDUSTATION+++" : # Intermediate Ardustation line
             roll = log.roll
             pitch = log.pitch
@@ -2286,12 +2340,12 @@ def write_csv(options,log_book):
     ### write out a csv file enabling analysis in Excel or OpenOffice
    
     f_csv = open(options.CSV_filename, 'w')
-    print >> f_csv, "GPS Time(secs),GPS Time(XML),Status,Lat,Lon,Waypoint,Altitude,",
+    print >> f_csv, "GPS Time(secs),GPS Time(XML),Status,Lat,Lon,Waypoint,GPS Alt ASL,GPS Alt AO,",
     print >> f_csv, "Rmat0,Rmat1,Rmat2,Rmat3,Rmat4,Rmat5,Rmat6,Rmat7,Rmat8,",
     print >> f_csv, "Pitch,Roll,Heading, COG, SOG, CPU, SVS, VDOP, HDOP,",
     print >> f_csv, "Est AirSpd,Est X Wind,Est Y Wind,Est Z Wind,IN1,IN2,IN3,IN4,",
     print >> f_csv, "IN5,IN6,IN7,IN8,OUT1,OUT2,OUT3,OUT4,",
-    print >> f_csv, "OUT5,OUT6,OUT7,OUT8,LEX,LEY,LEZ,IMU X,IMU Y,IMU Z,Desired Height,MAG W,MAG N,MAG Z,",
+    print >> f_csv, "OUT5,OUT6,OUT7,OUT8,LEX,LEY,LEZ,IMU X,IMU Y,IMU Z,Desired Height,Bar Tmp,Bar Prs,Bar Alt ASL,Bar Alt AO,MAG W,MAG N,MAG Z,",
     print >> f_csv, "Waypoint X,WaypointY,WaypointZ,IMUvelocityX,IMUvelocityY,IMUvelocityZ,",
     print >> f_csv, "Flags Dec,Flags Hex,Sonar Dst,ALT_SONAR, Aero X, Aero Y, Aero Z, AoI,Wing Load, AoA Pitch,",
     print >> f_csv, "Volts,Amps,mAh"
@@ -2374,6 +2428,7 @@ def write_csv(options,log_book):
               entry.status, "," , \
               entry.latitude / 10000000.0, ",",entry.longitude / 10000000.0,",", \
               entry.waypointIndex, ",", "{0:.2f}".format(entry.altitude / 100.0), "," , \
+              "{0:.2f}".format((entry.altitude - log_book.origin_altitude)/ 100.0), "," , \
               entry.rmat0, "," , entry.rmat1, "," , entry.rmat2 , "," ,\
               entry.rmat3, "," , entry.rmat4, "," , entry.rmat5 , "," ,\
               entry.rmat6, "," , entry.rmat7, "," , entry.rmat8 , "," ,\
@@ -2381,16 +2436,21 @@ def write_csv(options,log_book):
                               ",", "{0:.2f}".format(entry.heading_degrees), "," , \
               entry.cog / 100.0 , "," , entry.sog / 100.0,",", entry.cpu,",", entry.svs, \
               ",", entry.vdop, ",", entry.hdop, "," , \
-              entry.est_airspeed, "," , entry.est_wind_x, "," , entry.est_wind_y, ",", entry.est_wind_z , "," , \
+              "{0:.2f}".format(entry.est_airspeed /100.0), "," , "{0:.2f}".format(entry.est_wind_x / 100.0), "," ,  \
+              "{0:.2f}".format(entry.est_wind_y / 100.0), ",", "{0:.2f}".format(entry.est_wind_z / 100.0), "," , \
               entry.pwm_input[1], "," , entry.pwm_input[2], "," , entry.pwm_input[3], "," , entry.pwm_input[4], "," , \
               entry.pwm_input[5], "," , entry.pwm_input[6], "," , entry.pwm_input[7], "," , entry.pwm_input[8], "," , \
               entry.pwm_output[1], "," , entry.pwm_output[2], "," , entry.pwm_output[3], "," , entry.pwm_output[4], "," , \
               entry.pwm_output[5], "," , entry.pwm_output[6], "," , entry.pwm_output[7], "," , entry.pwm_output[8], "," , \
               entry.lex, "," , entry.ley , "," , entry.lez, ",", \
               entry.IMUlocationx_W1, ",", entry.IMUlocationy_W1, ",", entry.IMUlocationz_W1, "," , entry.desired_height, ",",\
+              entry.barometer_temperature / 10.0, ",",entry.barometer_pressure / 100.0, ",", \
+              "{0:.2f}".format(entry.barometer_altitude / 1000.0), ",", \
+              "{0:.2f}".format(((entry.barometer_altitude / 10.0) - (log_book.origin_altitude))/100.0), ",", \
               int(entry.earth_mag_vec_E), "," , int(entry.earth_mag_vec_N), "," , int(entry.earth_mag_vec_Z), "," , \
               entry.inline_waypoint_x, ",", entry.inline_waypoint_y, ",", entry.inline_waypoint_z, ",", \
-              entry.IMUvelocityx, ",", entry.IMUvelocityy, ",", entry.IMUvelocityz, ",", \
+              "{0:.2f}".format(entry.IMUvelocityx / 100.0), ",", "{0:.2f}".format(entry.IMUvelocityy / 100.0), ",", \
+              "{0:.2f}".format(entry.IMUvelocityz / 100.0), ",", \
               entry.flags, ",",hex(entry.flags),",", entry.sonar_direct, ",",  entry.alt_sonar, ",", \
               entry.aero_force_x, ",", entry.aero_force_y, ",", entry.aero_force_z,",","{0:.2f}".format(incidence), \
               ",","{0:.4f}".format(relative_wing_loading),",","{0:.2f}".format(aoa_using_pitch), \
