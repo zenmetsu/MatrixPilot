@@ -1110,7 +1110,7 @@ const struct logoInstructionDef instructions[] = {
 	PEN_UP
 		HOME      // Go Home and point North
 		RT(118)   // this is also the correct angle
-		FD(250)
+		FD(200)
 	PEN_DOWN
 		
 	//PARAM_SET(SPEED_MIN)  //start with 1
@@ -1155,7 +1155,7 @@ const struct logoInstructionDef instructions[] = {
 			END
 
 			//measure sinkrate with this speed
-			REPEAT(39)                               //100- 47/2 = 78m , = 47*11 = 500
+			REPEAT(35)                               //100- 47/2 = 78m , = 47*11 = 500
 				IF_EQ(READ_F_LAND,1)   //custom system value             
 					//check minimum alt	
 					IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)
@@ -1170,8 +1170,8 @@ const struct logoInstructionDef instructions[] = {
 			END
 		ELSE
 			//measure sinkrate with this speed
-			REPEAT(45)                         
-				DO (MOTOR_CLIMB_FORWARD)  // should be rare
+			REPEAT(41)
+				DO (MOTOR_CLIMB_FORWARD)
 			END
 		END
 
@@ -1198,7 +1198,7 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (RETURN_MC_SOFT_GEOFENCE)   //use this for (wider) turns
 		DO (CHECKS)
-		FD(25)
+		FD(23)
 	END
 	END
 	
