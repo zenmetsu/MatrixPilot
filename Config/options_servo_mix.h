@@ -185,20 +185,20 @@
 // -  ALTITUDE_GAINS_VARIABLE 1
 // Overspeed brake is not active in manual mode 
 
-#define RUDDER_OUTPUT_OFFSET                                0          // right = +  surface moves right, seen from behind
+#define RUDDER_OUTPUT_OFFSET                              100          // right = +  surface moves right, seen from behind
 #define ELEVATOR_OUTPUT_OFFSET                            150          // trailing edge up = +  trailing edge/nose up
-#define AILERON_RIGHT_OUTPUT_OFFSET                       -80          // trailing edge up = +
-#define AILERON_LEFT_OUTPUT_OFFSET                        -50          // trailing edge up = +
+#define AILERON_RIGHT_OUTPUT_OFFSET                      -150          // trailing edge up = +
+#define AILERON_LEFT_OUTPUT_OFFSET                         50          // trailing edge up = +
 #define FLAP_LEFT_OUTPUT_OFFSET                           830          // trailing edge up = +
 #define FLAP_RIGHT_OUTPUT_OFFSET                          900          // increase = +
 //                                                             
 //Warning: All of the following values should be in the range of -1.0 to 1.0 
 //                                                              
-#define AILERON_RIGHT_BRAKE_FACTOR                          -0.50 
+#define AILERON_RIGHT_BRAKE_FACTOR                          -0.70 
 #define AILERON_RIGHT_FLAPS_POS_FACTOR                      -0.18 
 #define AILERON_RIGHT_FLAPS_NEG_FACTOR                      -0.18 
 #define AILERON_RIGHT_LP_FLAPS_FACTOR                        1.00       //left part factor of aileron with normal flaps setting
-#define AILERON_RIGHT_RP_FLAPS_FACTOR                       -1.20       //right part factor of aileron with normal flaps setting
+#define AILERON_RIGHT_RP_FLAPS_FACTOR                       -0.60       //right part factor of aileron with normal flaps setting
 #define AILERON_RIGHT_LP_SPEED_FLAPS_FACTOR                  0.60       //left part factor of aileron with speed flaps setting
 #define AILERON_RIGHT_RP_SPEED_FLAPS_FACTOR                 -0.60       //right part factor of aileron with speed flaps setting
 #define AILERON_RIGHT_OFFSET_REVERSED                        1          //0 or 1 Make postive offset move surface up or to the right
@@ -224,10 +224,10 @@
 #define FLAP_RIGHT_OFFSET_REVERSED                          0          //0 or 1 Make postive offset move surface up
 #define FLAP_RIGHT_DIR_REVERSED                             0          //0 or 1 don't or do reverse
 //                                                           
-#define AILERON_LEFT_BRAKE_FACTOR                         -0.50 
+#define AILERON_LEFT_BRAKE_FACTOR                         -0.40 
 #define AILERON_LEFT_FLAPS_POS_FACTOR                     -0.16 
 #define AILERON_LEFT_FLAPS_NEG_FACTOR                     -0.16 
-#define AILERON_LEFT_LP_FLAPS_FACTOR                      -1.20       //left part factor of aileron with normal flaps setting
+#define AILERON_LEFT_LP_FLAPS_FACTOR                      -0.80       //left part factor of aileron with normal flaps setting
 #define AILERON_LEFT_RP_FLAPS_FACTOR                       1.00       //right part factor of aileron with normal flaps setting
 #define AILERON_LEFT_LP_SPEED_FLAPS_FACTOR                -0.50       //left part factor of aileron with speed flaps setting
 #define AILERON_LEFT_RP_SPEED_FLAPS_FACTOR                 0.50       //right part factor of aileron with speed flaps setting 
