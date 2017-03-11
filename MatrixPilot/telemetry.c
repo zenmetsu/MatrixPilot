@@ -970,6 +970,7 @@ void telemetry_output_8hz(void)
 						serial_output("p%io%i:",i,pwOut_save[i]);
 #if ( MY_PERSONAL_OPTIONS == 1 )
 					serial_output("ma%i:", get_flapsSelected() + SERVOCENTER);  // Flaps output (log only) as MAG W (ma%i:) for place in csv to Dashware
+					serial_output("mb%i:", target_airspeed); // DesireSpeed output (log only) as MAG N (mb%i:) for place in csv to Dashware
 					serial_output("imx%i:imy%i:imz%i:lex%i:ley%i:lez%i:fgs%X:ofc%i:tx%i:ty%i:tz%i:G%d,%d,%d:",IMUlocationx._.W1,IMUlocationy._.W1,IMUlocationz._.W1,
 					    locationErrorEarth[0], locationErrorEarth[1], locationErrorEarth[2],
 					    state_flags.WW, osc_fail_count,
