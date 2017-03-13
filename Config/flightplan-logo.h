@@ -1104,17 +1104,21 @@ const struct logoInstructionDef instructions[] = {
 		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 
 		IF_EQ(READ_F_LAND,1)
-			DO (CHECKS)                //is motor needed, landing requested, is pilot in control?
-			DO (SOFT_CHECKS)           //see if calling subroutine needs to end; geofence, too high, sink
-			DO (CHECK_THERMALS)          //geofence will be monitored, end and restart if needed
-			DO (PLAN_SOFT_GEOFENCE)    //soft geofence
-			DO (CRUISE)   // prevent overshoots
+			DO (CHECKS)              //is motor needed, landing requested, is pilot in control?
+			DO (SOFT_CHECKS)         //see if calling subroutine needs to end; geofence, too high, sink
 		ELSE
+			DO (SOFT_CHECKS_MC)      //see if calling subroutine needs to end; geofence, too high, sink
 			DO (TAKEOFF)             //keep level when low
 			DO (CHECKS_MC)           //is motor needed, landing requested, is pilot in control?
-			DO (SOFT_CHECKS_MC)      //see if calling subroutine needs to end; geofence, too high, sink
-			DO (PLAN_SOFT_GEOFENCE)    //soft geofence
-			DO (MOTOR_CLIMB_FORWARD) //prevent overshoots
+		END
+
+		IF_EQ(READ_F_LAND,1)
+			DO (CHECK_THERMALS)       //geofence will be monitored, end and restart if needed
+			DO (PLAN_SOFT_GEOFENCE)   //soft geofence
+			DO (CRUISE)   // prevent overshoots
+		ELSE
+			DO (PLAN_SOFT_GEOFENCE)   //soft geofence
+			DO (MOTOR_CLIMB_FORWARD)  //prevent overshoots
 		END
 	END
 	END
@@ -1746,20 +1750,17 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (DESCENT_PATTERN)
 	//TO (FS_DESCENT_PATTERN)
-
-		REPEAT(2)
-			//turn
-			REPEAT(18)
-				IF_GT(ALT,FINAL_ALT*3+5)
-					DO (SET_ALT_ALT)    //keep aware of current altitude
-					ALT_DOWN(8)  //keep going down  , this and FD controls brakes
-					FLAG_ON(F_LAND) //brake if you have to
-				ELSE
-					FLAG_OFF(F_LAND)  // no brakes
-				END
-				RT(20)
-				FD(DESIRED_SPEED_NORMAL_F0/5)
+		//turn
+		REPEAT(18)
+			IF_GT(ALT,FINAL_ALT*3+5)
+				DO (SET_ALT_ALT)    //keep aware of current altitude
+				ALT_DOWN(8)  //keep going down  , this and FD controls brakes
+				FLAG_ON(F_LAND) //brake if you have to
+			ELSE
+				FLAG_OFF(F_LAND)  // no brakes
 			END
+			RT(20)
+			FD(DESIRED_SPEED_NORMAL_F0/5)
 		END
 	END
 	END
@@ -2138,21 +2139,17 @@ const struct logoInstructionDef rtlInstructions[] = {
 
 	//TO (DESCENT_PATTERN)
 	TO (FS_DESCENT_PATTERN)
-
-		REPEAT(2)
-			//turn
-			REPEAT(18)
-				IF_GT(ALT,FINAL_ALT*3+5)
-					//DO (SET_ALT_ALT)           //level to upwind point
-					DO (FS_SET_ALT_ALT)           //level to upwind point
-					ALT_DOWN(8)  //keep going down  , this and FD controls brakes
-					FLAG_ON(F_LAND) //brake if you have to
-				ELSE
-					FLAG_OFF(F_LAND)  // no brakes
-				END
-				RT(20)
-				FD(DESIRED_SPEED_NORMAL_F0/5)
+		//turn
+		REPEAT(18)
+			IF_GT(ALT,FINAL_ALT*3+5)
+				DO (SET_ALT_ALT)    //keep aware of current altitude
+				ALT_DOWN(8)  //keep going down  , this and FD controls brakes
+				FLAG_ON(F_LAND) //brake if you have to
+			ELSE
+				FLAG_OFF(F_LAND)  // no brakes
 			END
+			RT(20)
+			FD(DESIRED_SPEED_NORMAL_F0/5)
 		END
 	END
 	END
