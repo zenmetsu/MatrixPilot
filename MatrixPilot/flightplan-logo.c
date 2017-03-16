@@ -88,6 +88,7 @@ enum {
  	GEOFENCE_STATUS,
 	GEOFENCE_TURN,
 	MOTOR_OFF_TIMER,	
+	READ_DESIRED_SPEED,
 #endif
 	PARAM
 };
@@ -924,6 +925,11 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			return ((desired_behavior.W & F_LAND) > 0);
 		}
 		
+		case READ_DESIRED_SPEED: //  used for waiting for a decrease in climbrate in a thermal
+		{
+			return (desiredSpeed);
+		}
+		
 		case GEOFENCE_STATUS: //  used for Geofence
 		{
 			return geoStatus;
@@ -1318,13 +1324,12 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 			switch (instr.subcmd)
 			{
 				case 0: // Increase Speed
-					desiredSpeed += instr.arg * 10;
+					desiredSpeed += instr.arg * 1;
 					break;
 				case 1: // Set Speed
 
-
-#if (THERMALLING_MISSION != 1)
-					desiredSpeed = instr.arg * 10;
+#if (THERMALLING_MISSION == 1)
+					desiredSpeed = instr.arg * 1;
 #else
 				{
 					//command changed to dm/s
