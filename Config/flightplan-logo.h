@@ -1101,6 +1101,14 @@ const struct logoInstructionDef instructions[] = {
 #define FS_DESCENT_PATTERN                   69
 #define FS_LOITER_LAND                       71
 
+//Polar_plot
+#define PP_CHECKS                            80
+#define PP_PATTERN                           81
+#define PP_RETURN_MC_SOFT_GEOFENCE           83
+#define PP_CRUISE                            85
+#define PP_MOTOR_CLIMB_FORWARD               87
+#define PP_RETURN_MC_SOFT_GEOFENCE           89
+
 const struct logoInstructionDef instructions[] = {
 
 	SET_ALT(MOTOR_OFF_TRIGGER_ALT)
@@ -1124,25 +1132,25 @@ const struct logoInstructionDef instructions[] = {
 			PARAM_SET(SPEED_MIN)  //start over
 		END
 		SET_SPEED_PARAM
-		DO(PATTERN)	              // turn, settle, glide, settle
+		DO(PP_PATTERN)	              // turn, settle, glide, settle
 
 	END
 	END
 
-	TO (PATTERN)
+	TO (PP_PATTERN)
 		//C- [O] --..-- - 	
 
 		//climb, turn
 		FLAG_OFF(F_LAND) //Motor on
 		REPEAT(18)
-			DO (RETURN_MC_SOFT_GEOFENCE)  
+			DO (PP_RETURN_MC_SOFT_GEOFENCE)  
 			RT(10)
 		END
 
 		//add a circle if still too low
 		IF_LT(ALT, MOTOR_OFF_TRIGGER_ALT-20)    
 			REPEAT(36)
-				DO (RETURN_MC_SOFT_GEOFENCE)  
+				DO (PP_RETURN_MC_SOFT_GEOFENCE)  
 				RT(10)
 			END
 		END
@@ -1151,7 +1159,7 @@ const struct logoInstructionDef instructions[] = {
 		IF_GT(ALT, MOTOR_OFF_TRIGGER_ALT-20)    
 			FLAG_ON(F_LAND)    //Motor off
 			REPEAT(6)
-				DO (MOTOR_CLIMB_FORWARD)     // log as motor
+				DO (PP_MOTOR_CLIMB_FORWARD)     // log as motor
 			END
 
 			//measure sinkrate with this speed
@@ -1159,51 +1167,51 @@ const struct logoInstructionDef instructions[] = {
 				IF_EQ(READ_F_LAND,1)   //custom system value             
 					//check minimum alt	
 					IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)
-						DO (MOTOR_CLIMB_FORWARD)     // log as motor first
+						DO (PP_MOTOR_CLIMB_FORWARD)     // log as motor first
 						FLAG_OFF(F_LAND)    //Motor on
 					ELSE
-						DO (CRUISE)   					
+						DO (PP_CRUISE)   					
 					END
 				ELSE
-					DO (MOTOR_CLIMB_FORWARD)  // should be rare
+					DO (PP_MOTOR_CLIMB_FORWARD)  // should be rare
 				END
 			END
 		ELSE
 			//measure sinkrate with this speed
 			REPEAT(41)
-				DO (MOTOR_CLIMB_FORWARD)
+				DO (PP_MOTOR_CLIMB_FORWARD)
 			END
 		END
 
 		//prepare motor on, continue glide, but log it as motor to prevent motor influence  
-		DO (MOTOR_CLIMB_FORWARD)            // log as motor
+		DO (PP_MOTOR_CLIMB_FORWARD)            // log as motor
 		FLAG_OFF(F_LAND)    //Motor on
 	END
 	END
 
 
-	TO (CRUISE)
-		DO (CHECKS)
+	TO (PP_CRUISE)
+		DO (PP_CHECKS)
 		FD(11)
 	END
 	END
 
 
-	TO (MOTOR_CLIMB_FORWARD)
-		DO (CHECKS)
+	TO (PP_MOTOR_CLIMB_FORWARD)
+		DO (PP_CHECKS)
 		FD(11)
 	END
 	END
 	
 
-	TO (RETURN_MC_SOFT_GEOFENCE)   //use this for (wider) turns
-		DO (CHECKS)
+	TO (PP_RETURN_MC_SOFT_GEOFENCE)   //use this for (wider) turns
+		DO (PP_CHECKS)
 		FD(23)
 	END
 	END
 	
 
-	TO (CHECKS)        // is motor needed, landing requested, is pilot in control?
+	TO (PP_CHECKS)        // is motor needed, landing requested, is pilot in control?
 		//see if calling subroutine needs to end
 
 		IF_LT(BRAKE_THR_SEL_INPUT_CHANNEL ,2700)     // automode only
