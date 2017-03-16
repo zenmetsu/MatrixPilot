@@ -110,9 +110,9 @@
 // ALT_DOWN(z)          - Drop z meters of altitude.
 // SET_ALT(z)           - Set altitude to z.
 
-// SPEED_INCREASE(x)    - Increases the target speed by x m/s
-// SPEED_DECREASE(x)    - Decreases the target speed by x m/s
-// SET_SPEED(x)         - Sets the target speed to x m/s
+// SPEED_INCREASE(x)    - Increases the target speed by x dm/s
+// SPEED_DECREASE(x)    - Decreases the target speed by x dm/s
+// SET_SPEED(x)         - Sets the target speed to x dm/s
 
 // REPEAT(n)            - Repeat all of the instructions until the matching END, n times
 // REPEAT_FOREVER       - Repeat all of the instructions until the matching END, forever
@@ -1037,6 +1037,8 @@ const struct logoInstructionDef instructions[] = {
 
 //Custom change made: Only odd numbers (actions) will be logged as waypoint
 
+#define SPEED_MIN			          105  // in dm/h     38 km/h	10,56
+#define SPEED_MAX				      116  // in dm/h     42 km/h	11,67
 #define INT_FORCE_TARGET_AHEAD                2
 
 //Geofences
@@ -1090,11 +1092,23 @@ const struct logoInstructionDef instructions[] = {
 #define FS_DESCENT_PATTERN                   69
 #define FS_LOITER_LAND                       71
 
+//Polar_plot
+#define PP_POLAR_PLOT                        81
+#define PP_CHECKS                            80
+#define PP_PATTERN                           83
+#define PP_RETURN_MC_SOFT_GEOFENCE           85
+#define PP_CRUISE                            87
+#define PP_MOTOR_CLIMB_FORWARD               89
 
 const struct logoInstructionDef instructions[] = {
 
+	IF_GT(TEST_MODE_INPUT_CHANNEL ,3500)     // automode only
+		EXEC (PP_POLAR_PLOT)
+	END
+
+
 	//Main  -  main program when motor is off
-	//LOGO_MAIN
+	//LOGO_MAIN  LET
 
 		//cleanup
 		SET_ALT(MAX_THERMALLING_ALT-10)    // the last 20m will be used to gradually apply brakes  - depends on brake gain
@@ -1730,6 +1744,133 @@ const struct logoInstructionDef instructions[] = {
 		END
 	END
 	END
+
+
+
+
+//Polar_Plot
+	TO (PP_POLAR_PLOT)
+
+		SET_ALT(MOTOR_OFF_TRIGGER_ALT)
+	
+		//to starting point
+		FLAG_OFF(F_LAND) //Motor on
+		PEN_UP
+			HOME      // Go Home and point North
+			RT(118)   // this is also the correct angle
+			FD(200)
+		PEN_DOWN
+			
+		//PARAM_SET(SPEED_MIN)  //start with 1
+	    LOAD_TO_PARAM(READ_DESIRED_SPEED)      //make script restartable, continue with last desiredSpeed
+	    
+		REPEAT_FOREVER
+			
+			IF_LT(PARAM,SPEED_MAX+0)
+				PARAM_ADD(1+0)          // Increases the target speed by x m/s   custom: 1 dm/s !
+			ELSE
+				PARAM_SET(SPEED_MIN)  //start over
+			END
+			SET_SPEED_PARAM
+			DO(PP_PATTERN)	              // turn, settle, glide, settle
+	
+		END
+		END
+	END
+	END
+
+
+	TO (PP_PATTERN)
+		//C- [O] --..-- - 	
+
+		//climb, turn
+		FLAG_OFF(F_LAND) //Motor on
+		REPEAT(18)
+			DO (PP_RETURN_MC_SOFT_GEOFENCE)  
+			RT(10)
+		END
+
+		//add a circle if still too low
+		IF_LT(ALT, MOTOR_OFF_TRIGGER_ALT-20)    
+			REPEAT(36)
+				DO (PP_RETURN_MC_SOFT_GEOFENCE)  
+				RT(10)
+			END
+		END
+
+		//settle into glide	 if high enough
+		IF_GT(ALT, MOTOR_OFF_TRIGGER_ALT-20)    
+			FLAG_ON(F_LAND)    //Motor off
+			REPEAT(6)
+				DO (PP_MOTOR_CLIMB_FORWARD)     // log as motor
+			END
+
+			//measure sinkrate with this speed
+			REPEAT(35)                               //100- 47/2 = 78m , = 47*11 = 500
+				IF_EQ(READ_F_LAND,1)   //custom system value             
+					//check minimum alt	
+					IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)
+						DO (PP_MOTOR_CLIMB_FORWARD)     // log as motor first
+						FLAG_OFF(F_LAND)    //Motor on
+					ELSE
+						DO (PP_CRUISE)   					
+					END
+				ELSE
+					DO (PP_MOTOR_CLIMB_FORWARD)  // should be rare
+				END
+			END
+		ELSE
+			//measure sinkrate with this speed
+			REPEAT(41)
+				DO (PP_MOTOR_CLIMB_FORWARD)
+			END
+		END
+
+		//prepare motor on, continue glide, but log it as motor to prevent motor influence  
+		DO (PP_MOTOR_CLIMB_FORWARD)            // log as motor
+		FLAG_OFF(F_LAND)    //Motor on
+	END
+	END
+
+
+	TO (PP_CRUISE)
+		DO (PP_CHECKS)
+		FD(11)
+	END
+	END
+
+
+	TO (PP_MOTOR_CLIMB_FORWARD)
+		DO (PP_CHECKS)
+		FD(11)
+	END
+	END
+	
+
+	TO (PP_RETURN_MC_SOFT_GEOFENCE)   //use this for (wider) turns
+		DO (PP_CHECKS)
+		FD(23)
+	END
+	END
+	
+
+	TO (PP_CHECKS)        // is motor needed, landing requested, is pilot in control?
+		//see if calling subroutine needs to end
+
+		IF_LT(BRAKE_THR_SEL_INPUT_CHANNEL ,2700)     // automode only
+			IF_GT(BRAKE_THR_SEL_INPUT_CHANNEL ,1700) // abstract flightplan workaround: only real low, ignore 0
+				EXEC (LOITER_LAND)
+			END
+		END
+		IF_LT(BATTERY_VOLTAGE, VOLTAGE_SENSOR_ALARM)     // land automatically when battery is low, usefull when no telemetry is available
+			EXEC (LOITER_LAND)
+		END
+	END
+	END
+
+
+
+
 
 
 //Landing
