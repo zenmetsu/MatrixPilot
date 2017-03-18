@@ -111,7 +111,7 @@ static int16_t oneSecSUE;    // from 4Hz to 1Hz for mts and ftt records in SUE
 static int16_t motorSecondsUDB = 0;   // in sec starts when throttle out opens, for GCS motor run time, allows GCS restarts
 extern int16_t desiredSpeed;
 extern int16_t desiredPitch;
-extern int16_t target_airspeed;
+//extern int16_t target_airspeed;
 extern int16_t location[];              //from estLocation.c
 extern int16_t locationz;              //from estLocation.c
 extern union longbbbb accum_nav;        //from estLocation.c
@@ -764,14 +764,15 @@ void telemetry_output_8hz(void)
 				    state_flags.WW,	motorSecondsUDB, vario); 
 				for (i= 7; i <= NUM_OUTPUTS; i++)                //p7o, p8o  only
 				    serial3_output("p%io%i:",i,pwOut_save[i]);
-				serial3_output("ma%i:",get_flapsSelected() + SERVOCENTER);  // Flaps output (log only) as MAG W (ma%i:) for place in csv to Dashware
+				//serial3_output("ma%i:",get_flapsSelected() + SERVOCENTER);  // Flaps output (log only) as MAG W (ma%i:) for place in csv to Dashware
+				serial3_output("ma%i:",desiredSpeed);  // show desiredSpeed on pc telemetry ford debugging
 //#if (HILSIM == 1)
 /*
 				serial3_output("cpu%u:",
 				    (uint16_t)udb_cpu_load());
 
 				serial3_output("dsp%i:",
-				    target_airspeed);
+				    desiredSpeed);
 				serial3_output("dpi%i:",
 				    desiredPitch);
 				//serial3_output("apa%i:",
@@ -970,7 +971,7 @@ void telemetry_output_8hz(void)
 						serial_output("p%io%i:",i,pwOut_save[i]);
 #if ( MY_PERSONAL_OPTIONS == 1 )
 					serial_output("ma%i:", get_flapsSelected() + SERVOCENTER);  // Flaps output (log only) as MAG W (ma%i:) for place in csv to Dashware
-					serial_output("mb%i:", target_airspeed); // DesireSpeed output (log only) as MAG N (mb%i:) for place in csv to Dashware
+					serial_output("mb%i:", desiredSpeed); // DesireSpeed output (log only) as MAG N (mb%i:) for place in csv to Dashware
 					serial_output("imx%i:imy%i:imz%i:lex%i:ley%i:lez%i:fgs%X:ofc%i:tx%i:ty%i:tz%i:G%d,%d,%d:",IMUlocationx._.W1,IMUlocationy._.W1,IMUlocationz._.W1,
 					    locationErrorEarth[0], locationErrorEarth[1], locationErrorEarth[2],
 					    state_flags.WW, osc_fail_count,
