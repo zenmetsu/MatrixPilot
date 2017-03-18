@@ -1289,6 +1289,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (WAIT_DECREASE_CLIMBRATE)
+	    FLAG_ON(F_LAND)    //Motor off
 		//wait up to 6 sec for the climbrate to decrease, keep the best climbrate
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta
@@ -1750,7 +1751,8 @@ const struct logoInstructionDef instructions[] = {
 
 //Polar_Plot
 	TO (PP_POLAR_PLOT)
-
+        
+		CLEAR_INTERRUPT  //don't change navigation
 		SET_ALT(MOTOR_OFF_TRIGGER_ALT)
 	
 		//to starting point
