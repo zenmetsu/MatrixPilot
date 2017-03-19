@@ -1894,7 +1894,7 @@ const struct logoInstructionDef instructions[] = {
 	TO (DESCENT_PATTERN)
 	//TO (FS_DESCENT_PATTERN)
 		//turn
-		REPEAT(18)
+		REPEAT(12)
 			IF_GT(ALT,FINAL_ALT*3+5)
 				DO (SET_ALT_ALT)    //keep aware of current altitude
 				ALT_DOWN(8)  //keep going down  , this and FD controls brakes
@@ -1902,8 +1902,8 @@ const struct logoInstructionDef instructions[] = {
 			ELSE
 				FLAG_OFF(F_LAND)  // no brakes
 			END
-			RT(20)
-			FD(DESIRED_SPEED_NORMAL_F0/5)
+		    RT(30)
+		    FD(DESIRED_SPEED_NORMAL_F0/3)
 		END
 	END
 	END

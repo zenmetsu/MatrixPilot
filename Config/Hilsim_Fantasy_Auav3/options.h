@@ -938,7 +938,7 @@
 // Waypoint handling
 
 // Move on to the next waypoint when getting within this distance of the current goal (in meters)
-#define WAYPOINT_PROXIMITY_RADIUS	25
+//#define WAYPOINT_PROXIMITY_RADIUS	25
 #define WAYPOINT_PROXIMITY_RADIUS	35
 
 // Origin Location
