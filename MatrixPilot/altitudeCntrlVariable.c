@@ -282,12 +282,16 @@ static void normalAltitudeCntrl(void)
 	{
 		// vario in altitudeCntrlVariable.c because : if in logo c, no vario possible in manual and stab modes
 		//attempt to compensate energy by mixing speedheigth
+/*
 #if (USE_BAROMETER_ALTITUDE == 0)
-		vario = ( ( vario * 23 ) + (int16_t)(IMUvelocityz._.W1) + ((int16_t)( speed_height - speed_height_old ) / 200) ) / 24;    //update @ 4Hz, in cm/sec, used in flightplan_logo.c
+		vario = ( ( vario * 23 ) + (int16_t)(IMUvelocityz._.W1) + () ) / 24;    //update @ 4Hz, in cm/sec, used in flightplan_logo.c
 		speed_height_old = speed_height;
 #else
 		vario = ( ( vario * 11 ) + (int16_t)(get_barometer_vert_velocity()/10) )/ 12;    //from estAltitude.c   in cm/sec
 #endif
+*/
+		vario = ( ( vario * 11 ) + (int16_t)(IMUvelocityz._.W1) )/ 12;    //update @ 4Hz, 3 sec filter, based on GPS, in cm/sec, used in flightplan_logo.c
+
 	}
 #endif  //THERMALLING_MISSION
 

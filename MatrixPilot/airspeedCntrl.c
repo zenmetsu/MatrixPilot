@@ -316,7 +316,7 @@ void airspeedCntrl(void)
 		}
 		else if ( desiredSpeed == DESIRED_SPEED_FAST_FMIN4 )
 		{
-		  	flapsSelected = 200;// Flap setting -1 (up) for speed
+		  	flapsSelected = 100;// Flap setting -1 (up) for speed
 		}
 		else
 		{
