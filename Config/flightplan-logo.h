@@ -2028,7 +2028,7 @@ const struct logoInstructionDef instructions[] = {
 			//If high, fly circles down to 80m
 			//if low (<50m) go straight for an "emergency" final  (dont know if the charge level of the battery is sufficient)
 
-			IF_GT(ALT,(FINAL_ALT*3)+0)
+			IF_GT(ALT,(FINAL_ALT*4)+0)  // < ~16m can be removed on Downwind, else spyral down
 				DO (SET_ALT_ALT)
 				//DO (FS_SET_ALT_ALT)
 				DO (DESCENT_PATTERN)   //use a subroutine to preserve PARAM with circuit data
@@ -2418,7 +2418,7 @@ const struct logoInstructionDef rtlInstructions[] = {
 			//If high, fly circles down to 80m
 			//if low (<50m) go straight for an "emergency" final  (dont know if the charge level of the battery is sufficient)
 
-			IF_GT(ALT,(FINAL_ALT*3)+0)
+			IF_GT(ALT,(FINAL_ALT*4)+0)  // < ~16m can be removed on Downwind, else spyral down
 				//DO (SET_ALT_ALT)
 				DO (FS_SET_ALT_ALT)
 				//DO (DESCENT_PATTERN)   //use a subroutine to preserve PARAM with circuit data
