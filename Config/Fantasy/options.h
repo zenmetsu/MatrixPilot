@@ -188,7 +188,7 @@
 
 
 #if ( MODEL_FANTASY == 1 && HILSIM == 0 )
-#define DESIRED_SPEED_FAST_FMIN4            135     // decimeters/second  Flaps up                  48 km/h
+#define DESIRED_SPEED_FAST_FMIN4            122     // decimeters/second  Flaps up                  43 km/h
 #define DESIRED_SPEED_NORMAL_F0             110     // decimeters/second  no Flaps or manual F4     40 km/h
 #define DESIRED_SPEED_SLOW_F4               100     // decimeters/second  Flaps down, thermalling   36 km/h
 #endif
