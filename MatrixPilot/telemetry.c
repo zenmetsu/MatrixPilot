@@ -117,6 +117,10 @@ extern int16_t locationz;              //from estLocation.c
 extern union longbbbb accum_nav;        //from estLocation.c
 #endif  //MY_PERSONAL_OPTIONS
 
+#if ( THERMALLING_MISSION == 1 )
+static int16_t avgBatteryVoltage = 0;
+#endif  //THERMALLING_MISSION
+
 static union intbb voltage_milis = {0};
 static union intbb voltage_temp;
 
@@ -1033,8 +1037,15 @@ void telemetry_output_8hz(void)
 					//    flightTimeSUE);
 					//serial_output("mts%i:",
 					//	motorSecondsSUE);
+					
+					//serial_output("bmv%i:",
+					//  battery_voltage._.W1);
+		
+					avgBatteryVoltage = (int16_t)((avgBatteryVoltage * 119 +  battery_voltage._.W1)/120);   //heavy filter for voltage
 					serial_output("bmv%i:",
-					    battery_voltage._.W1);
+					    avgBatteryVoltage);
+					    
+					    
 					//serial_output("bma%i:",
 					//	(int16_t)(get_barometer_altitude()/10) );          //from estAltitude.c   in cm
 #endif  //MY_PERSONAL_OPTIONS

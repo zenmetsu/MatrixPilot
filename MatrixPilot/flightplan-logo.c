@@ -278,7 +278,7 @@ static struct logoInstructionDef *currentInstructionSet = (struct logoInstructio
 static int16_t numInstructionsInCurrentSet = NUM_INSTRUCTIONS;
 
 #if ( THERMALLING_MISSION == 1 )
-int16_t vario = 0;// in cm/s ,used for Logo  - updated in MavUDBExtra.c @ 1hz - running average (3s)
+int16_t vario = 0;// in cm/s ,used for Logo  - defined in flightplan_logo.c and set in altitudeCntrlVariable.c - running average (3s)
 static int16_t vario_old = 0;// in cm/s ,used for AIR_SPEED_Z_DELTA
 int16_t fixedBankTargetAngle = 0; // heading,  used for Logo  - for RT_BANK command
 int16_t fixedBankActiveCounter; //  used for Logo  - for RT_BANK and LEVEL_1S commands
@@ -290,6 +290,7 @@ int16_t fixedBankDeg;  // deg bank, used for Logo  - for RT_BANK and LEVEL_1S co
 static int16_t get_current_angle(void);
 static int16_t motorOffTimer = 0;
 static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
+static int16_t avgBatteryVoltage = 0;
 #if ( MY_PERSONAL_OPTIONS == 1 )
 boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c
 #endif
@@ -344,7 +345,7 @@ geoScores geofenceScore_old;
 
 int16_t geoTurn;       //turn -40, 0, or 40 deg in 4 sec    scope: flightplan_logo.c
 int16_t geoStatus;     //0,1,2  0= soft/wind gf, 1=wind gf, 2 geofence (alarm)   scope: flightplan_logo.c  
-static int16_t geoHeartbeat;  //to get 1Hz timebase
+static int16_t letHeartbeat;  //to get 1Hz timebase
 int16_t bestFarScore = 0;          //of four directions, find the angle to the farthest point possible
 int16_t bestFarScoreAngle = -1;
 int16_t relAngleToOpposite = 0;  
@@ -635,9 +636,12 @@ void flightplan_logo_update(void)
 #endif  //THERMALLING_MISSION
 	}
 #if ( THERMALLING_MISSION == 1 )
-	geoHeartbeat++;
-	if ( geoHeartbeat % 40 == 0 )   //1Hz
+	letHeartbeat++;
+	if ( letHeartbeat % 40 == 0 )   //1Hz
 	{
+		
+		avgBatteryVoltage = (int16_t)((avgBatteryVoltage * 29 +  battery_voltage._.W1)/30);   //heavy filter for voltage
+		
 		geoSetStatus();         //read geofencee status and update status system value
 
 		if (motorOffTimer > 0)   //monitor motor run
@@ -650,7 +654,7 @@ void flightplan_logo_update(void)
 		}
 	}
 	//calculate heading to where there is room to fly 400m, for REL_ANGLE_TO_OPPOSITE... 
-	if ( geoHeartbeat % 40 == 10 )   //1Hz
+	if ( letHeartbeat % 40 == 10 )   //1Hz
 	{
 		bestFarScore = 2;   //start bad
 		bestFarScoreAngle = -1;
@@ -662,7 +666,7 @@ void flightplan_logo_update(void)
 			bestFarScoreAngle = -150;
 		}
 	}
-	if ( geoHeartbeat % 40 == 20 )   //1Hz
+	if ( letHeartbeat % 40 == 20 )   //1Hz
 	{
 		areaGeoScore(150,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
 		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
@@ -671,7 +675,7 @@ void flightplan_logo_update(void)
 			bestFarScoreAngle = 150;
 		}
 	}
-	if ( geoHeartbeat % 40 == 25 )   //1Hz
+	if ( letHeartbeat % 40 == 25 )   //1Hz
 	{
 		areaGeoScore(-90,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
 		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
@@ -680,7 +684,7 @@ void flightplan_logo_update(void)
 			bestFarScoreAngle = -90;
 		}
 	}
-	if ( geoHeartbeat % 40 == 30 )   //1Hz
+	if ( letHeartbeat % 40 == 30 )   //1Hz
 	{
 		areaGeoScore(90,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
 		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
@@ -902,7 +906,8 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 
 		case BATTERY_VOLTAGE: // 
 		{
-			return battery_voltage._.W1;
+			//return battery_voltage._.W1;
+			return avgBatteryVoltage;
 		}
 		
 		case AIR_SPEED_Z_DELTA: //  used for waiting for a decrease in climbrate in a thermal
