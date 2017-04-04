@@ -398,7 +398,7 @@ static void normalAltitudeCntrl(void)
 			//normal mc: use avg power for climbrate 0.7
 			if (state_flags._.GPS_steering && ( desiredHeight > 70 ) )   //LOGO only, and not in landing phase.
 			{
-				if ( IMUlocationz._.W1 > 60 ) //only keep track above 60m
+				if ( IMUlocationz._.W1 > 50 ) //only keep track above 60m
 				{
 					if ( throttleAccum.WW == (int16_t)(max_throttle) && (!desired_behavior._.land))   // motor is running, only if max
 					{
@@ -468,6 +468,7 @@ static void normalAltitudeCntrl(void)
 
 
 #if ( THERMALLING_MISSION == 1 )
+			/*
 			if ( IMUlocationz._.W1 > 60 ) //only above 60m, when below, we may need more power to maintain minimal safe altitude
 			{
 				if ( sinkMotorOffTimer > 0 )
@@ -483,6 +484,7 @@ static void normalAltitudeCntrl(void)
 				
 			}
 			else   //below 60m
+			*/
 			{
 				if ( sinkMotorOffTimer > 0 )
 				{
