@@ -400,7 +400,7 @@ static void normalAltitudeCntrl(void)
 			{
 				if ( IMUlocationz._.W1 > 50 ) //only keep track above 60m
 				{
-					if ( throttleAccum.WW == (int16_t)(max_throttle) && (!desired_behavior._.land))   // motor is running, only if max
+					if ( throttleAccum.WW == (int16_t)(max_throttle) && (!desired_behavior._.land) && (udb_pwIn[TEST_MODE_INPUT_CHANNEL]<3500) )   // motor is running, only if max, not in polar plot program
 					{
 						if ( sinkMotorOffTimer == 0 ) //only do this if the sinkMotorOffTimer is not running
 						{
@@ -456,7 +456,7 @@ static void normalAltitudeCntrl(void)
 						motorClimbRunStarted = 0;	//motor climrate tuning must start over next time
 						sinkMotorOffTimer = 0;      //end suppress motor
 					}
-				} //>60m
+				} //>50m
 			}
 			else //!Gps
 			{
@@ -481,7 +481,6 @@ static void normalAltitudeCntrl(void)
 					// reduce throttle for a 0.7 m/s climb
 					throttleAccum.WW = (int16_t)((float)(throttleAccum.WW) * steadyClimbPowerFactor);
 				}
-				
 			}
 			else   //below 60m
 			*/

@@ -1824,7 +1824,7 @@ const struct logoInstructionDef instructions[] = {
 				END
 			END
 		ELSE
-			//measure sinkrate with this speed
+			//should not happen
 			REPEAT(41)
 				DO (PP_MOTOR_CLIMB_FORWARD)
 			END
