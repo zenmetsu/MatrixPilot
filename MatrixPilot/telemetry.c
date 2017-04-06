@@ -118,7 +118,7 @@ extern union longbbbb accum_nav;        //from estLocation.c
 #endif  //MY_PERSONAL_OPTIONS
 
 #if ( THERMALLING_MISSION == 1 )
-static int16_t avgBatteryVoltage = 0;
+static float avgBatteryVoltage = 0;
 #endif  //THERMALLING_MISSION
 
 static union intbb voltage_milis = {0};
@@ -1041,9 +1041,9 @@ void telemetry_output_8hz(void)
 					//serial_output("bmv%i:",
 					//  battery_voltage._.W1);
 		
-					avgBatteryVoltage = (int16_t)((avgBatteryVoltage * 119 +  battery_voltage._.W1)/120);   //heavy filter for voltage
+					avgBatteryVoltage = (avgBatteryVoltage * 119 + (float)battery_voltage._.W1 )/120;   //heavy filter for voltage
 					serial_output("bmv%i:",
-					    avgBatteryVoltage);
+					    (int16_t)avgBatteryVoltage);
 					    
 					    
 					//serial_output("bma%i:",

@@ -290,7 +290,7 @@ int16_t fixedBankDeg;  // deg bank, used for Logo  - for RT_BANK and LEVEL_1S co
 static int16_t get_current_angle(void);
 static int16_t motorOffTimer = 0;
 static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
-static int16_t avgBatteryVoltage = 0;
+static float avgBatteryVoltage = 0;
 #if ( MY_PERSONAL_OPTIONS == 1 )
 boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c
 #endif
@@ -640,7 +640,8 @@ void flightplan_logo_update(void)
 	if ( letHeartbeat % 40 == 0 )   //1Hz
 	{
 		
-		avgBatteryVoltage = (int16_t)((avgBatteryVoltage * 29 +  battery_voltage._.W1)/30);   //heavy filter for voltage
+		//avgBatteryVoltage = (int16_t)( battery_voltage._.W1 );   //heavy filter for voltage
+		avgBatteryVoltage = (avgBatteryVoltage * 29 + (float)battery_voltage._.W1 )/30;   //heavy filter for voltage
 		
 		geoSetStatus();         //read geofencee status and update status system value
 
@@ -907,7 +908,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		case BATTERY_VOLTAGE: // 
 		{
 			//return battery_voltage._.W1;
-			return avgBatteryVoltage;
+			return (int16_t)avgBatteryVoltage;
 		}
 		
 		case AIR_SPEED_Z_DELTA: //  used for waiting for a decrease in climbrate in a thermal

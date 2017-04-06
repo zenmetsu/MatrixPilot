@@ -137,7 +137,7 @@ void estWind(int16_t angleOfAttack)
 			estimatedWindNoGrad[0] = estimatedWindNoGrad[0] + 
 		    	((groundVelocitySum[0] - longaccum._.W1 - estimatedWindNoGrad[0]) >> 4);
 		    // windspeed * square(fraction current alt of 15m)	
-			estimatedWind[0] = (int16_t)((float)estimatedWindNoGrad[0] * (float)(IMUlocationz._.W1 / 15) * (float)(IMUlocationz._.W1 / 15) );  
+			estimatedWind[0] = (int16_t)((float)estimatedWindNoGrad[0] * ((float)(IMUlocationz._.W1) / 15) * ((float)(IMUlocationz._.W1) / 15) );  
 		}			 
 #endif // MY_PERSONAL_OPTIONS
 
@@ -162,7 +162,7 @@ void estWind(int16_t angleOfAttack)
 			estimatedWindNoGrad[1] = estimatedWindNoGrad[1] + 
 		    	((groundVelocitySum[1] - longaccum._.W1 - estimatedWindNoGrad[1]) >> 4);
 		    // windspeed * square(fraction current alt of 15m)	
-			estimatedWind[1] = (int16_t)((float)estimatedWindNoGrad[1] * (float)(IMUlocationz._.W1 / 15) * (float)(IMUlocationz._.W1 / 15) );  
+			estimatedWind[1] = (int16_t)((float)estimatedWindNoGrad[1] * ((float)(IMUlocationz._.W1) / 15) * ((float)(IMUlocationz._.W1) / 15) );   
 		}			 
 #endif // MY_PERSONAL_OPTIONS
 
