@@ -25,6 +25,10 @@
 #include "estWind.h"
 #include "rmat.h"
 
+#ifdef MY_PERSONAL_OPTIONS
+#include "deadReckoning.h"
+int16_t estimatedWindNoGrad[2] = { 0, 0 };
+#endif // MY_PERSONAL_OPTIONS
 
 int16_t estimatedWind[3] = { 0, 0, 0 };
 
@@ -115,14 +119,52 @@ void estWind(int16_t angleOfAttack)
 		longaccum.WW = (__builtin_mulss(costhetaDiff, fuselageDirectionSum[0])
 		              - __builtin_mulss(sinthetaDiff, fuselageDirectionSum[1])) << 2;
 		longaccum.WW = (__builtin_mulus(estimatedAirspeed, longaccum._.W1)) << 2;
+		
+#ifndef MY_PERSONAL_OPTIONS	
 		estimatedWind[0] = estimatedWind[0] + 
 		    ((groundVelocitySum[0] - longaccum._.W1 - estimatedWind[0]) >> 4);
+		estimatedWindNoGrad[0] = estimatedWind[0];	
+#else
+		if (IMUlocationz._.W1 > 15)
+		{
+			estimatedWind[0] = estimatedWind[0] + 
+		    	((groundVelocitySum[0] - longaccum._.W1 - estimatedWind[0]) >> 4);
+		    estimatedWindNoGrad[0] = estimatedWind[0];	
+  		}
+  		else
+  		{
+			//make wind decrease closer to the ground
+			estimatedWindNoGrad[0] = estimatedWindNoGrad[0] + 
+		    	((groundVelocitySum[0] - longaccum._.W1 - estimatedWindNoGrad[0]) >> 4);
+		    // windspeed * square(fraction current alt of 15m)	
+			estimatedWind[0] = (int16_t)((float)estimatedWindNoGrad[0] * (float)(IMUlocationz._.W1 / 15) * (float)(IMUlocationz._.W1 / 15) );  
+		}			 
+#endif // MY_PERSONAL_OPTIONS
 
 		longaccum.WW = (__builtin_mulss(sinthetaDiff, fuselageDirectionSum[0])
 		              + __builtin_mulss(costhetaDiff, fuselageDirectionSum[1])) << 2;
 		longaccum.WW = (__builtin_mulus(estimatedAirspeed, longaccum._.W1)) << 2;
+
+#ifndef MY_PERSONAL_OPTIONS	
 		estimatedWind[1] = estimatedWind[1] +
 		    ((groundVelocitySum[1] - longaccum._.W1 - estimatedWind[1]) >> 4);
+		estimatedWindNoGrad[1] = estimatedWind[1];	
+#else
+		if (IMUlocationz._.W1 > 15)
+		{
+			estimatedWind[1] = estimatedWind[1] + 
+		    	((groundVelocitySum[1] - longaccum._.W1 - estimatedWind[1]) >> 4);
+		    estimatedWindNoGrad[1] = estimatedWind[1];	
+  		}
+  		else
+  		{
+			//make wind decrease closer to the ground
+			estimatedWindNoGrad[1] = estimatedWindNoGrad[1] + 
+		    	((groundVelocitySum[1] - longaccum._.W1 - estimatedWindNoGrad[1]) >> 4);
+		    // windspeed * square(fraction current alt of 15m)	
+			estimatedWind[1] = (int16_t)((float)estimatedWindNoGrad[1] * (float)(IMUlocationz._.W1 / 15) * (float)(IMUlocationz._.W1 / 15) );  
+		}			 
+#endif // MY_PERSONAL_OPTIONS
 
 		longaccum.WW = (__builtin_mulus(estimatedAirspeed, fuselageDirectionSum[2])) << 2;
 		estimatedWind[2] = estimatedWind[2] +
