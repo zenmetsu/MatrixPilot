@@ -129,15 +129,15 @@ void estWind(int16_t angleOfAttack)
 		{
 			estimatedWind[0] = estimatedWind[0] + 
 		    	((groundVelocitySum[0] - longaccum._.W1 - estimatedWind[0]) >> 4);
-		    estimatedWindNoGrad[0] = estimatedWind[0];	
-  		}
-  		else
-  		{
+		    estimatedWindNoGrad[0] = estimatedWind[0];
+		}
+		else
+		{
 			//make wind decrease closer to the ground
 			estimatedWindNoGrad[0] = estimatedWindNoGrad[0] + 
-		    	((groundVelocitySum[0] - longaccum._.W1 - estimatedWindNoGrad[0]) >> 4);
-		    // windspeed * square(fraction current alt of 15m)	
-			estimatedWind[0] = (int16_t)((float)estimatedWindNoGrad[0] * ((float)(IMUlocationz._.W1) / 15) * ((float)(IMUlocationz._.W1) / 15) );  
+				((groundVelocitySum[0] - longaccum._.W1 - estimatedWindNoGrad[0]) >> 4);
+			// windspeed * square(fraction current alt of 15m)	
+			estimatedWind[0] = (int16_t)((float)estimatedWindNoGrad[0] * ((float)(IMUlocationz._.W1) / 15) * ((float)(IMUlocationz._.W1) / 15) );
 		}			 
 #endif // MY_PERSONAL_OPTIONS
 
@@ -153,16 +153,16 @@ void estWind(int16_t angleOfAttack)
 		if (IMUlocationz._.W1 > 15)
 		{
 			estimatedWind[1] = estimatedWind[1] + 
-		    	((groundVelocitySum[1] - longaccum._.W1 - estimatedWind[1]) >> 4);
-		    estimatedWindNoGrad[1] = estimatedWind[1];	
-  		}
-  		else
-  		{
+				((groundVelocitySum[1] - longaccum._.W1 - estimatedWind[1]) >> 4);
+			estimatedWindNoGrad[1] = estimatedWind[1];
+		}
+		else
+		{
 			//make wind decrease closer to the ground
 			estimatedWindNoGrad[1] = estimatedWindNoGrad[1] + 
-		    	((groundVelocitySum[1] - longaccum._.W1 - estimatedWindNoGrad[1]) >> 4);
-		    // windspeed * square(fraction current alt of 15m)	
-			estimatedWind[1] = (int16_t)((float)estimatedWindNoGrad[1] * ((float)(IMUlocationz._.W1) / 15) * ((float)(IMUlocationz._.W1) / 15) );   
+				((groundVelocitySum[1] - longaccum._.W1 - estimatedWindNoGrad[1]) >> 4);
+			// windspeed * square(fraction current alt of 15m)	
+			estimatedWind[1] = (int16_t)((float)estimatedWindNoGrad[1] * ((float)(IMUlocationz._.W1) / 15) * ((float)(IMUlocationz._.W1) / 15) );
 		}			 
 #endif // MY_PERSONAL_OPTIONS
 
