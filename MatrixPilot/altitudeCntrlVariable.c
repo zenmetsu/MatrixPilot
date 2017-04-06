@@ -452,9 +452,9 @@ static void normalAltitudeCntrl(void)
 					}
 					else  //!throttle  | land
 					{
-						//LOGO aborts climb? run ends
-						motorClimbRunStarted = 0;	//motor climrate tuning must start over next time
-						sinkMotorOffTimer = 0;      //end suppress motor
+						motorClimbRunStarted = 0;	//motor climbrate tuning must start over next time
+						//if LOGO aborts climb, timer must keep on running
+						//sinkMotorOffTimer = 0;      //end suppress motor
 					}
 				} //>50m
 			}
