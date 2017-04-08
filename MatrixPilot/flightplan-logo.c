@@ -641,7 +641,7 @@ void flightplan_logo_update(void)
 	{
 		
 		//avgBatteryVoltage = (int16_t)( battery_voltage._.W1 );   //heavy filter for voltage
-		avgBatteryVoltage = (avgBatteryVoltage * 29 + (float)battery_voltage._.W1 )/30;   //heavy filter for voltage
+		avgBatteryVoltage = (avgBatteryVoltage * 14 + (float)battery_voltage._.W1 )/15;   //heavy filter for voltage
 		
 		geoSetStatus();         //read geofencee status and update status system value
 

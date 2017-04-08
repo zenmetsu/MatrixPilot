@@ -1317,7 +1317,7 @@ const struct logoInstructionDef instructions[] = {
 				EXEC (BETTER_LIFT)  // report just once, start new thermalling cycle
 			END
 
-			IF_EQ(READ_F_LAND,0)    //only with motor off
+			IF_EQ(READ_F_LAND,1)    //only with motor off
 				//Custom solution using new command RT_BANK()
 				RT_BANK(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
 				DO (RESET_NAVIGATION)

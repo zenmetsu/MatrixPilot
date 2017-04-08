@@ -442,9 +442,9 @@ static void normalAltitudeCntrl(void)
 									{
 										steadyClimbPowerFactor = 0.3;
 									}
-									if (steadyClimbPowerFactor > 0.9)
+									if (steadyClimbPowerFactor > 1.0)
 									{
-										steadyClimbPowerFactor = 0.9;
+										steadyClimbPowerFactor = 1.0;
 									}
 								}
 							}
