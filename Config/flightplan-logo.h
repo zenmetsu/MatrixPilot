@@ -1813,7 +1813,7 @@ const struct logoInstructionDef instructions[] = {
 			REPEAT(35)                               //100- 47/2 = 78m , = 47*11 = 500
 				IF_EQ(READ_F_LAND,1)   //custom system value             
 					//check minimum alt	
-					IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)
+					IF_LT(ALT, MOTOR_ON_IN_SINK_ALT)
 						DO (PP_MOTOR_CLIMB_FORWARD)     // log as motor first
 						FLAG_OFF(F_LAND)    //Motor on
 					ELSE
