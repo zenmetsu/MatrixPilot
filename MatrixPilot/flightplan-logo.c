@@ -290,9 +290,9 @@ int16_t fixedBankDeg;  // deg bank, used for Logo  - for RT_BANK and LEVEL_1S co
 static int16_t get_current_angle(void);
 static int16_t motorOffTimer = 0;
 static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
-static float avgBatteryVoltage = 0;
+static float avgBatteryVoltage = 110;  //kickstart average filter with nominal value; it only starts when LOGO starts
 #if ( MY_PERSONAL_OPTIONS == 1 )
-boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c
+boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c 
 #endif
 
 

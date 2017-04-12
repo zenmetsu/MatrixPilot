@@ -115,6 +115,8 @@ extern int16_t desiredPitch;
 extern int16_t location[];              //from estLocation.c
 extern int16_t locationz;              //from estLocation.c
 extern union longbbbb accum_nav;        //from estLocation.c
+static int16_t thermalSteps = 0;    //extra status 0..9 for thermalling, to support therlma instrument in DashWare 
+static int16_t thermalSector = 0;   //extra status 0..7 (floor(heading/45)) for thermalling, to support therlma instrument in DashWare 
 #endif  //MY_PERSONAL_OPTIONS
 
 #if ( THERMALLING_MISSION == 1 )
@@ -978,8 +980,34 @@ void telemetry_output_8hz(void)
 #if ( MY_PERSONAL_OPTIONS == 1 )
 					serial_output("ma%i:", get_flapsSelected() + SERVOCENTER);  // Flaps output (log only) as MAG W (ma%i:) for place in csv to Dashware
 					serial_output("mb%i:", desiredSpeed); // DesireSpeed output (log only) as MAG N (mb%i:) for place in csv to Dashware
+					
+					//Dashware  locationErrorEarth[0] = thermalSteps, locationErrorEarth[1] = , locationErrorEarth[2] = 
+					if (waypointIndex == 13 || waypointIndex == 55) // WAIT_DECREASE_CLIMBRATE   BETTER_LIFT
+					{
+						thermalSteps = 1; 
+						thermalSector = cog_gps.BB / 4500; // (0..7)
+					}
+					else if (waypointIndex == 15 ) //  THERMALLING_TURN
+					{
+						if ( thermalSector != (cog_gps.BB / 4500) )//new sector, move dot
+						{
+							thermalSector = cog_gps.BB / 4500; // (0..7)
+						    thermalSteps++;
+						}	
+					}
+					else if (waypointIndex ==  17 ) //  THERMALLING_SHIFT_CIRCLE
+					{
+						thermalSteps = 9;
+					}
+					else  // 
+					{
+						thermalSteps = 0;
+					}
+
+					
 					serial_output("imx%i:imy%i:imz%i:lex%i:ley%i:lez%i:fgs%X:ofc%i:tx%i:ty%i:tz%i:G%d,%d,%d:",IMUlocationx._.W1,IMUlocationy._.W1,IMUlocationz._.W1,
-					    locationErrorEarth[0], locationErrorEarth[1], locationErrorEarth[2],
+					    //locationErrorEarth[0], locationErrorEarth[1], locationErrorEarth[2],
+					    thermalSteps, locationErrorEarth[1], locationErrorEarth[2],
 					    state_flags.WW, osc_fail_count,
 					    IMUvelocityx._.W1, IMUvelocityy._.W1, vario,
 					    goal.x, goal.y, goal.z
