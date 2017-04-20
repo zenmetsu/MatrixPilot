@@ -1334,7 +1334,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					break;
 				case 1: // Set Speed
 
-#if (THERMALLING_MISSION == 1)
+#if (THERMALLING_MISSION != 1)
 					desiredSpeed = instr.arg * 1;
 #else
 				{
@@ -1365,7 +1365,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					else
 					{
 						//    org code, needs 2 indents;
-						desiredSpeed = instr.arg * 10;
+						desiredSpeed = instr.arg * 1;
 						//
 					} //else
 					//limits

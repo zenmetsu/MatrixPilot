@@ -86,7 +86,7 @@ static int16_t avgMotorRunClimbrate;        // average climbrate in cm/s in this
 static int16_t sinkMotorOffTimer;           // wait period to postpone climbing with motor due to sink  (30 sec)
 static int16_t motorClimbRunCount;          // counter (40Hz steps) for motor run
 static float avgMotorClimbrate;             // average climbrate after settle all runs in m/s
-static float steadyClimbPowerFactor = 0.7;  // reduce throttle for a 0.7 m/s climb, start with 0.7
+static float steadyClimbPowerFactor = 0.8;  // reduce throttle for a 0.7 m/s climb, start with 0.7
 #endif  //THERMALLING_MISSION
 
 // Internal computed variables.

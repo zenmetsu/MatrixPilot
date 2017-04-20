@@ -989,11 +989,12 @@ void telemetry_output_8hz(void)
 					}
 					else if (waypointIndex == 15 ) //  THERMALLING_TURN
 					{
-						if ( thermalSector != (cog_gps.BB / 4500) )//new sector, move dot
+						if ( (thermalSector != (cog_gps.BB / 4500)) || (thermalSteps == 1) )//new sector, move dot
 						{
 							thermalSector = cog_gps.BB / 4500; // (0..7)
 						    thermalSteps++;
 						}	
+						thermalSteps = thermalSteps % 8;  //2..8
 					}
 					else if (waypointIndex ==  17 ) //  THERMALLING_SHIFT_CIRCLE
 					{

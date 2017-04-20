@@ -876,7 +876,7 @@
  #define ALT_HOLD_THROTTLE_MAX                1.0
 #endif
 #if ( MODEL_GRAFAS == 1 )
- #define ALT_HOLD_THROTTLE_MAX                0.70
+ #define ALT_HOLD_THROTTLE_MAX                0.80
 #endif
 #if ( MODEL_LINEA == 1 )
  #define ALT_HOLD_THROTTLE_MAX                0.56

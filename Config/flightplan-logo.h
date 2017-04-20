@@ -1026,10 +1026,16 @@ const struct logoInstructionDef instructions[] = {
 
 #if ( MODEL_GRAFAS == 1 )
 #define FINAL_ALT                      16  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
+#define SPEED_MIN			           95  // in dm/h      km/h	
+#define SPEED_MAX				      105  // in dm/h      km/h	
 #elif ( MODEL_LINEA == 1 )
 #define FINAL_ALT                      16  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
+#define SPEED_MIN			           95  // in dm/h      km/h	
+#define SPEED_MAX				      105  // in dm/h      km/h	
 #else   //Fantasy
 #define FINAL_ALT                      18  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
+#define SPEED_MIN			          105  // in dm/h     38 km/h	10,56
+#define SPEED_MAX				      116  // in dm/h     42 km/h	11,67
 #endif
 #endif
 
@@ -1037,8 +1043,6 @@ const struct logoInstructionDef instructions[] = {
 
 //Custom change made: Only odd numbers (actions) will be logged as waypoint
 
-#define SPEED_MIN			          105  // in dm/h     38 km/h	10,56
-#define SPEED_MAX				      116  // in dm/h     42 km/h	11,67
 #define INT_FORCE_TARGET_AHEAD                2
 
 //Geofences

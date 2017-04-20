@@ -98,6 +98,10 @@ static int16_t calc_airspeed(void)
 	if ( interval >= 10 )
 	{
 		interval = 0; 
+		if ( airspeed == 0 )
+		{
+			airspeed = air_speed_3DIMU; 
+		}
 		airspeed = ( airspeed * 7 + air_speed_3DIMU)/8; //7/8 filter, 4Hz
 	}
 	return airspeed;
