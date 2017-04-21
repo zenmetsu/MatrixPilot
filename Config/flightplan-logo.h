@@ -1346,10 +1346,12 @@ const struct logoInstructionDef instructions[] = {
 	TO (THERMALLING_SHIFT_CIRCLE)
 		//Level off/Shift the circle for 3 sec, log the action as a "waypoint"
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
-		LEVEL_1S  //custom command
-		LEVEL_1S  //custom command
-		LEVEL_1S  //custom command
-		DO (RESET_NAVIGATION)
+		IF_EQ(READ_F_LAND,1)    //only with motor off
+			LEVEL_1S  //custom command
+			LEVEL_1S  //custom command
+			LEVEL_1S  //custom command
+			DO (RESET_NAVIGATION)
+		END
 
 		EXEC (LOGO_MAIN)
 	END

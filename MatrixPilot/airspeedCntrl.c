@@ -199,6 +199,9 @@ fractional gliding_airspeed_pitch_adjust(void)
 	int16_t pitch_range = 0;
 	fractional aspd_pitch_adj = 0;
 	
+	//me - suspect; this should  rune every call, not only the first time ...
+	aspd_tc_delta = target_airspeed - cruise_airspeed;
+	
 	if (aspd_tc_delta > 0)
 	{
 		aspd_tc_range = maximum_airspeed - cruise_airspeed;
