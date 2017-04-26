@@ -694,7 +694,21 @@
 // ELEVATOR_TRIM_INVERTED               Elevator trim in fractional servo units (-1.0 to 1.0 ) for inverted straight and level flight at cruise speed.
 // Note: ELEVATOR_TRIM_INVERTED is usually negative, with typical values in the -0.5 to -1.0 range.
 
-#define REFERENCE_SPEED                 (  11.3 )
+//#define REFERENCE_SPEED                 (  11.3 )
+#if ( MODEL_FANTASY == 1 && HILSIM == 0 )
+#define REFERENCE_SPEED                       11.30     // meters/second   41 km/h
+#endif
+#if ( MODEL_FANTASY == 1 && HILSIM == 1 )
+//Hilsim Fantasy
+#define REFERENCE_SPEED                       11.30     // meters/second   41 km/h
+#endif
+#if ( MODEL_GRAFAS == 1 )
+#define REFERENCE_SPEED                       10.83     // meters/second   39 km/h
+#endif
+#if ( MODEL_LINEA == 1 )
+#define REFERENCE_SPEED                       10.83     // meters/second   39 km/h
+#endif
+
 #define ANGLE_OF_ATTACK_NORMAL          (   0.0 )
 #define ANGLE_OF_ATTACK_INVERTED        (   0.0 )
 #define ELEVATOR_TRIM_NORMAL            (   0.0 )
