@@ -502,6 +502,10 @@ static void normalAltitudeCntrl(void)
 					{
 						throttleAccum.WW = (int16_t)(max_throttle) + (__builtin_mulss(throttle_height_gain, (-heightError._.W0 - height_marginx8))>>3);
 						if (throttleAccum.WW > (int16_t)(max_throttle)) throttleAccum.WW = (int16_t)(max_throttle);
+						if(throttleAccum.WW < (int16_t)((float)(throttleAccum.WW) * 0.5))
+						{
+							 throttleAccum.WW = (int16_t)((float)(throttleAccum.WW) * 0.5);  //use at least minimal power below 60m  
+						}
 					}
 				}
 				else

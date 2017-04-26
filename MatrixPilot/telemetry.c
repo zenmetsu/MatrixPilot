@@ -1005,10 +1005,109 @@ void telemetry_output_8hz(void)
 						thermalSteps = 0;
 					}
 
+					int16_t logoProgramCode=0;
+					switch (waypointIndex)
+					{
+						case 3:
+							logoProgramCode = 1; 
+							break;
+						case 5:
+							logoProgramCode = 2; 
+							break;
+						case 9:
+							logoProgramCode = 3; 
+							break;
+						case 19:
+							logoProgramCode = 4; 
+							break;
+						case 23:
+							logoProgramCode = 5; 
+							break;
+						case 27:
+							logoProgramCode = 6; 
+							break;
+						case 33:
+							logoProgramCode = 7; 
+							break;
+						case 35:
+							logoProgramCode = 8; 
+							break;
+						case 47:
+							logoProgramCode = 9; 
+							break;
+						case 53:
+							logoProgramCode = 10; 
+							break;
+						case 55:
+							logoProgramCode = 20; 
+							break;
+						case 57:
+							logoProgramCode = 30; 
+							break;
+						case 59:
+							logoProgramCode = 40; 
+							break;
+						case 41:
+							logoProgramCode = 50; 
+							break;
+						case 43:
+							logoProgramCode = 60; 
+							break;
+						case 45:
+							logoProgramCode = 70; 
+							break;
+						case 87:
+							logoProgramCode = 80; 
+							break;
+					}
+					
+					int16_t logoProgramGroup=0;
+					switch (waypointIndex)
+					{
+						case 3:
+						case 7:
+						case 9:
+						case 11:
+						case 20:
+						case 25:
+						case 31:
+						case 33:
+						case 35:
+						case 37:
+						case 39:
+							logoProgramGroup = 1; 
+							break;
+						case 5:
+						case 23:
+							logoProgramGroup = 2; 
+							break;
+						case 13:
+						case 15:
+						case 17:
+							logoProgramGroup = 3; 
+							break;
+						case 19:
+							logoProgramGroup = 4; 
+							break;
+						case 21:
+						case 27:
+							logoProgramGroup = 5; 
+							break;
+						case 41:
+						case 43:
+						case 45:
+						case 63:
+						case 65:
+						case 67:
+						case 69:
+						case 71:
+							logoProgramGroup = 6; 
+							break;
+					}
 					
 					serial_output("imx%i:imy%i:imz%i:lex%i:ley%i:lez%i:fgs%X:ofc%i:tx%i:ty%i:tz%i:G%d,%d,%d:",IMUlocationx._.W1,IMUlocationy._.W1,IMUlocationz._.W1,
 					    //locationErrorEarth[0], locationErrorEarth[1], locationErrorEarth[2],
-					    thermalSteps, locationErrorEarth[1], locationErrorEarth[2],
+					    thermalSteps, logoProgramCode, logoProgramGroup,
 					    state_flags.WW, osc_fail_count,
 					    IMUvelocityx._.W1, IMUvelocityy._.W1, vario,
 					    goal.x, goal.y, goal.z
