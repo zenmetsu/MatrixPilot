@@ -97,9 +97,9 @@
 // Airspeeds in m/s
 #define MINIMUM_GROUNDSPEED         -3.0
 //will be redefined?
-#define MINIMUM_AIRSPEED             8.0   // 3? km/h
+#define MINIMUM_AIRSPEED             5.7   // 3? km/h
 #define CRUISE_AIRSPEED             11.8   // 4? km/h, Gliding airspeed when aircraft is level
-#define MAXIMUM_AIRSPEED            18.0   // 5? km/h
+#define MAXIMUM_AIRSPEED            17.1   // 5? km/h
 
 // Cruise airspeed may be below minimum airspeed for high drag aircraft.
 
@@ -109,8 +109,8 @@
 
 // Pitch feedforward for gliding airspeed
 // linearly interpolated from cruise airspeed to min and max airspeed
-#define AIRSPEED_PITCH_MIN_ASPD      5.0     // Default off, start with 5.0
-#define AIRSPEED_PITCH_MAX_ASPD    -10.0     // Default off, start with -10.0
+#define AIRSPEED_PITCH_MIN_ASPD      8.0     // Default off, start with 5.0
+#define AIRSPEED_PITCH_MAX_ASPD     -8.0     // Default off, start with -10.0
 
 // Maximum rate of pitch demand change in deg/s.  Used to make control smoother.
 // Default 10.0, Higher for small aircraft. Too low may cause instability.
@@ -119,7 +119,7 @@
 #define AIRSPEED_PITCH_ADJ_RATE     12.0
 	
 // Airspeed error integrator
-#define AIRSPEED_PITCH_KI            0.40    // Integration rate.  High = unstable, low = slow response.
+#define AIRSPEED_PITCH_KI            0.011   // Integration rate.  High? = unstable, low? = slow response.
 #define AIRSPEED_PITCH_KI_MAX       10.0     // Limit of integration control in degrees.  Start with 5.0.
 
 #endif //Grafas

@@ -500,11 +500,11 @@ static void normalAltitudeCntrl(void)
 					}
 					else
 					{
-						throttleAccum.WW = (int16_t)(max_throttle) + (__builtin_mulss(throttle_height_gain, (-heightError._.W0 - height_marginx8))>>3);
+						throttleAccum.WW = (int16_t)(max_throttle) + (__builtin_mulss(throttle_height_gain, (-heightError._.W0))>>3);
 						if (throttleAccum.WW > (int16_t)(max_throttle)) throttleAccum.WW = (int16_t)(max_throttle);
-						if(throttleAccum.WW < (int16_t)((float)(throttleAccum.WW) * 0.5))
+						if(throttleAccum.WW < (int16_t)((float)(max_throttle) * 0.3))
 						{
-							 throttleAccum.WW = (int16_t)((float)(throttleAccum.WW) * 0.5);  //use at least minimal power below 60m  
+							 throttleAccum.WW = (int16_t)((float)(max_throttle) * 0.3);  //use at least minimal power below 60m  
 						}
 					}
 				}
