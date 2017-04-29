@@ -1096,12 +1096,17 @@ void telemetry_output_8hz(void)
 						case 41:
 						case 43:
 						case 45:
+						case 57:
+						case 59:
 						case 63:
 						case 65:
 						case 67:
 						case 69:
 						case 71:
-							logoProgramGroup = 6; 
+							logoProgramGroup = 6;
+							break;
+						case 87:
+							logoProgramGroup = 7;
 							break;
 					}
 					

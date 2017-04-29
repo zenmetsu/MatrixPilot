@@ -398,7 +398,7 @@ static void normalAltitudeCntrl(void)
 			//normal mc: use avg power for climbrate 0.7
 			if (state_flags._.GPS_steering && ( desiredHeight > 70 ) )   //LOGO only, and not in landing phase.
 			{
-				if ( IMUlocationz._.W1 > 50 ) //only keep track above 60m
+				if ( ( IMUlocationz._.W1 > 50 ) && ( IMUlocationz._.W1 < 90 ) ) //only keep track above 60m , don't train above 90m
 				{
 					if ( throttleAccum.WW == (int16_t)(max_throttle) && (!desired_behavior._.land) && (udb_pwIn[TEST_MODE_INPUT_CHANNEL]<3500) )   // motor is running, only if max, not in polar plot program
 					{

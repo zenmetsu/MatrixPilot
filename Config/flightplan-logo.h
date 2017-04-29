@@ -1768,7 +1768,7 @@ const struct logoInstructionDef instructions[] = {
 		PEN_UP
 			HOME      // Go Home and point North
 			RT(118)   // this is also the correct angle
-			FD(200)
+			FD(110)
 		PEN_DOWN
 			
 		//PARAM_SET(SPEED_MIN)  //start with 1
