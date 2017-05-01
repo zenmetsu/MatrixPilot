@@ -1357,7 +1357,7 @@ const struct logoInstructionDef instructions[] = {
 	END
 	END
 
-
+												 
 	TO (SINK)
 		SET_SPEED(DESIRED_SPEED_FAST_FMIN4) //dm/s
 		// method: avoid flying in sink, assume sink area in front of aircraft
@@ -1791,7 +1791,8 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (PP_PATTERN)
-		//C- [O] --..-- - 	
+		//basic shape: one turn, one glide
+		//turn 180 deg, [cicle 360 if too low], glide , motor on if alt <50m, climb
 
 		//climb, turn
 		FLAG_OFF(F_LAND) //Motor on
@@ -1801,15 +1802,17 @@ const struct logoInstructionDef instructions[] = {
 		END
 
 		//add a circle if still too low
-		IF_LT(ALT, MOTOR_OFF_TRIGGER_ALT-20)    
-			REPEAT(36)
-				DO (PP_RETURN_MC_SOFT_GEOFENCE)  
-				RT(10)
+		REPEAT(5)
+			IF_LT(ALT, MOTOR_ON_IN_SINK_ALT+40)  //need at least 40m for a glide, else circle  
+				REPEAT(36)
+					DO (PP_RETURN_MC_SOFT_GEOFENCE)  
+					RT(10)
+				END
 			END
 		END
 
 		//settle into glide	 if high enough
-		IF_GT(ALT, MOTOR_OFF_TRIGGER_ALT-20)    
+		IF_GT(ALT, MOTOR_ON_IN_SINK_ALT+40)    
 			FLAG_ON(F_LAND)    //Motor off
 			REPEAT(6)
 				DO (PP_MOTOR_CLIMB_FORWARD)     // log as motor
@@ -1823,10 +1826,10 @@ const struct logoInstructionDef instructions[] = {
 						DO (PP_MOTOR_CLIMB_FORWARD)     // log as motor first
 						FLAG_OFF(F_LAND)    //Motor on
 					ELSE
-						DO (PP_CRUISE)   					
+						DO (PP_CRUISE)   	// glide, measure sinkrate				
 					END
 				ELSE
-					DO (PP_MOTOR_CLIMB_FORWARD)  // should be rare
+					DO (PP_MOTOR_CLIMB_FORWARD)  
 				END
 			END
 		ELSE
@@ -1841,6 +1844,7 @@ const struct logoInstructionDef instructions[] = {
 		FLAG_OFF(F_LAND)    //Motor on
 	END
 	END
+
 
 
 	TO (PP_CRUISE)

@@ -116,10 +116,10 @@
 // Default 10.0, Higher for small aircraft. Too low may cause instability.
 // Maximum value is 720deg/s.  
 	
-#define AIRSPEED_PITCH_ADJ_RATE     12.0
+#define AIRSPEED_PITCH_ADJ_RATE     16.0
 	
 // Airspeed error integrator
-#define AIRSPEED_PITCH_KI            0.011   // Integration rate.  High? = unstable, low? = slow response.
+#define AIRSPEED_PITCH_KI            0.010   // Integration rate.  High? = unstable, low? = slow response.
 #define AIRSPEED_PITCH_KI_MAX       10.0     // Limit of integration control in degrees.  Start with 5.0.
 
 #endif //Grafas
