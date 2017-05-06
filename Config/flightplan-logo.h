@@ -1026,8 +1026,8 @@ const struct logoInstructionDef instructions[] = {
 
 #if ( MODEL_GRAFAS == 1 )
 #define FINAL_ALT                      16  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
-#define SPEED_MIN			          103  // in dm/h      km/h	
-#define SPEED_MAX				      113  // in dm/h      km/h	
+#define SPEED_MIN			           97  // in dm/h     35 km/h	
+#define SPEED_MAX				      113  // in dm/h     41 km/h	
 #elif ( MODEL_LINEA == 1 )
 #define FINAL_ALT                      16  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
 #define SPEED_MIN			           95  // in dm/h      km/h	
