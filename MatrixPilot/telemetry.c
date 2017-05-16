@@ -1061,7 +1061,7 @@ void telemetry_output_8hz(void)
 							break;
 					}
 					
-					int16_t logoProgramGroup=0;
+					int16_t logoProgramGroup=0;   // ___
 					switch (waypointIndex)
 					{
 						case 3:
@@ -1075,23 +1075,23 @@ void telemetry_output_8hz(void)
 						case 35:
 						case 37:
 						case 39:
-							logoProgramGroup = 1; 
+							logoProgramGroup = 1;  //Searching
 							break;
 						case 5:
 						case 23:
-							logoProgramGroup = 2; 
+							logoProgramGroup = 2;  //Geofencing
 							break;
 						case 13:
 						case 15:
 						case 17:
-							logoProgramGroup = 3; 
+							logoProgramGroup = 3;  //Thermalling
 							break;
 						case 19:
-							logoProgramGroup = 4; 
+							logoProgramGroup = 4;  //Sink
 							break;
 						case 21:
 						case 27:
-							logoProgramGroup = 5; 
+							logoProgramGroup = 5;  //Searching
 							break;
 						case 41:
 						case 43:
@@ -1103,10 +1103,10 @@ void telemetry_output_8hz(void)
 						case 67:
 						case 69:
 						case 71:
-							logoProgramGroup = 6;
+							logoProgramGroup = 6;  //Landing
 							break;
 						case 87:
-							logoProgramGroup = 7;
+							logoProgramGroup = 7;  //Polar Plot
 							break;
 					}
 					
@@ -1174,7 +1174,7 @@ void telemetry_output_8hz(void)
 					//serial_output("bmv%i:",
 					//  battery_voltage._.W1);
 		
-					avgBatteryVoltage = (avgBatteryVoltage * 119 + (float)battery_voltage._.W1 )/120;   //heavy filter for voltage
+					avgBatteryVoltage = (avgBatteryVoltage * 119.0 + (float)battery_voltage._.W1 )/120.0;   //heavy filter for voltage
 					serial_output("bmv%i:",
 					    (int16_t)avgBatteryVoltage);
 					    
