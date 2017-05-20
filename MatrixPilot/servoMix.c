@@ -429,7 +429,7 @@ void servoMix(void)
 				throttleSteps += (int32_t)(temp/3); //centred = no change, else add or subract.
 			}
 #endif	//TEST_MODE_INPUT_CHANNEL
-			if ( throttleSteps < 250 )	//remove offset from throttle channel, prevent windmilling
+			if ( throttleSteps < 300 )	//remove offset from throttle channel, prevent windmilling
 			{
 				throttleSteps = 0;
 			}

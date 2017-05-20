@@ -117,6 +117,7 @@ extern int16_t locationz;              //from estLocation.c
 extern union longbbbb accum_nav;        //from estLocation.c
 static int16_t thermalSteps = 0;    //extra status 0..9 for thermalling, to support therlma instrument in DashWare 
 static int16_t thermalSector = 0;   //extra status 0..7 (floor(heading/45)) for thermalling, to support therlma instrument in DashWare 
+static int16_t logoSubroutine = 0;  
 #endif  //MY_PERSONAL_OPTIONS
 
 #if ( THERMALLING_MISSION == 1 )
@@ -943,12 +944,17 @@ void telemetry_output_8hz(void)
 #endif // MAG_YAW_DRIFT
 				    svs, hdop);
 #else  //MY_PERSONAL_OPTIONS
+					logoSubroutine = waypointIndex;  
+					if ( !state_flags._.GPS_steering )  //only if Auto/Logo is active
+					{
+						logoSubroutine = 0;
+					}	
 					serial_output("F2:T%li:S%d%d%d:N%li:E%li:A%li:W%i:"
 					              "a%i:b%i:c%i:d%i:e%i:f%i:g%i:h%i:i%i:"
 					              "c%u:s%i:cpu%u:"
 					              "as%u:wvx%i:wvy%i:wvz%i:svs%i:hd%i:",
 					    tow.WW, udb_flags._.radio_on, dcm_flags._.nav_capable, state_flags._.GPS_steering,
-					    lat_gps.WW, lon_gps.WW, alt_sl_gps.WW, waypointIndex,
+					    lat_gps.WW, lon_gps.WW, alt_sl_gps.WW, logoSubroutine,
 					    rmat[0], rmat[1], rmat[2],
 					    rmat[3], rmat[4], rmat[5],
 					    rmat[6], rmat[7], rmat[8],
@@ -980,14 +986,22 @@ void telemetry_output_8hz(void)
 #if ( MY_PERSONAL_OPTIONS == 1 )
 					serial_output("ma%i:", get_flapsSelected() + SERVOCENTER);  // Flaps output (log only) as MAG W (ma%i:) for place in csv to Dashware
 					serial_output("mb%i:", desiredSpeed); // DesireSpeed output (log only) as MAG N (mb%i:) for place in csv to Dashware
+					if ( (pwIn_save[1] > 3000) && (pwIn_save[1] < 3100) )  //mc1 = "Pilot input" as MAG Z for dashware, if aileron input is not centered
+					{
+					    serial_output("mc0:"); 
+					}
+					else
+					{
+					    serial_output("mc1:"); 
+					}				
 					
 					//Dashware  locationErrorEarth[0] = thermalSteps, locationErrorEarth[1] = , locationErrorEarth[2] = 
-					if (waypointIndex == 13 || waypointIndex == 55) // WAIT_DECREASE_CLIMBRATE   BETTER_LIFT
+					if (logoSubroutine == 13 || logoSubroutine == 55) // WAIT_DECREASE_CLIMBRATE   BETTER_LIFT
 					{
 						thermalSteps = 1; 
 						thermalSector = cog_gps.BB / 4500; // (0..7)
 					}
-					else if (waypointIndex == 15 ) //  THERMALLING_TURN
+					else if (logoSubroutine == 15 ) //  THERMALLING_TURN
 					{
 						if ( (thermalSector != (cog_gps.BB / 4500)) || (thermalSteps == 1) )//new sector, move dot
 						{
@@ -996,7 +1010,7 @@ void telemetry_output_8hz(void)
 						}	
 						thermalSteps = thermalSteps % 8;  //2..8
 					}
-					else if (waypointIndex ==  17 ) //  THERMALLING_SHIFT_CIRCLE
+					else if (logoSubroutine ==  17 ) //  THERMALLING_SHIFT_CIRCLE
 					{
 						thermalSteps = 9;
 					}
@@ -1006,7 +1020,7 @@ void telemetry_output_8hz(void)
 					}
 
 					int16_t logoProgramCode=0;
-					switch (waypointIndex)
+					switch (logoSubroutine)
 					{
 						case 3:
 							logoProgramCode = 1; 
@@ -1062,7 +1076,7 @@ void telemetry_output_8hz(void)
 					}
 					
 					int16_t logoProgramGroup=0;   // ___
-					switch (waypointIndex)
+					switch (logoSubroutine)
 					{
 						case 3:
 						case 7:
