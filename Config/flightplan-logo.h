@@ -1013,6 +1013,8 @@ const struct logoInstructionDef instructions[] = {
 #define MOTOR_CLIMB_MAX               120  // cm/sec maximal climbrate that is expected   else start thermalling
 
 #define FINAL_ALT                      22  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
+#define SPEED_MIN			          105  // in dm/h     38 km/h	10,56
+#define SPEED_MAX				      116  // in dm/h     42 km/h	11,67
 #else
 //Dutch rules outside of Knvvl fields...
 #define MOTOR_ON_TRIGGER_ALT           80  // in meters
