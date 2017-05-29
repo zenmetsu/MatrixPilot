@@ -1303,7 +1303,8 @@ const struct logoInstructionDef instructions[] = {
 		REPEAT(5)    //6 sec
 			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			IF_GE(PARAM,0)
-				FD(DESIRED_SPEED_SLOW_F4/10)    //still increasing, wait ~1 sec
+				//FD(DESIRED_SPEED_SLOW_F4/10)    //still increasing, wait ~1 sec
+				LEVEL_1S  //custom command
 			END
 		END
 		//return.. check not cruise..

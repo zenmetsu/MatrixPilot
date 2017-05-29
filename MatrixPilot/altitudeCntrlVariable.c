@@ -438,9 +438,9 @@ static void normalAltitudeCntrl(void)
 									{
 										steadyClimbPowerFactor -= 0.0001;
 									}
-									if (steadyClimbPowerFactor < 0.3)
+									if (steadyClimbPowerFactor < 0.5)
 									{
-										steadyClimbPowerFactor = 0.3;
+										steadyClimbPowerFactor = 0.5;
 									}
 									if (steadyClimbPowerFactor > 1.0)
 									{
