@@ -1010,7 +1010,7 @@ const struct logoInstructionDef instructions[] = {
 
 #define CLIMBR_THERMAL_TRIGGER         40  // cm/sec >= 0.2 m/s climb is the trigger to start thermalling
 #define CLIMBR_THERMAL_CLIMB_MIN     -140  // cm/sec > -1.0 maximum sink allowed, else abort thermalling
-#define MOTOR_CLIMB_MIN               -50  // cm/sec minimal climbrate that is expected   else abort the Motor climb
+//#define MOTOR_CLIMB_MIN               -50  // cm/sec minimal climbrate that is expected   else abort the Motor climb
 #define MOTOR_CLIMB_MAX               120  // cm/sec maximal climbrate that is expected   else start thermalling
 
 #define FINAL_ALT                      22  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
@@ -1018,13 +1018,13 @@ const struct logoInstructionDef instructions[] = {
 #define SPEED_MAX				      116  // in dm/h     42 km/h	11,67
 #else
 //Dutch rules outside of Knvvl fields...
-#define MOTOR_ON_TRIGGER_ALT           80  // in meters
+#define MOTOR_ON_TRIGGER_ALT           50  // in meters
 #define MOTOR_ON_IN_SINK_ALT           50  // in meters, set low. Altitude where ground objects must be avoided using motor despite sink
-#define MOTOR_OFF_TRIGGER_ALT         100  // in meters
+#define MOTOR_OFF_TRIGGER_ALT          90  // in meters
 #define MAX_THERMALLING_ALT           120  // in meters
 #define CLIMBR_THERMAL_TRIGGER         20  // cm/sec >= 0.2 m/s climb is the trigger to start thermalling
 #define CLIMBR_THERMAL_CLIMB_MIN     -100  // cm/sec > -1.0 maximum sink allowed, else abort thermalling
-#define MOTOR_CLIMB_MIN                 0  // cm/sec minimal climbrate that is expected   else abort the Motor climb
+//#define MOTOR_CLIMB_MIN                 0  // cm/sec minimal climbrate that is expected   else abort the Motor climb
 #define MOTOR_CLIMB_MAX               120  // cm/sec maximal climbrate that is expected   else start thermalling
 
 #if ( MODEL_GRAFAS == 1 )
@@ -1125,7 +1125,7 @@ const struct logoInstructionDef instructions[] = {
 		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 
 		//IF_EQ(READ_F_LAND,1)
-		IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2600)
+		IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)
 			DO (CHECKS)              //is motor needed, landing requested, is pilot in control?
 			DO (SOFT_CHECKS)         //see if calling subroutine needs to end; geofence, too high, sink
 		ELSE
@@ -1135,7 +1135,7 @@ const struct logoInstructionDef instructions[] = {
 		END
 
 		//IF_EQ(READ_F_LAND,1)
-		IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2600)
+		IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)
 			DO (CHECK_THERMALS)       //geofence will be monitored, end and restart if needed
 			DO (PLAN_SOFT_GEOFENCE)   //soft geofence
 			DO (CRUISE)   // prevent overshoots
@@ -1220,7 +1220,7 @@ const struct logoInstructionDef instructions[] = {
 				REPEAT(5)
 					LT(10)
 					//IF_EQ(READ_F_LAND,1)
-					IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2600)
+					IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)
 						DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
 						DO (CHECKS)  //maintain min and max altitudes
 						DO (SOFT_CHECKS)
@@ -1236,7 +1236,7 @@ const struct logoInstructionDef instructions[] = {
 				REPEAT(5)
 					RT(10)
 					//IF_EQ(READ_F_LAND,1)
-					IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2600)
+					IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)
 						DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
 						DO (CHECKS)  //maintain min and max altitudes
 						DO (SOFT_CHECKS)
@@ -1332,7 +1332,7 @@ const struct logoInstructionDef instructions[] = {
 			END
 
 			//IF_EQ(READ_F_LAND,1)    //only with motor off
-			IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2600)   //only with motor off
+			IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)   //only with motor off
 				//Custom solution using new command RT_BANK()
 				RT_BANK(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
 				DO (RESET_NAVIGATION)
@@ -1642,10 +1642,16 @@ const struct logoInstructionDef instructions[] = {
 		IF_EQ( GEOFENCE_STATUS,2 )
 			DO (PLAN_RETURN_GEOFENCE) //act if needed
 		END
+		/* sink now handeled in c
 		IF_LT(AIR_SPEED_Z, MOTOR_CLIMB_MIN) //limit sink to -1 m/s,	if so, stop motor, exit the sink
 			//settle into gliding
 			FLAG_ON(F_LAND)	//Motor off
 			EXEC (LOGO_MAIN)
+		END
+		*/
+		IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)
+			//if flag was off, seems motorcontrol has stopped the motor due to sink, follow.
+			FLAG_ON(F_LAND)	//Motor off
 		END
 	END
 
@@ -2241,7 +2247,7 @@ const struct logoInstructionDef instructions[] = {
 			REPEAT(4)
 				RT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
-				IF_GT(ALT,FINAL_ALT-5)
+				IF_GT(ALT,FINAL_ALT)
 					ALT_DOWN(1)
 				END
 			END
@@ -2250,7 +2256,7 @@ const struct logoInstructionDef instructions[] = {
 			REPEAT(4)
 				LT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
-				IF_GT(ALT,FINAL_ALT-5)
+				IF_GT(ALT,FINAL_ALT)
 					ALT_DOWN(1)
 				END
 			END
@@ -2271,8 +2277,8 @@ const struct logoInstructionDef instructions[] = {
 				//left hand circuit
 				LT(12)
 			END
-			
 		PEN_DOWN
+
 		SET_ALT(-40) //target altitude for the next waypoint below ground
 		FD(160)
 
