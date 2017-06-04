@@ -227,6 +227,7 @@
 // BATTERY_VOLTAGE,     - in tens of volts  (THERMALLING_MISSION)
 // AIR_SPEED_Z_DELTA,   - in cm/s   (THERMALLING_MISSION)
 // READ_F_LAND,         - read the LAND flag, 0 if off, 1 if on  (THERMALLING_MISSION)
+// READ_THROTTLE_OUTPUT_CHANNEL - read the LAND flag, 0 if off, 1 if on  (THERMALLING_MISSION)
 // PARAM                - current param value
 // XX_INPUT_CHANNEL     - channel value from 2000-4000 (any channel defined in options.h, e.g. THROTTLE_INPUT_CHANNEL)
 
@@ -1123,7 +1124,8 @@ const struct logoInstructionDef instructions[] = {
 		PEN_DOWN
 		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 
-		IF_EQ(READ_F_LAND,1)
+		//IF_EQ(READ_F_LAND,1)
+		IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2600)
 			DO (CHECKS)              //is motor needed, landing requested, is pilot in control?
 			DO (SOFT_CHECKS)         //see if calling subroutine needs to end; geofence, too high, sink
 		ELSE
@@ -1132,7 +1134,8 @@ const struct logoInstructionDef instructions[] = {
 			DO (CHECKS_MC)           //is motor needed, landing requested, is pilot in control?
 		END
 
-		IF_EQ(READ_F_LAND,1)
+		//IF_EQ(READ_F_LAND,1)
+		IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2600)
 			DO (CHECK_THERMALS)       //geofence will be monitored, end and restart if needed
 			DO (PLAN_SOFT_GEOFENCE)   //soft geofence
 			DO (CRUISE)   // prevent overshoots
@@ -1216,7 +1219,8 @@ const struct logoInstructionDef instructions[] = {
 			IF_LT(GEOFENCE_TURN, 0)           // gf	angle < 0
 				REPEAT(5)
 					LT(10)
-					IF_EQ(READ_F_LAND,1)
+					//IF_EQ(READ_F_LAND,1)
+					IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2600)
 						DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
 						DO (CHECKS)  //maintain min and max altitudes
 						DO (SOFT_CHECKS)
@@ -1231,7 +1235,8 @@ const struct logoInstructionDef instructions[] = {
 			ELSE
 				REPEAT(5)
 					RT(10)
-					IF_EQ(READ_F_LAND,1)
+					//IF_EQ(READ_F_LAND,1)
+					IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2600)
 						DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
 						DO (CHECKS)  //maintain min and max altitudes
 						DO (SOFT_CHECKS)
@@ -1307,6 +1312,7 @@ const struct logoInstructionDef instructions[] = {
 				LEVEL_1S  //custom command
 			END
 		END
+		DO(RESET_NAVIGATION)
 		//return.. check not cruise..
 	END
 	END
@@ -1315,6 +1321,7 @@ const struct logoInstructionDef instructions[] = {
 
 	//270 deg method
 	TO (THERMALLING_TURN)
+	    FLAG_ON(F_LAND)    //Motor off
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
 		LOAD_TO_PARAM(AIR_SPEED_Z)    //to detect better lift
 		PARAM_ADD(50)                 //add a margin
@@ -1324,7 +1331,8 @@ const struct logoInstructionDef instructions[] = {
 				EXEC (BETTER_LIFT)  // report just once, start new thermalling cycle
 			END
 
-			IF_EQ(READ_F_LAND,1)    //only with motor off
+			//IF_EQ(READ_F_LAND,1)    //only with motor off
+			IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2600)   //only with motor off
 				//Custom solution using new command RT_BANK()
 				RT_BANK(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
 				DO (RESET_NAVIGATION)
@@ -1589,8 +1597,7 @@ const struct logoInstructionDef instructions[] = {
 	TO (CHECKS_MC)      // is motor still needed, landing requested, is pilot in control?
 		//remember we are MotorClimb mode , use DO 's
 
-		//MotorClimb -- Interrupt routine
-		//reset on ail input
+		//pilot wants motor off
 		IF_LT(THROTTLE_INPUT_CHANNEL ,2400)
 			//stop motor, restart
 			//settle into gliding
@@ -1691,6 +1698,16 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (INT_FORCE_TARGET_AHEAD)  //interrupt routine
+	
+	
+	
+		IF_LT(AILERON_INPUT_CHANNEL ,2850)
+			DO (RESET_NAVIGATION)
+		END
+		IF_GT(AILERON_INPUT_CHANNEL ,3150)
+			DO (RESET_NAVIGATION)
+		END
+
 		//check if relative angle is much different from planes angle, if so, correct
 		IF_EQ( GEOFENCE_STATUS,2 )              //outside geofence
 			IF_LT(REL_ANGLE_TO_GOAL,-90)
@@ -2098,7 +2115,7 @@ const struct logoInstructionDef instructions[] = {
 	//TO (FS_DOWNWIND)
 		// assume 50m < alt < 80m
 
-		SET_ALT((FINAL_ALT*2))
+		SET_ALT((FINAL_ALT*2+5))
 		FLAG_ON(F_LAND) //brake if you have to
 		//turn to and fly the downwind leg
 		PEN_UP
@@ -2176,7 +2193,7 @@ const struct logoInstructionDef instructions[] = {
 			END
 			LT(5)
 		END
-		SET_ALT(FINAL_ALT)
+		SET_ALT(FINAL_ALT+5)
 		PEN_UP     //base leg
 			//set up the endpoint of the glideslope
 			FD(70)
@@ -2191,8 +2208,8 @@ const struct logoInstructionDef instructions[] = {
 			REPEAT(5)
 				RT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
-				IF_GT(ALT,FINAL_ALT-5)
-					ALT_DOWN(2)
+				IF_GT(ALT,FINAL_ALT)
+					ALT_DOWN(1)
 				END
 			END
 			RT(5)
@@ -2201,8 +2218,8 @@ const struct logoInstructionDef instructions[] = {
 			REPEAT(5)
 				LT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
-				IF_GT(ALT,FINAL_ALT-5)
-					ALT_DOWN(2)
+				IF_GT(ALT,FINAL_ALT)
+					ALT_DOWN(1)
 				END
 			END
 			LT(5)
@@ -2224,8 +2241,8 @@ const struct logoInstructionDef instructions[] = {
 			REPEAT(4)
 				RT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
-				IF_GT(ALT,FINAL_ALT)
-					ALT_DOWN(2)
+				IF_GT(ALT,FINAL_ALT-5)
+					ALT_DOWN(1)
 				END
 			END
 		ELSE
@@ -2233,8 +2250,8 @@ const struct logoInstructionDef instructions[] = {
 			REPEAT(4)
 				LT(10)
 				FD(DESIRED_SPEED_NORMAL_F0/10)
-				IF_GT(ALT,FINAL_ALT)
-					ALT_DOWN(2)
+				IF_GT(ALT,FINAL_ALT-5)
+					ALT_DOWN(1)
 				END
 			END
 		END
@@ -2254,7 +2271,7 @@ const struct logoInstructionDef instructions[] = {
 				//left hand circuit
 				LT(12)
 			END
-
+			
 		PEN_DOWN
 		SET_ALT(-40) //target altitude for the next waypoint below ground
 		FD(160)

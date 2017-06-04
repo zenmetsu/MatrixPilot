@@ -89,6 +89,7 @@ enum {
 	GEOFENCE_TURN,
 	MOTOR_OFF_TIMER,	
 	READ_DESIRED_SPEED,
+	READ_THROTTLE_OUTPUT_CHANNEL,
 #endif
 	PARAM
 };
@@ -920,22 +921,28 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			return airSpeedZDelta;
 		}
 		
-		case AIR_SPEED_Z_VS_START: //  used for waiting for a decrease in climbrate in a thermal
+		case AIR_SPEED_Z_VS_START: //  
 		{
 			//set in AIR_SPEED_Z_DELTA for WAIT_DECREASE
 			return vario - airSpeedZStart;
 		}
 		
-		case READ_F_LAND: //  used for waiting for a decrease in climbrate in a thermal
+		case READ_F_LAND: // used for motor climbs 
 		{
 			return ((desired_behavior.W & F_LAND) > 0);
 		}
 		
-		case READ_DESIRED_SPEED: //  used for waiting for a decrease in climbrate in a thermal
+		case READ_DESIRED_SPEED: // used for polar plot 
 		{
 			return (desiredSpeed);
 		}
 		
+		case READ_THROTTLE_OUTPUT_CHANNEL: // used for detecting motor hold low state 
+		{
+		 	//return udb_pwOut[THROTTLE_OUTPUT_CHANNEL];    // 2000 - 4000
+		 	return udb_pwOut[7];    // 2000 - 4000
+		}
+
 		case GEOFENCE_STATUS: //  used for Geofence
 		{
 			return geoStatus;
