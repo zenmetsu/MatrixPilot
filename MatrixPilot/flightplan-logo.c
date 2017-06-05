@@ -291,7 +291,7 @@ int16_t fixedBankDeg;  // deg bank, used for Logo  - for RT_BANK and LEVEL_1S co
 static int16_t get_current_angle(void);
 static int16_t motorOffTimer = 0;
 static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
-static float avgBatteryVoltage = 110;  //kickstart average filter with nominal value; it only starts when LOGO starts
+static float avgBatteryVoltage = 110;  //kickstart average filter with nominal value; it only starts when LOGO starts      
 #if ( MY_PERSONAL_OPTIONS == 1 )
 boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c 
 #endif
@@ -600,7 +600,7 @@ void flightplan_logo_update(void)
 		}
 #else
 		// inhibit navigation for x loops, to allow drifting downwind
-
+        
 		if ( fixedBankActive )
 		{
 			fixedBankActiveCounter--;   //countdown @ 40Hz
@@ -939,8 +939,8 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		
 		case READ_THROTTLE_OUTPUT_CHANNEL: // used for detecting motor hold low state 
 		{
-		 	//return udb_pwOut[THROTTLE_OUTPUT_CHANNEL];    // 2000 - 4000
-		 	return udb_pwOut[7];    // 2000 - 4000
+		 	return udb_pwOut[THROTTLE_OUTPUT_CHANNEL];    // 2000 - 4000
+		 	//return udb_pwOut[7];    // 2000 - 4000
 		}
 
 		case GEOFENCE_STATUS: //  used for Geofence

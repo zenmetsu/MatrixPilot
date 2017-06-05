@@ -1003,9 +1003,9 @@ const struct logoInstructionDef instructions[] = {
 #define MOTOR_OFF_TRIGGER_ALT         230  // in meters
 #define MAX_THERMALLING_ALT           300  // in meters
 */
-#define MOTOR_ON_TRIGGER_ALT           80  // in meters
+#define MOTOR_ON_TRIGGER_ALT           50  // in meters
 #define MOTOR_ON_IN_SINK_ALT           50  // in meters, set low. Altitude where ground objects must be avoided using motor despite sink
-#define MOTOR_OFF_TRIGGER_ALT         100  // in meters
+#define MOTOR_OFF_TRIGGER_ALT          90  // in meters
 #define MAX_THERMALLING_ALT           120  // in meters
 
 #define CLIMBR_THERMAL_TRIGGER         40  // cm/sec >= 0.2 m/s climb is the trigger to start thermalling
@@ -1304,7 +1304,7 @@ const struct logoInstructionDef instructions[] = {
 		//wait up to 6 sec for the climbrate to decrease, keep the best climbrate
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta
-		FD(DESIRED_SPEED_SLOW_F4/10)    //1 sec
+		LEVEL_1S  //custom command
 		REPEAT(5)    //6 sec
 			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			IF_GE(PARAM,0)
@@ -1589,6 +1589,12 @@ const struct logoInstructionDef instructions[] = {
 		IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //limit sink to -1 m/s,	if so, exit the sink
 			EXEC (SINK)
 		END
+		IF_LT(AILERON_INPUT_CHANNEL ,2850)
+			DO (PILOT_INPUT)
+		END
+		IF_GT(AILERON_INPUT_CHANNEL ,3150)
+			DO (PILOT_INPUT)
+		END
 	END
 	END
 
@@ -1653,6 +1659,12 @@ const struct logoInstructionDef instructions[] = {
 			//if flag was off, seems motorcontrol has stopped the motor due to sink, follow.
 			FLAG_ON(F_LAND)	//Motor off
 		END
+		IF_LT(AILERON_INPUT_CHANNEL ,2850)
+			DO (PILOT_INPUT_IN_MC)
+		END
+		IF_GT(AILERON_INPUT_CHANNEL ,3150)
+			DO (PILOT_INPUT_IN_MC)
+		END
 	END
 
 
@@ -1680,6 +1692,7 @@ const struct logoInstructionDef instructions[] = {
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 			END
 		END
+		DO (RESET_NAVIGATION)
 		EXEC (LOGO_MAIN)
 	END
 	END
@@ -1697,6 +1710,7 @@ const struct logoInstructionDef instructions[] = {
 				FD(DESIRED_SPEED_NORMAL_F0/10)
 			END
 		END
+		DO (RESET_NAVIGATION)
 		EXEC (LOGO_MAIN)
 	END
 	END
@@ -1704,16 +1718,14 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (INT_FORCE_TARGET_AHEAD)  //interrupt routine
-	
-	
-	
+		/*
 		IF_LT(AILERON_INPUT_CHANNEL ,2850)
 			DO (RESET_NAVIGATION)
 		END
 		IF_GT(AILERON_INPUT_CHANNEL ,3150)
 			DO (RESET_NAVIGATION)
 		END
-
+		*/
 		//check if relative angle is much different from planes angle, if so, correct
 		IF_EQ( GEOFENCE_STATUS,2 )              //outside geofence
 			IF_LT(REL_ANGLE_TO_GOAL,-90)
