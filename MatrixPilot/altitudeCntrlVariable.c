@@ -87,6 +87,7 @@ static int16_t sinkMotorOffTimer;           // wait period to postpone climbing 
 static int16_t motorClimbRunCount;          // counter (40Hz steps) for motor run
 static float avgMotorClimbrate;             // average climbrate after settle all runs in m/s
 static float steadyClimbPowerFactor = 0.8;  // reduce throttle for a 0.7 m/s climb, start with 0.7
+static boolean motorClimbSinkStarted;       // boolean climbing with motor in sink between 50 and 50 m 
 #endif  //THERMALLING_MISSION
 
 // Internal computed variables.
@@ -487,6 +488,8 @@ static void normalAltitudeCntrl(void)
 			{
 				if ( sinkMotorOffTimer > 0 )
 				{
+
+					/*
 					//use throttle as needed to remain at safe minimal altitude of 50m
 					heightError._.W1 = -50;  //leave LOGO in control of desiredHeight
 					heightError.WW = (heightError.WW + IMUlocationz.WW + speed_height) >> 13;
@@ -506,6 +509,28 @@ static void normalAltitudeCntrl(void)
 						{
 							 throttleAccum.WW = (int16_t)((float)(max_throttle) * 0.5);  //use at least minimal power below 60m  
 						}
+					}
+					*/
+					//sink was detected. To save power, use burst of full throttle (enough to mostly counter/climb in sink) and glides.
+					if ( (IMUlocationz.WW + speed_height) < 60 )
+					{
+					    if ( (IMUlocationz.WW + speed_height) < 50 )
+					    {
+			             	motorClimbSinkStarted = true;  // boolean climbing with motor in sink between 50 and 50 m 
+				}
+					    if ( motorClimbSinkStarted)       
+					    {
+							throttleAccum.WW = (int16_t)(max_throttle);
+						}
+				else
+				{
+							throttleAccum.WW = 0;
+						}
+					}    
+				    else
+				    {
+			            motorClimbSinkStarted = false;
+						throttleAccum.WW = 0;
 					}
 				}
 				else
@@ -566,7 +591,11 @@ static void normalAltitudeCntrl(void)
 		{
 			manualThrottle(throttleIn);
 		}
+#if ( THERMALLING_MISSION != 1 )
 		else if (state_flags._.GPS_steering && desired_behavior._.land)
+#else
+		else if (state_flags._.GPS_steering && desired_behavior._.land && (IMUlocationz._.W1 < 5 || IMUlocationz._.W1 > 50) ) //use both motor and brakes for glideslopes in landing circuit
+#endif // ( THERMALLING_MISSION == 1 )
 		{
 			// place a ceiling, in other words, go down, but not up.
 			if (pitchAltitudeAdjust > 0)
