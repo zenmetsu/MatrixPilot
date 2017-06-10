@@ -68,18 +68,18 @@ enum {
 	ANGLE_TO_GOAL,
 	REL_ANGLE_TO_HOME,
 	REL_ANGLE_TO_GOAL,
-#if ( THERMALLING_MISSION == 1 )
-	REL_ANGLE_TO_OPPOSITE, //custom command
+#if ( THERMALLING_MISSION == 1 )  //custom commands
+	REL_ANGLE_TO_OPPOSITE, 
 	REL_ANGLE_TO_WIND,
 #endif
 	GROUND_SPEED,
 	AIR_SPEED,
-	AIR_SPEED_Z,
+	AIR_SPEED_Z,   // if THERMALLING_MISSION custom command
 	WIND_SPEED,
 	WIND_SPEED_X,
 	WIND_SPEED_Y,
 	WIND_SPEED_Z,
-#if ( THERMALLING_MISSION == 1 )
+#if ( THERMALLING_MISSION == 1 )  //custom commands
 	WIND_FROM_ANGLE,
 	BATTERY_VOLTAGE,
 	AIR_SPEED_Z_DELTA,
@@ -90,6 +90,7 @@ enum {
 	MOTOR_OFF_TIMER,	
 	READ_DESIRED_SPEED,
 	READ_THROTTLE_OUTPUT_CHANNEL,
+	FORCE_CROSS_FINISH_LINE,
 #endif
 	PARAM
 };
@@ -294,6 +295,7 @@ static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
 static float avgBatteryVoltage = 110;  //kickstart average filter with nominal value; it only starts when LOGO starts      
 #if ( MY_PERSONAL_OPTIONS == 1 )
 boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c 
+boolean forceCrossFinishLine;   //used by interrupt routine to sigmal an event that needs immediate action
 #endif
 
 
@@ -629,8 +631,9 @@ void flightplan_logo_update(void)
 		{
 			//
 			//org code:
-			if (tofinish_line < WAYPOINT_PROXIMITY_RADIUS) // crossed the finish line
+			if ( (tofinish_line < WAYPOINT_PROXIMITY_RADIUS) || forceCrossFinishLine ) // crossed the finish line  or interrupt routine sigmalled an event that needs immediate action
 			{
+				forceCrossFinishLine= false;  
 				process_instructions();
 			}
 		}
@@ -956,6 +959,12 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		case MOTOR_OFF_TIMER: // 4..0 sec. used for waiting after motor off before detecting a thermal
 		{
 			return motorOffTimer;
+		}
+
+		case FORCE_CROSS_FINISH_LINE: // used by interrupt routine to sigmal an event that needs immediate action
+		{
+			forceCrossFinishLine = true;
+			return 0;
 		}
 #endif  //THERMALLING_MISSION
 
