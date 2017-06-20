@@ -439,9 +439,9 @@ static void normalAltitudeCntrl(void)
 									{
 										steadyClimbPowerFactor -= 0.0001;
 									}
-									if (steadyClimbPowerFactor < 0.55)
+									if (steadyClimbPowerFactor < 0.70)
 									{
-										steadyClimbPowerFactor = 0.55;
+										steadyClimbPowerFactor = 0.70;
 									}
 									if (steadyClimbPowerFactor > 1.0)
 									{
@@ -461,8 +461,9 @@ static void normalAltitudeCntrl(void)
 			}
 			else //!Gps
 			{
-				motorClimbRunStarted = 0;	//motor climrate tuning must start over next time
-				sinkMotorOffTimer = 0;      //end suppress motor
+				motorClimbRunStarted = 0;	  //motor climrate tuning must start over next time
+				sinkMotorOffTimer = 0;        //end suppress motor
+				steadyClimbPowerFactor =0.80; //reset for stabilized mode ~30pct
 			}
 #endif // ( THERMALLING_MISSION == 1 )
 

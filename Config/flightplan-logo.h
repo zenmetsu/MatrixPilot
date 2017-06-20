@@ -1557,14 +1557,14 @@ const struct logoInstructionDef instructions[] = {
 		IF_LT(REL_ANGLE_TO_GOAL,-90)  
 		    CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
 		    //relax angle 
-			RT(2)
+			LT(2)
 			FD(4)
 			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 		END
 		IF_GT(REL_ANGLE_TO_GOAL,90)  
     		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
 			//relax angle 
-			LT(2)
+			RT(2)
 			FD(4)
 			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 		END
@@ -1646,14 +1646,14 @@ const struct logoInstructionDef instructions[] = {
 		IF_LT(REL_ANGLE_TO_GOAL,-90)  
 		    CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
 		    //relax angle 
-			RT(2)
+			LT(2)
 			FD(4)
 			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 		END
 		IF_GT(REL_ANGLE_TO_GOAL,90)  
     		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
 			//relax angle 
-			LT(2)
+			RT(2)
 			FD(4)
 			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 		END
@@ -1741,14 +1741,18 @@ const struct logoInstructionDef instructions[] = {
 		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
 		REPEAT(10)			//keep pilot control as long stick is off-centre,max 10 loops
 			IF_LT(AILERON_INPUT_CHANNEL ,2850)
-				LT(10)
-				FD(DESIRED_SPEED_NORMAL_F0/10)
+				//LT(10)
+				//FD(DESIRED_SPEED_NORMAL_F0/10)
+				LEVEL_1S  //don't fight pilot, wait one sec, regardles the groundspeed
 			END
 			IF_GT(AILERON_INPUT_CHANNEL,3150)
-				RT(10)
-				FD(DESIRED_SPEED_NORMAL_F0/10)
+				//RT(10)
+				//FD(DESIRED_SPEED_NORMAL_F0/10)
+				LEVEL_1S  //don't fight pilot, wait one sec, regardles the groundspeed
 			END
 		END
+		LEVEL_1S  //setlle, wait one sec, regardles the groundspeed
+		LEVEL_1S  //settle, wait one sec, regardles the groundspeed
 		DO (RESET_NAVIGATION)
 		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 		//EXEC (LOGO_MAIN)
@@ -1761,14 +1765,18 @@ const struct logoInstructionDef instructions[] = {
 		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
 		REPEAT(10)			//keep pilot control as long stick is off-centre,max 10 loops
 			IF_LT(AILERON_INPUT_CHANNEL ,2850)
-				LT(10)
-				FD(DESIRED_SPEED_NORMAL_F0/10)
+				//LT(10)
+				//FD(DESIRED_SPEED_NORMAL_F0/10)
+				LEVEL_1S  //don't fight pilot, wait one sec, regardles the groundspeed
 			END
 			IF_GT(AILERON_INPUT_CHANNEL,3150)
-				RT(10)
-				FD(DESIRED_SPEED_NORMAL_F0/10)
+				//RT(10)
+				//FD(DESIRED_SPEED_NORMAL_F0/10)
+				LEVEL_1S  //don't fight pilot, wait one sec, regardles the groundspeed
 			END
 		END
+		LEVEL_1S  //setlle, wait one sec, regardles the groundspeed
+		LEVEL_1S  //settle, wait one sec, regardles the groundspeed
 		DO (RESET_NAVIGATION)
 		FD(DESIRED_SPEED_NORMAL_F0/10)
 		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
