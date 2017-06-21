@@ -1557,14 +1557,14 @@ const struct logoInstructionDef instructions[] = {
 		IF_LT(REL_ANGLE_TO_GOAL,-90)  
 		    CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
 		    //relax angle 
-			LT(2)
+			LT(4)
 			FD(4)
 			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 		END
 		IF_GT(REL_ANGLE_TO_GOAL,90)  
     		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
 			//relax angle 
-			RT(2)
+			RT(4)
 			FD(4)
 			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 		END
@@ -1590,6 +1590,14 @@ const struct logoInstructionDef instructions[] = {
 		END
 #endif
 */
+#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
+		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not low,  check every cycle
+			//low, must use motor
+			IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
+				FLAG_OFF(F_LAND)    //Motor on
+			END
+		END
+#endif
 		IF_LT(BRAKE_THR_SEL_INPUT_CHANNEL ,2700)     // automode only
 			IF_GT(BRAKE_THR_SEL_INPUT_CHANNEL ,1700) // abstract flightplan workaround: only real low, ignore 0
 				EXEC (LOITER_LAND)
@@ -1646,18 +1654,25 @@ const struct logoInstructionDef instructions[] = {
 		IF_LT(REL_ANGLE_TO_GOAL,-90)  
 		    CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
 		    //relax angle 
-			LT(2)
+			LT(4)
 			FD(4)
 			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 		END
 		IF_GT(REL_ANGLE_TO_GOAL,90)  
     		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
 			//relax angle 
-			RT(2)
+			RT(4)
 			FD(4)
 			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 		END
-		
+#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
+		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not low,  check every cycle
+			//low, must use motor
+			IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
+				FLAG_OFF(F_LAND)    //Motor on
+			END
+		END
+#endif		
 		//pilot wants motor off
 		IF_LT(THROTTLE_INPUT_CHANNEL ,2400)
 			//stop motor, restart
@@ -1750,6 +1765,14 @@ const struct logoInstructionDef instructions[] = {
 				//FD(DESIRED_SPEED_NORMAL_F0/10)
 				LEVEL_1S  //don't fight pilot, wait one sec, regardles the groundspeed
 			END
+#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
+		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not low,  check every cycle
+			//low, must use motor
+			IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
+				FLAG_OFF(F_LAND)    //Motor on
+			END
+		END
+#endif
 		END
 		LEVEL_1S  //setlle, wait one sec, regardles the groundspeed
 		LEVEL_1S  //settle, wait one sec, regardles the groundspeed
@@ -1774,6 +1797,14 @@ const struct logoInstructionDef instructions[] = {
 				//FD(DESIRED_SPEED_NORMAL_F0/10)
 				LEVEL_1S  //don't fight pilot, wait one sec, regardles the groundspeed
 			END
+#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
+		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not low,  check every cycle
+			//low, must use motor
+			IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
+				FLAG_OFF(F_LAND)    //Motor on
+			END
+		END
+#endif
 		END
 		LEVEL_1S  //setlle, wait one sec, regardles the groundspeed
 		LEVEL_1S  //settle, wait one sec, regardles the groundspeed
@@ -1877,7 +1908,7 @@ const struct logoInstructionDef instructions[] = {
 				*/
 			END
 		END
-/**/
+/*
 #if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
 		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not low,  check every cycle
 			IF_LT(ALT, MOTOR_ON_IN_SINK_ALT)    // not too low,  check every cycle
@@ -1896,7 +1927,16 @@ const struct logoInstructionDef instructions[] = {
 			END
 		END
 #endif
-/**/
+*/
+#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
+		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not low,  check every cycle
+			//low, must use motor
+			IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
+				FLAG_OFF(F_LAND)    //Motor on
+			END
+		END
+#endif
+
 	END
 	END
 

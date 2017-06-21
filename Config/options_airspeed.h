@@ -97,9 +97,9 @@
 // Airspeeds in m/s
 #define MINIMUM_GROUNDSPEED         -3.0
 //will be redefined?
-#define MINIMUM_AIRSPEED             5.7   // 3? km/h
-#define CRUISE_AIRSPEED             11.8   // 4? km/h, Gliding airspeed when aircraft is level
-#define MAXIMUM_AIRSPEED            17.1   // 5? km/h
+#define MINIMUM_AIRSPEED             4.7   // 3? km/h
+#define CRUISE_AIRSPEED             10.8   // 4? km/h, Gliding airspeed when aircraft is level
+#define MAXIMUM_AIRSPEED            16.1   // 5? km/h
 
 // Cruise airspeed may be below minimum airspeed for high drag aircraft.
 
