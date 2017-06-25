@@ -91,6 +91,7 @@ enum {
 	READ_DESIRED_SPEED,
 	READ_THROTTLE_OUTPUT_CHANNEL,
 	FORCE_CROSS_FINISH_LINE,
+	FLY_COMMAND_COUNTER,
 #endif
 	PARAM
 };
@@ -293,6 +294,7 @@ static int16_t get_current_angle(void);
 static int16_t motorOffTimer = 0;
 static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
 static float avgBatteryVoltage = 110;  //kickstart average filter with nominal value; it only starts when LOGO starts      
+static int16_t flyCommandCounter = 0;  //count up 40 times per sec when in a fly command
 #if ( MY_PERSONAL_OPTIONS == 1 )
 boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c 
 boolean forceCrossFinishLine;   //used by interrupt routine to sigmal an event that needs immediate action
@@ -602,6 +604,10 @@ void flightplan_logo_update(void)
 		}
 #else
 		// inhibit navigation for x loops, to allow drifting downwind
+		if ( flyCommandCounter > 0 )
+		{
+			flyCommandCounter++;   //count up @ 40Hz
+		}
         
 		if ( fixedBankActive )
 		{
@@ -629,8 +635,6 @@ void flightplan_logo_update(void)
 		}
 		else
 		{
-			//
-			//org code:
 			if ( (tofinish_line < WAYPOINT_PROXIMITY_RADIUS) || forceCrossFinishLine ) // crossed the finish line  or interrupt routine sigmalled an event that needs immediate action
 			{
 				forceCrossFinishLine= false;  
@@ -963,8 +967,13 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 
 		case FORCE_CROSS_FINISH_LINE: // used by interrupt routine to sigmal an event that needs immediate action
 		{
+			flyCommandCounter = 0;
 			forceCrossFinishLine = true;
 			return 0;
+		}
+		case FLY_COMMAND_COUNTER: // used by interrupt routines to sigmal fly commands that take too long
+		{
+			return flyCommandCounter;
 		}
 #endif  //THERMALLING_MISSION
 
@@ -1105,6 +1114,9 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), instr.arg) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), instr.arg) << 2);
+#if ( THERMALLING_MISSION == 1 )
+					flyCommandCounter = 1;    //start counter, count up at 40Hz
+#endif  //THERMALLING_MISSION
 				}
 				break;
 
@@ -1112,10 +1124,12 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 				case 1: // RT_BANK
 				{
 					//rotate turtle too, like RT(). Set the rotation target 30 deg to the right
-					fixedBankTargetAngle = turtleAngles[currentTurtle] + 30; // ~0.5 - 1 sec == 30 deg headingchange
+					//fixedBankTargetAngle = turtleAngles[currentTurtle] + 30; // ~0.5 - 1 sec == 30 deg headingchange
+					fixedBankTargetAngle = get_current_angle() + 30; // ~0.5 - 1 sec == 30 deg headingchange
 					while (fixedBankTargetAngle < 0) fixedBankTargetAngle += 360;
 					fixedBankTargetAngle = fixedBankTargetAngle % 360;
 
+					/*
 					//this is a fly command, do the same as FD()
 					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
 					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
@@ -1125,7 +1139,8 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					// selected a fixed number I used before, combined with servo calculation
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 25) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);
-
+					*/
+					
 					fixedBankDeg = instr.arg;  //controls roll and yaw,
 					fixedBankActiveCounter = 240; //40Hz = 4s
 					fixedBankActive = true;     //controls roll and yaw, will be reset when rotation is reached

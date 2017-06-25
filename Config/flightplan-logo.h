@@ -1050,7 +1050,7 @@ const struct logoInstructionDef instructions[] = {
 
 //Custom change made: Only odd numbers (actions) will be logged as waypoint
 
-#define INT_FORCE_TARGET_AHEAD                2
+//#define INT_FORCE_TARGET_AHEAD                2
 
 //Geofences
 #define CRUISE                                3
@@ -1058,17 +1058,23 @@ const struct logoInstructionDef instructions[] = {
 #define RETURN_GEOFENCE                       5
 #define PLAN_SOFT_GEOFENCE                    6
 #define CHECK_WIND_GEOFENCE                   7
+#define INT_PILOT_INPUT                       8
 #define RETURN_SOFT_GEOFENCE                  9
+#define INT_RETURN_GEOFENCE                  10
 #define CHECK_SOFT_WIND_GEOFENCE             11
+#define INT_RETURN_SOFT_GEOFENCE             12
 
 //Thermals
-#define CHECK_THERMALS                       12
 #define WAIT_DECREASE_CLIMBRATE              13
+#define CHECK_THERMALS                       14
 #define THERMALLING_TURN                     15
+#define INT_THERMALLING                      16
 #define THERMALLING_SHIFT_CIRCLE             17
 #define SINK                                 19
+#define INT_SINK                             20
 
-//Motor
+
+//Motor                 
 #define TAKEOFF                              21    // keep level when low
 #define RETURN_MC_GEOFENCE                   23
 #define CHECK_MC_SOFT_WIND_GEOFENCE          25
@@ -1084,6 +1090,7 @@ const struct logoInstructionDef instructions[] = {
 #define PILOT_INPUT                          47
 #define CHECKS                               48    // is motor needed, landing requested, is pilot in control?
 #define TOO_HIGH                             53
+#define INT_TOO_HIGH                         54
 #define BETTER_LIFT                          55
 #define RESET_NAVIGATION                     56
 
@@ -1113,51 +1120,66 @@ const struct logoInstructionDef instructions[] = {
 
 const struct logoInstructionDef instructions[] = {
 
-	IF_GT(TEST_MODE_INPUT_CHANNEL ,3500)     // automode only
-		EXEC (PP_POLAR_PLOT)
-	END
-
-
-	//Main  -  main program when motor is off
-	//LOGO_MAIN  LET
-
+		//Main  -  main program when motor is off
+		//LOGO_MAIN  LET
+		
+		IF_GT(TEST_MODE_INPUT_CHANNEL ,3500)     // automode only
+			EXEC (PP_POLAR_PLOT)
+		END
+	
 		//cleanup
+		CLEAR_INTERRUPT
 		SET_ALT(MAX_THERMALLING_ALT-10)    // the last 20m will be used to gradually apply brakes  - depends on brake gain
-//		FLAG_ON(F_LAND)    //Motor off
 		SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
 		PEN_DOWN
-		/*
-		//prevent looping by interrupt
-		IF_LT(AILERON_INPUT_CHANNEL ,2850)
+		
+		//following action may take several seconds, monitor events by interrupt 
+		//they also serve interrupts in order of priority
+		
+		IF_LT(AILERON_INPUT_CHANNEL,2850)
 			DO (PILOT_INPUT)
-			DO (RESET_NAVIGATION)
 		END
-		IF_GT(AILERON_INPUT_CHANNEL ,3150)
+		IF_GT(AILERON_INPUT_CHANNEL,3150)
 			DO (PILOT_INPUT)
-			DO (RESET_NAVIGATION)
-		END
-		*/
-		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
-
-		//IF_EQ(READ_F_LAND,1)
-		IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)  //Motor off
-			DO (CHECKS)              //is motor needed, landing requested, is pilot in control?
-			DO (SOFT_CHECKS)         //see if calling subroutine needs to end; geofence, too high, sink
-		ELSE
-			DO (SOFT_CHECKS_MC)      //see if calling subroutine needs to end; geofence, too high, sink
-			IF_LT(ALT, 10)  //below: auto takeoff / hand launch with motor on in Autonomous mode
-			    DO (TAKEOFF)             //keep level when low
-			END    
-			DO (CHECKS_MC)           //is motor needed, landing requested, is pilot in control?
 		END
 
-		//IF_EQ(READ_F_LAND,1)
+		IF_EQ( GEOFENCE_STATUS,2 )
+	        DO (PLAN_RETURN_GEOFENCE)
+		END
+	        
+ 		//CLEAR_INTERRUPT  //keep using  INT_PLAN_SOFT_GEOFENCE
+
+		IF_LT(BRAKE_THR_SEL_INPUT_CHANNEL ,2700)     // automode only
+			IF_GT(BRAKE_THR_SEL_INPUT_CHANNEL ,1700) // abstract flightplan workaround: only real low, ignore 0
+				EXEC (LOITER_LAND)
+			END
+		END
+
+		IF_LT(BATTERY_VOLTAGE, VOLTAGE_SENSOR_ALARM)     // land automatically when battery is low, usefull when no telemetry is available
+			EXEC (LOITER_LAND)
+		END
+		
+		IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //limit sink to -1 m/s,	if so, exit the sink
+			EXEC (SINK)
+		END
+		
+		IF_LT(ALT, 10)  //below: auto takeoff / hand launch with motor on in Autonomous mode
+		    DO (TAKEOFF)             //keep level when low
+		END    
+
+		CLEAR_INTERRUPT
+        DO (CHECK_THERMALS)
+        
+		IF_GT(ALT,MAX_THERMALLING_ALT )   // not too high
+			DO (TOO_HIGH)                 // if true, restart to main to avoid an extra nesting level
+		END
+
+		DO (PLAN_SOFT_GEOFENCE)   //soft geofence
+		
+
 		IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)  //Motor off
-			DO (CHECK_THERMALS)       //geofence will be monitored, end and restart if needed
-			DO (PLAN_SOFT_GEOFENCE)   //soft geofence
 			DO (CRUISE)   // prevent overshoots
 		ELSE
-			DO (PLAN_SOFT_GEOFENCE)   //soft geofence
 			DO (MOTOR_CLIMB_FORWARD)  //prevent overshoots
 		END
 	END
@@ -1176,36 +1198,25 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (PLAN_RETURN_GEOFENCE)
-		IF_EQ( GEOFENCE_STATUS,2 )
+		SET_INTERRUPT(INT_RETURN_GEOFENCE)
 			//CLEAR_INTERRUPT  //don't change navigation
 			IF_LT(GEOFENCE_TURN, 0)                     // gf	angle < 0
 				REPEAT(4)
 					LT(10)
-					IF_EQ(READ_F_LAND,1)
-						DO (RETURN_GEOFENCE)            //fly and checks
-					ELSE
-						DO (RETURN_MC_GEOFENCE)         //fly and checks
-					END
+					DO (RETURN_GEOFENCE)            //fly 
 				END
 				EXEC (LOGO_MAIN)
 			END
-			IF_GT(GEOFENCE_TURN, 0)                     // gf	angle < 0
+			IF_GT(GEOFENCE_TURN, 0)                     // gf	angle > 0
 				REPEAT(4)
 					RT(10)
-					IF_EQ(READ_F_LAND,1)
-						DO (RETURN_GEOFENCE)            //fly and checks
-					ELSE
-						DO (RETURN_MC_GEOFENCE)         //fly and checks
-					END
+					DO (RETURN_GEOFENCE)            //fly 
 				END
 				EXEC (LOGO_MAIN)
 			END
+			//if straight ahead
 			REPEAT(4)
-				IF_EQ(READ_F_LAND,1)
-					DO (RETURN_GEOFENCE)            //fly and checks
-				ELSE
-					DO (RETURN_MC_GEOFENCE)         //fly and checks
-				END
+				DO (RETURN_GEOFENCE)            //fly 
 			END
 			EXEC (LOGO_MAIN)
 		END
@@ -1215,58 +1226,49 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (RETURN_GEOFENCE)
-		FD(DESIRED_SPEED_NORMAL_F0/10)
-		DO (CHECKS)  //maintain min and max altitudes
-	END //geof
-	END
-
-
-
-	TO (RETURN_SOFT_GEOFENCE)
-		FD(DESIRED_SPEED_NORMAL_F0/10)
+		FD(DESIRED_SPEED_NORMAL_F0/10)	
 	END
 	END
 
 
 
 	TO (PLAN_SOFT_GEOFENCE)
+		SET_INTERRUPT(INT_RETURN_SOFT_GEOFENCE)
 		//assume not strict
 		//only act if needed
 		IF_NE(GEOFENCE_TURN, 0)           // gf	angle <> 0
 			IF_LT(GEOFENCE_TURN, 0)           // gf	angle < 0
 				REPEAT(5)
 					LT(10)
-					//IF_EQ(READ_F_LAND,1)
-					IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)
-						DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
-						DO (CHECKS)  //maintain min and max altitudes
-						DO (SOFT_CHECKS)
-						DO (CHECK_THERMALS)
-					ELSE
-						DO (RETURN_MC_SOFT_GEOFENCE)  // 1 sec fd
-						DO (CHECKS_MC)
-						DO (SOFT_CHECKS_MC)
-						DO (CHECK_THERMALS)
-					END
+					DO (RETURN_SOFT_GEOFENCE)  // 1 sec fd
 				END
 			ELSE
 				REPEAT(5)
 					RT(10)
-					//IF_EQ(READ_F_LAND,1)
-					IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)
-						DO (RETURN_SOFT_GEOFENCE)   // 1 sec fd
-						DO (CHECKS)  //maintain min and max altitudes
-						DO (SOFT_CHECKS)
-						DO (CHECK_THERMALS)
-					ELSE
-						DO (RETURN_MC_SOFT_GEOFENCE)  // 1 sec fd
-						DO (CHECKS_MC)
-						DO (SOFT_CHECKS_MC)
-						DO (CHECK_THERMALS)
-					END
+					DO (RETURN_SOFT_GEOFENCE)  // 1 sec fd
 				END
 			END
-		END //
+		END 
+	END
+	END
+
+
+
+	TO (RETURN_SOFT_GEOFENCE)
+
+		FD(DESIRED_SPEED_NORMAL_F0/10)
+/*      
+//test!!!
+	  FD(DESIRED_SPEED_NORMAL_F0)  //test; take too long,
+/
+	  IF_GT(FLY_COMMAND_COUNTER,80 )             //fly command takes too long    
+	      //EXEC (LOGO_MAIN)   
+	  END
+/
+      DO (CRUISE)
+//test!!!
+*/ 
+
 	END
 	END
 
@@ -1317,6 +1319,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (WAIT_DECREASE_CLIMBRATE)
+	    SET_INTERRUPT(INT_THERMALLING) 
 	    FLAG_ON(F_LAND)    //Motor off
 		//wait up to 6 sec for the climbrate to decrease, keep the best climbrate
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
@@ -1329,7 +1332,7 @@ const struct logoInstructionDef instructions[] = {
 				LEVEL_1S  //custom command
 			END
 		END
-		DO(RESET_NAVIGATION)
+		//DO(RESET_NAVIGATION)
 		//return.. check not cruise..
 	END
 	END
@@ -1338,6 +1341,7 @@ const struct logoInstructionDef instructions[] = {
 
 	//270 deg method
 	TO (THERMALLING_TURN)
+	    SET_INTERRUPT(INT_THERMALLING) 
 	    FLAG_ON(F_LAND)    //Motor off
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
 		LOAD_TO_PARAM(AIR_SPEED_Z)    //to detect better lift
@@ -1352,15 +1356,8 @@ const struct logoInstructionDef instructions[] = {
 			IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)   //only with motor off
 				//Custom solution using new command RT_BANK()
 				RT_BANK(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
-				DO (RESET_NAVIGATION)
 			END
-
-			DO (CHECKS)
-			DO (SOFT_CHECKS)
 		END  //repeat
-		DO (RESET_NAVIGATION)
-
-		//true in normal exit (no better climb found)
 
 		//if param 0 (bug?) shift only done if current clibrate <= 0
 		//Shift the circle for 3 sec
@@ -1373,13 +1370,12 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (THERMALLING_SHIFT_CIRCLE)
 		//Level off/Shift the circle for 3 sec, log the action as a "waypoint"
+	    SET_INTERRUPT(INT_THERMALLING) 
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
-		IF_EQ(READ_F_LAND,1)    //only with motor off
-			LEVEL_1S  //custom command
-			LEVEL_1S  //custom command
-			LEVEL_1S  //custom command
-			DO (RESET_NAVIGATION)
-		END
+ 		LEVEL_1S  //custom command
+		LEVEL_1S  //custom command
+		LEVEL_1S  //custom command
+		DO (RESET_NAVIGATION)	
 
 		EXEC (LOGO_MAIN)
 	END
@@ -1387,6 +1383,7 @@ const struct logoInstructionDef instructions[] = {
 
 												 
 	TO (SINK)
+	    SET_INTERRUPT(INT_SINK) 
 		SET_SPEED(DESIRED_SPEED_FAST_FMIN4) //dm/s
 		// method: avoid flying in sink, assume sink area in front of aircraft
 		// turn at least 120 deg while in sink, away from start heading
@@ -1404,13 +1401,6 @@ const struct logoInstructionDef instructions[] = {
 			PARAM_DIV(10)
 			//special : force at least 12 = 120 deg turn to evade sink
 			REPEAT_PARAM
-				DO (CHECKS)  //maintain min and max altitudes
-
-				//don't let sink take you away from home...
-				IF_EQ( GEOFENCE_STATUS,2 )
-					SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
-					EXEC (PLAN_RETURN_GEOFENCE)
-				END
 				//exit as soon as sink has gone
 				IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //> -1 m/s,	if so, exit
 					SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
@@ -1424,14 +1414,6 @@ const struct logoInstructionDef instructions[] = {
 		IF_GT(REL_ANGLE_TO_OPPOSITE, 10)          //
 			PARAM_DIV(10)
 			REPEAT_PARAM
-				DO (CHECKS)  //maintain min and max altitudes
-
-				//don't let sink take you away from home...
-				IF_EQ( GEOFENCE_STATUS,2 )
-					SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
-					EXEC (PLAN_RETURN_GEOFENCE)
-				END
-				//exit as soon as sink has gone
 				IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //> -1 m/s,	if so, exit sink routine
 					SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
 					EXEC (LOGO_MAIN)
@@ -1446,19 +1428,12 @@ const struct logoInstructionDef instructions[] = {
 		PARAM_SET(5)
 
 		REPEAT_PARAM
-			DO (CHECKS)  //maintain min and max altitudes
-
-			//don't let sink take you away from home...
-			IF_EQ( GEOFENCE_STATUS,2 )
-				SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
-				EXEC (PLAN_RETURN_GEOFENCE)
-			END
 			//exit as soon as sink has gone
 			IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //limit sink to -1 m/s,	if so, exit sink routine
 				SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
 				EXEC (LOGO_MAIN)
 			END
-
+			
 			FD(DESIRED_SPEED_FAST_FMIN4/10)	//"SINK"
 		END
 
@@ -1490,10 +1465,8 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (RETURN_MC_GEOFENCE)
 		FD(DESIRED_SPEED_NORMAL_F0/10)
-		DO (CHECKS_MC)
 	END //geof
 	END
-
 
 
 
@@ -1522,20 +1495,27 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (TOO_HIGH)
 		//indicates lift while too high
+		SET_INTERRUPT(INT_TOO_HIGH)
 
-		//try to head upwind with every cycle
-		LOAD_TO_PARAM(REL_ANGLE_TO_WIND)    // wgf !!!non-standard LOGO command!!! -	-180..179)
-
-		IF_LT(REL_ANGLE_TO_WIND, 0) // wgf	angle < -30		(-31..-180) =   1-150 L
-			LT(10)
-		ELSE
-			IF_GE(REL_ANGLE_TO_WIND, -30) // wgf	angle >= -30  (-30..149) = 0..179 R
-				RT(10)
+		REPEAT(10)
+			IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)    // not too low  check every cycle
+			    //avoid extra nesting level?
+			    IF_GT(ALT,MAX_THERMALLING_ALT )     // not too high
+					//try to head upwind with every cycle
+					LOAD_TO_PARAM(REL_ANGLE_TO_WIND)    // wgf !!!non-standard LOGO command!!! -	-180..179)
+			
+					IF_LT(REL_ANGLE_TO_WIND, 0) // wgf	angle < -30		(-31..-180) =   1-150 L
+						LT(10)
+					ELSE
+						IF_GE(REL_ANGLE_TO_WIND, -30) // wgf	angle >= -30  (-30..149) = 0..179 R
+							RT(10)
+						END
+					END
+					FD(DESIRED_SPEED_NORMAL_F0/10)
+				END
 			END
-		END
-
-		FD(DESIRED_SPEED_NORMAL_F0/10)
-		EXEC (LOGO_MAIN)
+		END	
+		//EXEC (LOGO_MAIN)
 	END
 	END
 
@@ -1550,192 +1530,22 @@ const struct logoInstructionDef instructions[] = {
 	END
 
 
+/*
 	TO (CHECKS)        // is motor needed, landing requested, is pilot in control?
 		//see if calling subroutine needs to end
 		
-		//see if forcePreventOvershoot interrupt occurred
-		IF_LT(REL_ANGLE_TO_GOAL,-90)  
-		    CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
-		    //relax angle 
-			LT(4)
-			FD(4)
-			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
-		END
-		IF_GT(REL_ANGLE_TO_GOAL,90)  
-    		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
-			//relax angle 
-			RT(4)
-			FD(4)
-			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
-		END
-		
-		
-/* to interrupt
-#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
-		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not low,  check every cycle
-			IF_LT(ALT, MOTOR_ON_IN_SINK_ALT)    // not too low,  check every cycle
-				//very low, must use motor
-				IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
-					FLAG_OFF(F_LAND)    //Motor on
-				END
-			ELSE
-				IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)    // > ?? m/s if not too much sink, start motor
-					IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)    // unless thermals
-						IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
-							FLAG_OFF(F_LAND)    //Motor on
-						END
-					END
-				END
-			END
-		END
-#endif
+	END
+	END
 */
-#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
-		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not low,  check every cycle
-			//low, must use motor
-			IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
-				FLAG_OFF(F_LAND)    //Motor on
-			END
-		END
-#endif
-		IF_LT(BRAKE_THR_SEL_INPUT_CHANNEL ,2700)     // automode only
-			IF_GT(BRAKE_THR_SEL_INPUT_CHANNEL ,1700) // abstract flightplan workaround: only real low, ignore 0
-				EXEC (LOITER_LAND)
-			END
-		END
-		IF_LT(BATTERY_VOLTAGE, VOLTAGE_SENSOR_ALARM)     // land automatically when battery is low, usefull when no telemetry is available
-			EXEC (LOITER_LAND)
-		END
-		
-		IF_LT(AILERON_INPUT_CHANNEL ,2850)
-			DO (PILOT_INPUT)
-		END
-		IF_GT(AILERON_INPUT_CHANNEL ,3150)
-			DO (PILOT_INPUT)
-		END
-	END
-	END
 
 
+/*		
 	TO (SOFT_CHECKS)
         //see if calling subroutine needs to end; geofence, too high, sink
 
-		//used by main, xgf an thermal
-		//not allowed to be called by RETURN_GEOFENCE
-		IF_EQ( GEOFENCE_STATUS,2 )
-			SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
-			EXEC (PLAN_RETURN_GEOFENCE)
-		END
-		IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)    // not too low  check every cycle
-			//avoid extra nesting level?
-			IF_GT(ALT,MAX_THERMALLING_ALT )     // not too high
-				EXEC (TOO_HIGH)                 // if true, restart to main to avoid an extra nesting level
-			END
-		END
-		IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //limit sink to -1 m/s,	if so, exit the sink
-			EXEC (SINK)
-		END
-		
-		IF_LT(AILERON_INPUT_CHANNEL ,2850)
-			DO (PILOT_INPUT)
-		END
-		IF_GT(AILERON_INPUT_CHANNEL ,3150)
-			DO (PILOT_INPUT)
-		END
 	END
 	END
-
-
-
-	TO (CHECKS_MC)      // is motor still needed, landing requested, is pilot in control?
-		//remember we are MotorClimb mode , use DO 's
-
-		//see if forcePreventOvershoot interrupt occurred
-		IF_LT(REL_ANGLE_TO_GOAL,-90)  
-		    CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
-		    //relax angle 
-			LT(4)
-			FD(4)
-			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
-		END
-		IF_GT(REL_ANGLE_TO_GOAL,90)  
-    		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
-			//relax angle 
-			RT(4)
-			FD(4)
-			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
-		END
-#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
-		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not low,  check every cycle
-			//low, must use motor
-			IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
-				FLAG_OFF(F_LAND)    //Motor on
-			END
-		END
-#endif		
-		//pilot wants motor off
-		IF_LT(THROTTLE_INPUT_CHANNEL ,2400)
-			//stop motor, restart
-			//settle into gliding
-			FLAG_ON(F_LAND)	//Motor off
-		END
-		IF_LT(BRAKE_THR_SEL_INPUT_CHANNEL ,2700)     // automode only
-			IF_GT(BRAKE_THR_SEL_INPUT_CHANNEL ,1700) // abstract flightplan workaround: only real low, ignore 0
-				EXEC (LOITER_LAND)
-			END
-		END
-
-		IF_GT(ALT,MOTOR_OFF_TRIGGER_ALT+5)           //prevent overshooting in gf turns, but keep motor armed. Margin 5; only if normal code fails.
-			//settle into gliding
-			SET_ALT(MOTOR_OFF_TRIGGER_ALT)
-		END
-		IF_GT(ALT,MOTOR_OFF_TRIGGER_ALT)             //settle into gliding
-			FLAG_ON(F_LAND)	//Motor off
-		END
-		IF_LT(BATTERY_VOLTAGE, VOLTAGE_SENSOR_ALARM) // land automatically when battery is low, usefull when no telemetry is available
-			EXEC (LOITER_LAND)
-		END
-		IF_LT(AILERON_INPUT_CHANNEL ,2850)
-			DO (PILOT_INPUT_IN_MC)
-		END
-		IF_GT(AILERON_INPUT_CHANNEL ,3150)
-			DO (PILOT_INPUT_IN_MC)
-		END
-	END
-	END
-
-
-
-	TO (SOFT_CHECKS_MC)           //see if calling subroutine needs to end
-		//not allowed to be called by RETURN_GEOFENCE
-
-		IF_GT(ALT,MOTOR_OFF_TRIGGER_ALT)           //settle into gliding
-			//settle into gliding
-			FLAG_ON(F_LAND)	//Motor off
-			EXEC (LOGO_MAIN)
-		END
-
-		IF_EQ( GEOFENCE_STATUS,2 )
-			DO (PLAN_RETURN_GEOFENCE) //act if needed
-		END
-		/* sink now handeled in c
-		IF_LT(AIR_SPEED_Z, MOTOR_CLIMB_MIN) //limit sink to -1 m/s,	if so, stop motor, exit the sink
-			//settle into gliding
-			FLAG_ON(F_LAND)	//Motor off
-			EXEC (LOGO_MAIN)
-		END
-		*/
-		IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)
-			//if flag was off, seems motorcontrol has stopped the motor due to sink, follow.
-			FLAG_ON(F_LAND)	//Motor off
-		END
-		IF_LT(AILERON_INPUT_CHANNEL ,2850)
-			DO (PILOT_INPUT_IN_MC)
-		END
-		IF_GT(AILERON_INPUT_CHANNEL ,3150)
-			DO (PILOT_INPUT_IN_MC)
-		END
-	END
+*/
 
 
 
@@ -1753,194 +1563,328 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (PILOT_INPUT)        
-		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
+		SET_INTERRUPT(INT_PILOT_INPUT)
 		REPEAT(10)			//keep pilot control as long stick is off-centre,max 10 loops
 			IF_LT(AILERON_INPUT_CHANNEL ,2850)
-				//LT(10)
-				//FD(DESIRED_SPEED_NORMAL_F0/10)
 				LEVEL_1S  //don't fight pilot, wait one sec, regardles the groundspeed
 			END
 			IF_GT(AILERON_INPUT_CHANNEL,3150)
-				//RT(10)
-				//FD(DESIRED_SPEED_NORMAL_F0/10)
 				LEVEL_1S  //don't fight pilot, wait one sec, regardles the groundspeed
 			END
-#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
-		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not low,  check every cycle
-			//low, must use motor
-			IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
-				FLAG_OFF(F_LAND)    //Motor on
-			END
-		END
-#endif
 		END
 		LEVEL_1S  //setlle, wait one sec, regardles the groundspeed
 		LEVEL_1S  //settle, wait one sec, regardles the groundspeed
 		DO (RESET_NAVIGATION)
-		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
-		//EXEC (LOGO_MAIN)
+		EXEC (LOGO_MAIN)
 	END
 	END
 
 
 
-	TO (PILOT_INPUT_IN_MC)  
-		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
-		REPEAT(10)			//keep pilot control as long stick is off-centre,max 10 loops
-			IF_LT(AILERON_INPUT_CHANNEL ,2850)
-				//LT(10)
-				//FD(DESIRED_SPEED_NORMAL_F0/10)
-				LEVEL_1S  //don't fight pilot, wait one sec, regardles the groundspeed
-			END
-			IF_GT(AILERON_INPUT_CHANNEL,3150)
-				//RT(10)
-				//FD(DESIRED_SPEED_NORMAL_F0/10)
-				LEVEL_1S  //don't fight pilot, wait one sec, regardles the groundspeed
-			END
-#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
-		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not low,  check every cycle
-			//low, must use motor
+	TO (INT_PILOT_INPUT)  //interrupt routine
+#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )    //no motor support in case of gliders
+		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)            // not low,  check every cycle
 			IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
-				FLAG_OFF(F_LAND)    //Motor on
+				FLAG_OFF(F_LAND)                    //Motor on
 			END
+		END
+		IF_GT(ALT,MOTOR_OFF_TRIGGER_ALT)             //settle into gliding
+			FLAG_ON(F_LAND)	//Motor off
 		END
 #endif
+		IF_LT(BATTERY_VOLTAGE, VOLTAGE_SENSOR_ALARM)     // land automatically when battery is low, usefull when no telemetry is available
+			EXEC (LOGO_MAIN)
 		END
-		LEVEL_1S  //setlle, wait one sec, regardles the groundspeed
-		LEVEL_1S  //settle, wait one sec, regardles the groundspeed
-		DO (RESET_NAVIGATION)
-		FD(DESIRED_SPEED_NORMAL_F0/10)
-		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
-		//EXEC (LOGO_MAIN)
+
 	END
 	END
 
 
 
-	TO (INT_FORCE_TARGET_AHEAD)  //interrupt routine
-		/**/
+	TO (INT_RETURN_GEOFENCE)  //interrupt routine
+	
+	    //check pilot
 		IF_LT(AILERON_INPUT_CHANNEL ,2850)
-			IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
-			END
+			EXEC (LOGO_MAIN)   
 		END
 		IF_GT(AILERON_INPUT_CHANNEL ,3150)
+			EXEC (LOGO_MAIN)   
+		END
+		
+		//check if relative angle is much different from planes angle, if so, correct
+		IF_EQ( GEOFENCE_STATUS,2 )              //outside geofence        
+			IF_LT(REL_ANGLE_TO_GOAL,-60)   
+				IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+				END
+			END
+			IF_GT(REL_ANGLE_TO_GOAL,60)
+				IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+				END
+			END
+		ELSE
+			IF_LT(REL_ANGLE_TO_GOAL,-60)
+				IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+				END
+			END
+			IF_GT(REL_ANGLE_TO_GOAL,60)
+				IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+				END
+			END
+		END
+
+#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )    //no motor support in case of gliders
+		//moot handling
+		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)            // not low,  check every cycle
+			IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
+				FLAG_OFF(F_LAND)                    //Motor on
+			END
+		END
+		IF_GT(ALT,MOTOR_OFF_TRIGGER_ALT)             //settle into gliding
+			FLAG_ON(F_LAND)	//Motor off
+		END
+#endif
+
+	END
+	END
+
+
+
+	TO (INT_RETURN_SOFT_GEOFENCE)  //interrupt routine
+	
+	    //check pilot
+		IF_LT(AILERON_INPUT_CHANNEL ,2850)
+			EXEC (LOGO_MAIN)   
+		END
+		IF_GT(AILERON_INPUT_CHANNEL ,3150)
+			EXEC (LOGO_MAIN)   
+		END
+		
+		IF_EQ(GEOFENCE_STATUS,2 )              //outside geofence    
+			EXEC (LOGO_MAIN)   
+		END
+
+		IF_GT(FLY_COMMAND_COUNTER,80 )             //fly command takes too long    
+			//EXEC (LOGO_MAIN)   
 			IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
 			END
 		END
-		
-		/**/
-		//check if relative angle is much different from planes angle, if so, correct
-		IF_EQ( GEOFENCE_STATUS,2 )              //outside geofence        
-			IF_LT(REL_ANGLE_TO_GOAL,-90)   
-				IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
-				END
-				/*
-				IF_LT(GEOFENCE_TURN, 0)          // gf	angle < 0     
-					//insert extra second, move target more in front, but maintain the turn
-					PEN_UP
-						LT(10)
-						FD(DESIRED_SPEED_NORMAL_F0/10)
-					PEN_DOWN
-				END
-				IF_GT(GEOFENCE_TURN, 0)                     // gf	angle < 0
-					//insert extra second, move target more in front, but maintain the turn
-					PEN_UP
-						RT(10)
-						FD(DESIRED_SPEED_NORMAL_F0/10)
-					PEN_DOWN
-				END
-				IF_EQ(GEOFENCE_TURN, 0)                     // gf	angle == 0
-					//insert extra second, move target more in front, but maintain heading
-					PEN_UP
-						FD(DESIRED_SPEED_NORMAL_F0/10)
-					PEN_DOWN
-				END
-				*/ 
-			END
-			IF_GT(REL_ANGLE_TO_GOAL,90)
-				IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
-				END
-				/*
-				IF_LT(GEOFENCE_TURN, 0)          // gf	angle < 0
-					//insert extra second, move target more in front, but maintain the turn
-					PEN_UP
-						LT(10)
-						FD(DESIRED_SPEED_NORMAL_F0/10)
-					PEN_DOWN
-				END
-				IF_GT(GEOFENCE_TURN, 0)                     // gf	angle < 0
-					//insert extra second, move target more in front, but maintain the turn
-					PEN_UP
-						RT(10)
-						FD(DESIRED_SPEED_NORMAL_F0/10)
-					PEN_DOWN
-				END
-				IF_EQ(GEOFENCE_TURN, 0)                     // gf	angle == 0
-					//insert extra second, move target more in front, but maintain heading
-					PEN_UP
-						FD(DESIRED_SPEED_NORMAL_F0/10)
-					PEN_DOWN
-				END 
-				*/
-			END
-		ELSE
-			IF_LT(REL_ANGLE_TO_GOAL,-90)
-				IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
-				END
-				/*
-				PEN_UP
-					USE_CURRENT_ANGLE
-					USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
-					FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
-				PEN_DOWN
-				*/
-			END
-			IF_GT(REL_ANGLE_TO_GOAL,90)
-				IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
-				END
-				/*
-					PEN_UP
-						USE_CURRENT_ANGLE
-						USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
-						FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
-					PEN_DOWN
-				END
-				*/
+		IF_LT(REL_ANGLE_TO_GOAL,-60)   
+			IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
 			END
 		END
-/*
-#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
-		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not low,  check every cycle
-			IF_LT(ALT, MOTOR_ON_IN_SINK_ALT)    // not too low,  check every cycle
-				//very low, must use motor
-				IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
-					FLAG_OFF(F_LAND)    //Motor on
-				END 
-			ELSE
-				IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)    // > ?? m/s if not too much sink, start motor
-					IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)    // unless thermals
-						IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
-							FLAG_OFF(F_LAND)    //Motor on
-						END 
-					END
-				END
+		IF_GT(REL_ANGLE_TO_GOAL,60)
+			IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
 			END
 		END
-#endif
-*/
-#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
-		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not low,  check every cycle
-			//low, must use motor
+
+        IF_EQ(MOTOR_OFF_TIMER,0 )  //motor has stopped more than 4 secons ago
+			//glided into a thermal
+			IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)  //>= 0.2 m/s climb is the trigger, also check GEOFENCE
+		   		EXEC (LOGO_MAIN)   
+			END
+		END
+
+#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )    //no motor support in case of gliders
+		//moot handling
+		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)            // not low,  check every cycle
 			IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
-				FLAG_OFF(F_LAND)    //Motor on
+				FLAG_OFF(F_LAND)                    //Motor on
 			END
+		END
+		IF_GT(ALT,MOTOR_OFF_TRIGGER_ALT)             //settle into gliding
+			FLAG_ON(F_LAND)	//Motor off
 		END
 #endif
 
+		IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)    // not too low  check every cycle
+			//avoid extra nesting level?
+			IF_GT(ALT,MAX_THERMALLING_ALT )     // not too high
+				EXEC (LOGO_MAIN)                 // if true, restart to main to avoid an extra nesting level
+			END
+		END
+		IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //limit sink to -1 m/s,	if so, exit the sink
+			EXEC (LOGO_MAIN)
+		END
+
+		IF_LT(BRAKE_THR_SEL_INPUT_CHANNEL ,2700)     // automode only
+			IF_GT(BRAKE_THR_SEL_INPUT_CHANNEL ,1700) // abstract flightplan workaround: only real low, ignore 0
+				EXEC (LOGO_MAIN)
+			END
+		END
+		IF_LT(BATTERY_VOLTAGE, VOLTAGE_SENSOR_ALARM)     // land automatically when battery is low, usefull when no telemetry is available
+			EXEC (LOGO_MAIN)
+		END
+
 	END
 	END
 
 
+	TO (INT_THERMALLING)  //interrupt routine
+
+	    //check pilot
+		IF_LT(AILERON_INPUT_CHANNEL ,2850)
+			EXEC (LOGO_MAIN)   
+		END
+		IF_GT(AILERON_INPUT_CHANNEL ,3150)
+			EXEC (LOGO_MAIN)   
+		END
+		
+		IF_EQ( GEOFENCE_STATUS,2 )              //outside geofence    
+	   		EXEC (LOGO_MAIN)   
+		END
+
+#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )    //no motor support in case of gliders
+		//moot handling
+		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)            // not low,  check every cycle
+			IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
+				FLAG_OFF(F_LAND)                    //Motor on
+			END
+		END
+		IF_GT(ALT,MOTOR_OFF_TRIGGER_ALT)             //settle into gliding
+			FLAG_ON(F_LAND)	//Motor off
+		END
+#endif
+
+		IF_GT(ALT,MAX_THERMALLING_ALT )      // not too high
+			EXEC (LOGO_MAIN)                 // if true, restart to main to avoid an extra nesting level
+		END
+
+		IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //limit sink to -1 m/s,	if so, exit the sink
+			EXEC (LOGO_MAIN)
+		END
+
+
+		IF_LT(BRAKE_THR_SEL_INPUT_CHANNEL ,2700)     // automode only
+			IF_GT(BRAKE_THR_SEL_INPUT_CHANNEL ,1700) // abstract flightplan workaround: only real low, ignore 0
+				EXEC (LOGO_MAIN)
+			END
+		END
+		IF_LT(BATTERY_VOLTAGE, VOLTAGE_SENSOR_ALARM)     // land automatically when battery is low, usefull when no telemetry is available
+			EXEC (LOGO_MAIN)
+		END
+
+	END
+	END
+
+
+
+	TO (INT_SINK)  //interrupt routine
+	    //check pilot
+		IF_LT(AILERON_INPUT_CHANNEL ,2850)
+			EXEC (LOGO_MAIN)   
+		END
+		IF_GT(AILERON_INPUT_CHANNEL ,3150)
+			EXEC (LOGO_MAIN)   
+		END
+		
+		IF_EQ( GEOFENCE_STATUS,2 )              //outside geofence    
+	   		EXEC (LOGO_MAIN)   
+		END
+
+		IF_GT(FLY_COMMAND_COUNTER,80 )             //fly command takes too long    
+			//EXEC (LOGO_MAIN)   
+			IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+			END
+		END
+		IF_LT(REL_ANGLE_TO_GOAL,-60)   
+			IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+			END
+		END
+		IF_GT(REL_ANGLE_TO_GOAL,60)
+			IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+			END
+		END
+
+#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )    //no motor support in case of gliders
+		//moot handling
+		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)            // not low,  check every cycle
+			IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
+				FLAG_OFF(F_LAND)                    //Motor on
+			END
+		END
+		IF_GT(ALT,MOTOR_OFF_TRIGGER_ALT)             //settle into gliding
+			FLAG_ON(F_LAND)	//Motor off
+		END
+#endif
+
+		IF_LT(BRAKE_THR_SEL_INPUT_CHANNEL ,2700)     // automode only
+			IF_GT(BRAKE_THR_SEL_INPUT_CHANNEL ,1700) // abstract flightplan workaround: only real low, ignore 0
+				EXEC (LOGO_MAIN)
+			END
+		END
+		IF_LT(BATTERY_VOLTAGE, VOLTAGE_SENSOR_ALARM)     // land automatically when battery is low, usefull when no telemetry is available
+			EXEC (LOGO_MAIN)
+		END
+
+	END
+	END
+
+
+	TO (INT_TOO_HIGH)  //interrupt routine
+
+	    //check pilot
+		IF_LT(AILERON_INPUT_CHANNEL ,2850)
+			EXEC (LOGO_MAIN)   
+		END
+		IF_GT(AILERON_INPUT_CHANNEL ,3150)
+			EXEC (LOGO_MAIN)   
+		END
+		
+		IF_EQ( GEOFENCE_STATUS,2 )              //outside geofence    
+	   		EXEC (LOGO_MAIN)   
+		END
+
+		IF_GT(FLY_COMMAND_COUNTER,80 )             //fly command takes too long    
+			//EXEC (LOGO_MAIN)   
+			IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+			END
+		END
+		IF_LT(REL_ANGLE_TO_GOAL,-60)   
+			IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+			END
+		END
+		IF_GT(REL_ANGLE_TO_GOAL,60)
+			IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+			END
+		END
+
+#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )    //no motor support in case of gliders
+		//motor handling
+		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)            // not low,  check every cycle
+			IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
+				FLAG_OFF(F_LAND)                    //Motor on
+			END
+		END
+		IF_GT(ALT,MOTOR_OFF_TRIGGER_ALT)             //settle into gliding
+			FLAG_ON(F_LAND)	//Motor off
+		END
+#endif
+
+		/*
+		IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)    // not too low  check every cycle
+			//avoid extra nesting level?
+			IF_GT(ALT,MAX_THERMALLING_ALT )     // not too high
+				EXEC (TOO_HIGH)                 // if true, restart to main to avoid an extra nesting level
+			END
+		END
+		*/
+		/*
+		IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //limit sink to -1 m/s,	if so, exit the sink
+			EXEC (SINK)
+		END
+		*/
+
+		IF_LT(BRAKE_THR_SEL_INPUT_CHANNEL ,2700)     // automode only
+			IF_GT(BRAKE_THR_SEL_INPUT_CHANNEL ,1700) // abstract flightplan workaround: only real low, ignore 0
+				EXEC (LOGO_MAIN)
+			END
+		END
+		IF_LT(BATTERY_VOLTAGE, VOLTAGE_SENSOR_ALARM)     // land automatically when battery is low, usefull when no telemetry is available
+			EXEC (LOGO_MAIN)
+		END
+
+	END
+	END
 
 
 //Polar_Plot

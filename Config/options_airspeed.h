@@ -28,7 +28,7 @@
 //Fantasy
 
 // Airspeeds in m/s
-#define MINIMUM_GROUNDSPEED         -3.0
+#define MINIMUM_GROUNDSPEED          1.0
 //will be redefined?
 #define MINIMUM_AIRSPEED             8.5    // 30 km/h
 #define MAXIMUM_AIRSPEED            16.39   // 59 km/h
@@ -66,7 +66,7 @@
 #define GLIDE_AIRSPEED_CONTROL       1
 
 // Airspeeds in m/s
-#define MINIMUM_GROUNDSPEED         -3.0
+#define MINIMUM_GROUNDSPEED          1.0
 #define CRUISE_AIRSPEED              8.6    // 31 km/h, Gliding airspeed when aircraft is level
 #define MINIMUM_AIRSPEED             9.0    // 35 km/h    //was 9.7
 #define MAXIMUM_AIRSPEED            13.0    // 47 km/h
@@ -95,7 +95,7 @@
 //Grafas
 
 // Airspeeds in m/s
-#define MINIMUM_GROUNDSPEED         -3.0
+#define MINIMUM_GROUNDSPEED          1.0
 //will be redefined?
 #define MINIMUM_AIRSPEED             4.7   // 3? km/h
 #define CRUISE_AIRSPEED             10.8   // 4? km/h, Gliding airspeed when aircraft is level
@@ -130,7 +130,7 @@
 //Linea
 
 // Airspeeds in m/s
-#define MINIMUM_GROUNDSPEED         -3.0
+#define MINIMUM_GROUNDSPEED          1.0
 //will be redefined?
 #define MINIMUM_AIRSPEED             9.0		// 32 km/h
 #define MAXIMUM_AIRSPEED            15.0    // 54 km/h
