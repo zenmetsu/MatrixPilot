@@ -512,25 +512,25 @@ static void normalAltitudeCntrl(void)
 						}
 					}
 					*/
-					//sink was detected. To save power, use burst of full throttle (enough to mostly counter/climb in sink) and glides.
-					if ( (IMUlocationz.WW + speed_height) < 60 )
+					    //sink was detected. To save power, use burst of full throttle (enough to mostly counter/climb in sink) and glides.
+					if ( (IMUlocationz._.W1) < 60 )
 					{
-					    if ( (IMUlocationz.WW + speed_height) < 50 )
-					    {
-			             	motorClimbSinkStarted = true;  // boolean climbing with motor in sink between 50 and 50 m 
-				}
-					    if ( motorClimbSinkStarted)       
-					    {
+						if ( (IMUlocationz._.W1) < 50 )
+						{
+							motorClimbSinkStarted = true;  // boolean climbing with motor in sink between 50 and 50 m 
+						}
+						if ( motorClimbSinkStarted)       
+						{
 							throttleAccum.WW = (int16_t)(max_throttle);
 						}
-				else
-				{
+						else
+						{
 							throttleAccum.WW = 0;
 						}
-					}    
-				    else
-				    {
-			            motorClimbSinkStarted = false;
+					}
+					else
+					{
+						motorClimbSinkStarted = false;
 						throttleAccum.WW = 0;
 					}
 				}
