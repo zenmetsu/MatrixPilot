@@ -990,6 +990,10 @@ const struct logoInstructionDef instructions[] = {
 //
 // see https://groups.google.com/forum/#!topic/uavdevboard/yn5PnR6pk7Q
 //
+// GEOFENCE_STATUS : 0,1,2  0= soft/wind gf, 1=wind gf, 2 geofence (alarm)   
+// GEOFENCE_TURN : geofence angle to return
+
+
 
 #define GEOFENCE_SIZE                 400  // radius of circle to keep aircaft within line of sight
 //#define UPWIND_POINT_FACTOR           0.5  // multiply "windspeed in cm/s" by factor for distance from home i.e. windspeed = 540 cm/s (3 bft) * 0.5 = 270 M from home
@@ -1122,20 +1126,33 @@ const struct logoInstructionDef instructions[] = {
 //		FLAG_ON(F_LAND)    //Motor off
 		SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
 		PEN_DOWN
+		/*
+		//prevent looping by interrupt
+		IF_LT(AILERON_INPUT_CHANNEL ,2850)
+			DO (PILOT_INPUT)
+			DO (RESET_NAVIGATION)
+		END
+		IF_GT(AILERON_INPUT_CHANNEL ,3150)
+			DO (PILOT_INPUT)
+			DO (RESET_NAVIGATION)
+		END
+		*/
 		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
 
 		//IF_EQ(READ_F_LAND,1)
-		IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)
+		IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)  //Motor off
 			DO (CHECKS)              //is motor needed, landing requested, is pilot in control?
 			DO (SOFT_CHECKS)         //see if calling subroutine needs to end; geofence, too high, sink
 		ELSE
 			DO (SOFT_CHECKS_MC)      //see if calling subroutine needs to end; geofence, too high, sink
-			DO (TAKEOFF)             //keep level when low
+			IF_LT(ALT, 10)  //below: auto takeoff / hand launch with motor on in Autonomous mode
+			    DO (TAKEOFF)             //keep level when low
+			END    
 			DO (CHECKS_MC)           //is motor needed, landing requested, is pilot in control?
 		END
 
 		//IF_EQ(READ_F_LAND,1)
-		IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)
+		IF_LT(READ_THROTTLE_OUTPUT_CHANNEL,2400)  //Motor off
 			DO (CHECK_THERMALS)       //geofence will be monitored, end and restart if needed
 			DO (PLAN_SOFT_GEOFENCE)   //soft geofence
 			DO (CRUISE)   // prevent overshoots
@@ -1535,24 +1552,44 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (CHECKS)        // is motor needed, landing requested, is pilot in control?
 		//see if calling subroutine needs to end
-
+		
+		//see if forcePreventOvershoot interrupt occurred
+		IF_LT(REL_ANGLE_TO_GOAL,-90)  
+		    CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
+		    //relax angle 
+			RT(2)
+			FD(4)
+			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
+		END
+		IF_GT(REL_ANGLE_TO_GOAL,90)  
+    		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
+			//relax angle 
+			LT(2)
+			FD(4)
+			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
+		END
+		
+		
+/* to interrupt
 #if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
-		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not too low  check every cycle
-			IF_LT(ALT, MOTOR_ON_IN_SINK_ALT)    // not too low  check every cycle
+		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not low,  check every cycle
+			IF_LT(ALT, MOTOR_ON_IN_SINK_ALT)    // not too low,  check every cycle
 				//very low, must use motor
 				IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
 					FLAG_OFF(F_LAND)    //Motor on
 				END
-			END
-			IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)    // > ?? m/s if not too much sink, start motor
-				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)    // unless thermals
-					IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
-						FLAG_OFF(F_LAND)    //Motor on
+			ELSE
+				IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)    // > ?? m/s if not too much sink, start motor
+					IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)    // unless thermals
+						IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
+							FLAG_OFF(F_LAND)    //Motor on
+						END
 					END
 				END
 			END
 		END
 #endif
+*/
 		IF_LT(BRAKE_THR_SEL_INPUT_CHANNEL ,2700)     // automode only
 			IF_GT(BRAKE_THR_SEL_INPUT_CHANNEL ,1700) // abstract flightplan workaround: only real low, ignore 0
 				EXEC (LOITER_LAND)
@@ -1561,6 +1598,7 @@ const struct logoInstructionDef instructions[] = {
 		IF_LT(BATTERY_VOLTAGE, VOLTAGE_SENSOR_ALARM)     // land automatically when battery is low, usefull when no telemetry is available
 			EXEC (LOITER_LAND)
 		END
+		
 		IF_LT(AILERON_INPUT_CHANNEL ,2850)
 			DO (PILOT_INPUT)
 		END
@@ -1589,6 +1627,7 @@ const struct logoInstructionDef instructions[] = {
 		IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN) //limit sink to -1 m/s,	if so, exit the sink
 			EXEC (SINK)
 		END
+		
 		IF_LT(AILERON_INPUT_CHANNEL ,2850)
 			DO (PILOT_INPUT)
 		END
@@ -1603,6 +1642,22 @@ const struct logoInstructionDef instructions[] = {
 	TO (CHECKS_MC)      // is motor still needed, landing requested, is pilot in control?
 		//remember we are MotorClimb mode , use DO 's
 
+		//see if forcePreventOvershoot interrupt occurred
+		IF_LT(REL_ANGLE_TO_GOAL,-90)  
+		    CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
+		    //relax angle 
+			RT(2)
+			FD(4)
+			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
+		END
+		IF_GT(REL_ANGLE_TO_GOAL,90)  
+    		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
+			//relax angle 
+			LT(2)
+			FD(4)
+			SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
+		END
+		
 		//pilot wants motor off
 		IF_LT(THROTTLE_INPUT_CHANNEL ,2400)
 			//stop motor, restart
@@ -1675,13 +1730,15 @@ const struct logoInstructionDef instructions[] = {
 			USE_CURRENT_ANGLE
 			USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
 			FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
+			FD(DESIRED_SPEED_NORMAL_F0/10)
 		PEN_DOWN
 	END
 	END
 
 
 
-	TO (PILOT_INPUT)
+	TO (PILOT_INPUT)        
+		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
 		REPEAT(10)			//keep pilot control as long stick is off-centre,max 10 loops
 			IF_LT(AILERON_INPUT_CHANNEL ,2850)
 				LT(10)
@@ -1693,13 +1750,15 @@ const struct logoInstructionDef instructions[] = {
 			END
 		END
 		DO (RESET_NAVIGATION)
-		EXEC (LOGO_MAIN)
+		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
+		//EXEC (LOGO_MAIN)
 	END
 	END
 
 
 
-	TO (PILOT_INPUT_IN_MC)
+	TO (PILOT_INPUT_IN_MC)  
+		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
 		REPEAT(10)			//keep pilot control as long stick is off-centre,max 10 loops
 			IF_LT(AILERON_INPUT_CHANNEL ,2850)
 				LT(10)
@@ -1711,25 +1770,33 @@ const struct logoInstructionDef instructions[] = {
 			END
 		END
 		DO (RESET_NAVIGATION)
-		EXEC (LOGO_MAIN)
+		FD(DESIRED_SPEED_NORMAL_F0/10)
+		SET_INTERRUPT(INT_FORCE_TARGET_AHEAD)
+		//EXEC (LOGO_MAIN)
 	END
 	END
 
 
 
 	TO (INT_FORCE_TARGET_AHEAD)  //interrupt routine
-		/*
+		/**/
 		IF_LT(AILERON_INPUT_CHANNEL ,2850)
-			DO (RESET_NAVIGATION)
+			IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+			END
 		END
 		IF_GT(AILERON_INPUT_CHANNEL ,3150)
-			DO (RESET_NAVIGATION)
+			IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+			END
 		END
-		*/
+		
+		/**/
 		//check if relative angle is much different from planes angle, if so, correct
-		IF_EQ( GEOFENCE_STATUS,2 )              //outside geofence
-			IF_LT(REL_ANGLE_TO_GOAL,-90)
-				IF_LT(GEOFENCE_TURN, 0)          // gf	angle < 0
+		IF_EQ( GEOFENCE_STATUS,2 )              //outside geofence        
+			IF_LT(REL_ANGLE_TO_GOAL,-90)   
+				IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+				END
+				/*
+				IF_LT(GEOFENCE_TURN, 0)          // gf	angle < 0     
 					//insert extra second, move target more in front, but maintain the turn
 					PEN_UP
 						LT(10)
@@ -1749,8 +1816,12 @@ const struct logoInstructionDef instructions[] = {
 						FD(DESIRED_SPEED_NORMAL_F0/10)
 					PEN_DOWN
 				END
+				*/ 
 			END
 			IF_GT(REL_ANGLE_TO_GOAL,90)
+				IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+				END
+				/*
 				IF_LT(GEOFENCE_TURN, 0)          // gf	angle < 0
 					//insert extra second, move target more in front, but maintain the turn
 					PEN_UP
@@ -1770,25 +1841,54 @@ const struct logoInstructionDef instructions[] = {
 					PEN_UP
 						FD(DESIRED_SPEED_NORMAL_F0/10)
 					PEN_DOWN
-				END
+				END 
+				*/
 			END
 		ELSE
 			IF_LT(REL_ANGLE_TO_GOAL,-90)
+				IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+				END
+				/*
 				PEN_UP
 					USE_CURRENT_ANGLE
 					USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
 					FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
 				PEN_DOWN
-			ELSE
-				IF_GT(REL_ANGLE_TO_GOAL,90)
+				*/
+			END
+			IF_GT(REL_ANGLE_TO_GOAL,90)
+				IF_GT(FORCE_CROSS_FINISH_LINE,0) //test is not relevant, this sets the flag
+				END
+				/*
 					PEN_UP
 						USE_CURRENT_ANGLE
 						USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
 						FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
 					PEN_DOWN
 				END
+				*/
 			END
 		END
+/**/
+#if ( THROTTLE_INPUT_CHANNEL != CHANNEL_UNUSED )     //no motor support in case of gliders
+		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)    // not low,  check every cycle
+			IF_LT(ALT, MOTOR_ON_IN_SINK_ALT)    // not too low,  check every cycle
+				//very low, must use motor
+				IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
+					FLAG_OFF(F_LAND)    //Motor on
+				END 
+			ELSE
+				IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)    // > ?? m/s if not too much sink, start motor
+					IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)    // unless thermals
+						IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
+							FLAG_OFF(F_LAND)    //Motor on
+						END 
+					END
+				END
+			END
+		END
+#endif
+/**/
 	END
 	END
 
