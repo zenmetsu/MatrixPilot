@@ -1321,12 +1321,14 @@ const struct logoInstructionDef instructions[] = {
 		//wait up to 6 sec for the climbrate to decrease, keep the best climbrate
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta
-		LEVEL_1S  //custom command
+		//LEVEL_1S  //custom command
+		BANK_1S(0)
 		REPEAT(5)    //6 sec
 			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			IF_GE(PARAM,0)
 				//FD(DESIRED_SPEED_SLOW_F4/10)    //still increasing, wait ~1 sec
-				LEVEL_1S  //custom command
+				//LEVEL_1S  //custom command
+				BANK_1S(0)
 			END
 		END
 		DO(RESET_NAVIGATION)
@@ -1375,9 +1377,14 @@ const struct logoInstructionDef instructions[] = {
 		//Level off/Shift the circle for 3 sec, log the action as a "waypoint"
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
 		IF_EQ(READ_F_LAND,1)    //only with motor off
+			/*
 			LEVEL_1S  //custom command
 			LEVEL_1S  //custom command
 			LEVEL_1S  //custom command
+			*/
+			BANK_1S(0)
+			BANK_1S(0)
+			BANK_1S(0)
 			DO (RESET_NAVIGATION)
 		END
 
@@ -1477,7 +1484,8 @@ const struct logoInstructionDef instructions[] = {
 			//if relative angle is much different from turtle,correct
 			REPEAT(60)
 				IF_LT(ALT, 10)  //below: auto takeoff / hand launch with motor on in Autonomous mode
-					LEVEL_1S  //allow heading to stabilize on takeoff
+					//LEVEL_1S  //allow heading to stabilize on takeoff
+					BANK_1S(0)
 					DO (RESET_NAVIGATION)
 				END
 			END
@@ -1527,14 +1535,16 @@ const struct logoInstructionDef instructions[] = {
 		LOAD_TO_PARAM(REL_ANGLE_TO_WIND)    // wgf !!!non-standard LOGO command!!! -	-180..179)
 
 		IF_LT(REL_ANGLE_TO_WIND, 0) // wgf	angle < -30		(-31..-180) =   1-150 L
-			LT(10)
+			//LT(10)
+			BANK_1S(-20)
 		ELSE
 			IF_GE(REL_ANGLE_TO_WIND, -30) // wgf	angle >= -30  (-30..149) = 0..179 R
-				RT(10)
+				//RT(10)
+				BANK_1S(20)
 			END
 		END
 
-		FD(DESIRED_SPEED_NORMAL_F0/10)
+		//FD(DESIRED_SPEED_NORMAL_F0/10)
 		EXEC (LOGO_MAIN)
 	END
 	END
@@ -1544,7 +1554,8 @@ const struct logoInstructionDef instructions[] = {
 	TO (BETTER_LIFT)
 		//indicates lift is better then it was at the beginnning of the thermalling turn
 
-		FD(DESIRED_SPEED_NORMAL_F0/10)
+		//FD(DESIRED_SPEED_NORMAL_F0/10)
+		BANK_1S(0)
 		EXEC(LOGO_MAIN)
 	END
 	END
@@ -1600,10 +1611,10 @@ const struct logoInstructionDef instructions[] = {
 		END
 		
 		IF_LT(AILERON_INPUT_CHANNEL ,2850)
-			DO (PILOT_INPUT)
+			EXEC (PILOT_INPUT)
 		END
 		IF_GT(AILERON_INPUT_CHANNEL ,3150)
-			DO (PILOT_INPUT)
+			EXEC (PILOT_INPUT)
 		END
 	END
 	END
@@ -1611,7 +1622,7 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (SOFT_CHECKS)
         //see if calling subroutine needs to end; geofence, too high, sink
-
+		
 		//used by main, xgf an thermal
 		//not allowed to be called by RETURN_GEOFENCE
 		IF_EQ( GEOFENCE_STATUS,2 )
@@ -1629,10 +1640,10 @@ const struct logoInstructionDef instructions[] = {
 		END
 		
 		IF_LT(AILERON_INPUT_CHANNEL ,2850)
-			DO (PILOT_INPUT)
+			EXEC (PILOT_INPUT)
 		END
 		IF_GT(AILERON_INPUT_CHANNEL ,3150)
-			DO (PILOT_INPUT)
+			EXEC (PILOT_INPUT)
 		END
 	END
 	END
@@ -1741,12 +1752,11 @@ const struct logoInstructionDef instructions[] = {
 		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
 		REPEAT(10)			//keep pilot control as long stick is off-centre,max 10 loops
 			IF_LT(AILERON_INPUT_CHANNEL ,2850)
-				LT(10)
-				FD(DESIRED_SPEED_NORMAL_F0/10)
+				//LT(10)
+				//FD(DESIRED_SPEED_NORMAL_F0/10)
+				BANK_1S(-20)
 			END
 			IF_GT(AILERON_INPUT_CHANNEL,3150)
-				RT(10)
-				FD(DESIRED_SPEED_NORMAL_F0/10)
 			END
 		END
 		DO (RESET_NAVIGATION)
@@ -1761,12 +1771,14 @@ const struct logoInstructionDef instructions[] = {
 		CLEAR_INTERRUPT  //don't set  forceCrossFinishLine again
 		REPEAT(10)			//keep pilot control as long stick is off-centre,max 10 loops
 			IF_LT(AILERON_INPUT_CHANNEL ,2850)
-				LT(10)
-				FD(DESIRED_SPEED_NORMAL_F0/10)
+				//LT(10)
+				//FD(DESIRED_SPEED_NORMAL_F0/10)
+				BANK_1S(-20)
 			END
 			IF_GT(AILERON_INPUT_CHANNEL,3150)
-				RT(10)
-				FD(DESIRED_SPEED_NORMAL_F0/10)
+				//RT(10)
+				//FD(DESIRED_SPEED_NORMAL_F0/10)
+				BANK_1S(20)
 			END
 		END
 		DO (RESET_NAVIGATION)
@@ -1775,6 +1787,7 @@ const struct logoInstructionDef instructions[] = {
 		//EXEC (LOGO_MAIN)
 	END
 	END
+
 
 
 

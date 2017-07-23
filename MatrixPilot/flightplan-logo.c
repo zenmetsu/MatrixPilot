@@ -87,10 +87,13 @@ enum {
 	READ_F_LAND,
  	GEOFENCE_STATUS,
 	GEOFENCE_TURN,
-	MOTOR_OFF_TIMER,	
+	MOTOR_OFF_TIMER,
 	READ_DESIRED_SPEED,
 	READ_THROTTLE_OUTPUT_CHANNEL,
 	FORCE_CROSS_FINISH_LINE,
+	READ_FLY_COMMAND_COUNTER,
+	FORCE_FINISH_BAD_NAV,
+	FORCE_RESET,
 #endif
 	PARAM
 };
@@ -108,7 +111,8 @@ enum {
 #define _FD(x, fl, pr)          {3,   fl,  pr,  0,   x},
 #if ( THERMALLING_MISSION == 1 )
 #define _RT_BANK(x, fl, pr)     {3,   fl,  pr,  1,   x},  //custom command
-#define _LEVEL_1S(fl)           {3,   fl,  0,   2,   0},  //custom command
+#define _LEVEL_1S(fl)           {3,   fl,  0,   2,   0},  //custom command  // deprecated
+#define _BANK_1S(x, fl, pr)    	{3,   fl,  pr,  3,   x},  //custom command
 #endif
 
 #define _RT(x, pr)              {4,   0,   pr,  0,   x},
@@ -166,8 +170,9 @@ enum {
 #define BK_PARAM                _FD(-1, 1, 1)
 
 #if ( THERMALLING_MISSION == 1 )
-#define RT_BANK(x)              _RT_BANK(x, 1, 0)           //custom command
-#define LEVEL_1S                _LEVEL_1S(1)             //custom command
+#define RT_BANK(x)              _RT_BANK(x, 1, 0)        //custom command
+#define LEVEL_1S                _LEVEL_1S(1)             //custom command   //deprecated
+#define BANK_1S(x)             	_BANK_1S(x, 1, 0)        //custom command
 #endif
 
 #define RT(x)                   _RT(x, 0)
@@ -293,9 +298,12 @@ static int16_t get_current_angle(void);
 static int16_t motorOffTimer = 0;
 static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
 static float avgBatteryVoltage = 110;  //kickstart average filter with nominal value; it only starts when LOGO starts      
+static int16_t flyCommandCounter = 0;  //count up 40 times per sec when in a fly command
+//static int16_t interruptResult;        // used by interrupt routines to sigmal events, store as PARAM first
 #if ( MY_PERSONAL_OPTIONS == 1 )
 boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c 
 boolean forceCrossFinishLine;   //used by interrupt routine to sigmal an event that needs immediate action
+static boolean forceFinishReset = false;   //used by interrupt routine to sigmal an event that needs immediate action
 #endif
 
 
@@ -368,7 +376,7 @@ void geoSetTurn();   // Call from LOGO. convert a set of score outcomes to a num
 // then stop and continue on the next run through
 
 #if ( THERMALLING_MISSION == 1 )
-#define MAX_INSTRUCTIONS_PER_CYCLE  20
+#define MAX_INSTRUCTIONS_PER_CYCLE  50
 #else
 #define MAX_INSTRUCTIONS_PER_CYCLE  32
 #endif
@@ -602,44 +610,159 @@ void flightplan_logo_update(void)
 		}
 #else
 		// inhibit navigation for x loops, to allow drifting downwind
-        
 		if ( fixedBankActive )
 		{
-			fixedBankActiveCounter--;   //countdown @ 40Hz
-			if (fixedBankDeg == 0) // LEVEL_1S
+			if (fixedBankDeg == 0) // LEVEL_1S  or	BANK_1S(0)
 			{
+				//reset nav constantly
+				turtleLocations[PLANE].x._.W0 = 0;
+				turtleLocations[PLANE].x._.W1 = IMUlocationx._.W1;
+				turtleLocations[PLANE].y._.W0 = 0;
+				turtleLocations[PLANE].y._.W1 = IMUlocationy._.W1;
+			
+				//move turtle WAYPOINT_PROXIMITY_RADIUS forward
+				int16_t cangle = turtleAngles[PLANE];   // 0-359 (clockwise, 0=North)
+				//int16_t cangle = get_current_angle()
+				//int16_t cangle = cog_gps.BB/100; 
+				int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+				b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+				
+				turtleLocations[PLANE].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+				turtleLocations[PLANE].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
 				if (fixedBankActiveCounter <= 0)
 				{
 					fixedBankActive = false;
+					//instructionIndex = -1;  //DO (LOGO_MAIN)
 					process_instructions();  //as if arrived
 				}
 			}
-			else    // RT_BANK
+			else    // ??BANK
 			{
+				/*
+				//use current position for main program
+				turtleLocations[PLANE].x._.W0 = 0;
+				turtleLocations[PLANE].x._.W1 = IMUlocationx._.W1;
+				turtleLocations[PLANE].y._.W0 = 0;
+				turtleLocations[PLANE].y._.W1 = IMUlocationy._.W1;
+				
+				//move turtle WAYPOINT_PROXIMITY_RADIUS forward
+				int16_t cangle = turtleAngles[PLANE];   // 0-359 (clockwise, 0=North)
+				int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+				b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+				
+				turtleLocations[PLANE].x.WW += (__builtin_mulss(-cosine(b_angle), 2*(int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+				turtleLocations[PLANE].y.WW += (__builtin_mulss(-sine(b_angle), 2*(int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+				*/
 				//check if target of 15 deg right has been reached  or timer times out
 				if ( (fixedBankActiveCounter <= 0) | ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) < 180 )) // closest direction is right of target
 
 				//use Gps heading
 				//if ( ( ( cog_gpsBB - fixedBankTargetAngle + 360) % 360 ) < 180 ) // closest direction is right of target
 				{
+
+					//reset nav once
+					turtleLocations[PLANE].x._.W0 = 0;
+					turtleLocations[PLANE].x._.W1 = IMUlocationx._.W1;
+					turtleLocations[PLANE].y._.W0 = 0;
+					turtleLocations[PLANE].y._.W1 = IMUlocationy._.W1;
+				
+					//move turtle WAYPOINT_PROXIMITY_RADIUS forward
+					int16_t cangle = turtleAngles[PLANE];   // 0-359 (clockwise, 0=North)
+					//int16_t cangle = get_current_angle()
+					//int16_t cangle = cog_gps.BB/100; 
+					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+					
+					turtleLocations[PLANE].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+					turtleLocations[PLANE].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+
+
 					fixedBankActive = false;
 					process_instructions();  //as if arrived
 				}
 			}
 		}
-		else
+		else 
 		{
 			//
 			//org code:
 			if ( (tofinish_line < WAYPOINT_PROXIMITY_RADIUS) || forceCrossFinishLine ) // crossed the finish line  or interrupt routine sigmalled an event that needs immediate action
+			//if ( (!fixedBankActive && (tofinish_line < WAYPOINT_PROXIMITY_RADIUS)) | forceCrossFinishLine | forceFinishReset ) // crossed the finish line  or interrupt routine sigmalled an event that needs immediate action
 			{
-				forceCrossFinishLine= false;  
+				if ( forceCrossFinishLine )
+				{
+					forceCrossFinishLine= false;  
+					/*
+					//USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
+					//FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
+					
+					//use current position for main program
+					turtleLocations[PLANE].x._.W0 = 0;
+					turtleLocations[PLANE].x._.W1 = IMUlocationx._.W1;
+					turtleLocations[PLANE].y._.W0 = 0;
+					turtleLocations[PLANE].y._.W1 = IMUlocationy._.W1;
+					
+					//move turtle WAYPOINT_PROXIMITY_RADIUS forward
+					int16_t cangle = turtleAngles[PLANE];   // 0-359 (clockwise, 0=North)
+					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+					
+					turtleLocations[PLANE].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+					turtleLocations[PLANE].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+					
+					
+					//erase traces of override
+					lastGoal.x = (turtleLocations[PLANE].x._.W1);
+					lastGoal.y = (turtleLocations[PLANE].y._.W1);
+					lastGoal.z = turtleLocations[PLANE].z;
+					*/
+				}
+				if ( forceFinishReset )
+				{
+					forceFinishReset = false;
+					//reset Logo
+/*
+					interruptIndex = 0;       // clear interrupt; instruction index of the beginning of the interrupt function
+					instructionsProcessed = 0;
+					interruptStackBase = 0;  // stack depth when entering interrupt (clear interrupt when dropping below this depth)
+					logoStackIndex = 0;
+					currentTurtle = 0;
+*/
+//					logoStack[logoStackIndex].returnInstructionIndex = -1;  // When starting over, begin on instruction 0   
+					//use current position for main program
+					/*
+					turtleLocations[PLANE].x._.W0 = 0;
+					turtleLocations[PLANE].x._.W1 = IMUlocationx._.W1;
+					turtleLocations[PLANE].y._.W0 = 0;
+					turtleLocations[PLANE].y._.W1 = IMUlocationy._.W1;
+					
+					
+					//move turtle WAYPOINT_PROXIMITY_RADIUS forward
+					int16_t cangle = turtleAngles[PLANE];   // 0-359 (clockwise, 0=North)
+					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+					
+					turtleLocations[PLANE].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+					turtleLocations[PLANE].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+					*/
+					instructionIndex = -1;  //DO (LOGO_MAIN)
+				}		
 				process_instructions();
 			}
 		}
 #endif  //THERMALLING_MISSION
 	}
 #if ( THERMALLING_MISSION == 1 )
+	if ( ( flyCommandCounter > 0 ) && (!forceCrossFinishLine) && (!forceFinishReset) )
+	{                                                                                          
+		flyCommandCounter++;   //count up @ 40Hz
+	}
+	
+	if ( fixedBankActive )
+	{
+		fixedBankActiveCounter--;   //countdown @ 40Hz
+	}
+	
 	letHeartbeat++;
 	if ( letHeartbeat % 40 == 0 )   //1Hz
 	{
@@ -939,7 +1062,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		{
 			return (desiredSpeed);
 		}
-		
+
 		case READ_THROTTLE_OUTPUT_CHANNEL: // used for detecting motor hold low state 
 		{
 		 	return udb_pwOut[THROTTLE_OUTPUT_CHANNEL];    // 2000 - 4000
@@ -955,7 +1078,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		{
 			return geoTurn;
 		}
-		
+
 		case MOTOR_OFF_TIMER: // 4..0 sec. used for waiting after motor off before detecting a thermal
 		{
 			return motorOffTimer;
@@ -963,9 +1086,30 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 
 		case FORCE_CROSS_FINISH_LINE: // used by interrupt routine to sigmal an event that needs immediate action
 		{
+			flyCommandCounter = 0;
 			forceCrossFinishLine = true;
 			return 0;
 		}
+
+		case READ_FLY_COMMAND_COUNTER: // used by interrupt routines to sigmal fly commands that take too long
+		{
+			return flyCommandCounter;
+		}
+
+		case FORCE_FINISH_BAD_NAV: // used by interrupt routine to sigmal an event that needs immediate action
+		{
+			flyCommandCounter = 0;
+			forceCrossFinishLine = true;       
+			return 0;
+		}
+
+		case FORCE_RESET: // used by interrupt routine to sigmal an event that needs immediate action
+		{
+			flyCommandCounter = 0;
+			forceFinishReset = true;
+			return 0;
+		}
+
 #endif  //THERMALLING_MISSION
 
 		case PARAM:
@@ -1105,6 +1249,9 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), instr.arg) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), instr.arg) << 2);
+#if ( THERMALLING_MISSION == 1 )
+					flyCommandCounter = 1;    //start counter, count up at 40Hz
+#endif  //THERMALLING_MISSION
 				}
 				break;
 
@@ -1113,6 +1260,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 				{
 					//rotate turtle too, like RT(). Set the rotation target 30 deg to the right
 					fixedBankTargetAngle = turtleAngles[currentTurtle] + 30; // ~0.5 - 1 sec == 30 deg headingchange
+					//fixedBankTargetAngle = get_current_angle() + 30; // ~0.5 - 1 sec == 30 deg headingchange
 					while (fixedBankTargetAngle < 0) fixedBankTargetAngle += 360;
 					fixedBankTargetAngle = fixedBankTargetAngle % 360;
 
@@ -1150,6 +1298,30 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					fixedBankDeg = 0;  //controls roll and yaw, level
 					fixedBankActiveCounter = 40; //40Hz = 1s
 					fixedBankActive = true;     //controls roll and yaw, will end after one sec
+					break;
+				}
+				case 3: // BANK_1S
+				{
+					
+					//rotate turtle too, like RT(). Set the rotation target 30 deg to the right
+					fixedBankTargetAngle = turtleAngles[currentTurtle] + instr.arg; // ~0.5 - 1 sec == 30 deg headingchange
+					//fixedBankTargetAngle = get_current_angle() + 30; // ~0.5 - 1 sec == 30 deg headingchange
+					while (fixedBankTargetAngle < 0) fixedBankTargetAngle += 360;
+					fixedBankTargetAngle = fixedBankTargetAngle % 360;
+
+					//this is a fly command, do the same as FD()
+					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
+					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+
+					// 25: should be fd(groundspeed) in m from m/s (ideally)
+					// selected a fixed number I used before, combined with servo calculation
+					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+					
+					fixedBankDeg = instr.arg;  //controls roll and yaw,
+					fixedBankActiveCounter = 40; //40Hz = 1s
+					fixedBankActive = true;     //controls roll and yaw, will be reset when rotation is reached
 					break;
 				}
 #endif  //THERMALLING_MISSION
