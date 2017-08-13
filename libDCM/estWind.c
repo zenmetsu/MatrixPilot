@@ -123,7 +123,6 @@ void estWind(int16_t angleOfAttack)
 #ifndef MY_PERSONAL_OPTIONS	
 		estimatedWind[0] = estimatedWind[0] + 
 		    ((groundVelocitySum[0] - longaccum._.W1 - estimatedWind[0]) >> 4);
-		estimatedWindNoGrad[0] = estimatedWind[0];	
 #else
 		if (IMUlocationz._.W1 > 15)
 		{
