@@ -383,6 +383,11 @@
 #define FLAPS_OUTPUT_CHANNEL                CHANNEL_UNUSED
 */
 
+// Set to 1 to use Output 1 (udb5mini only) for throttle output and Castle Link
+// Live data reads to get voltage and current readings from a Castle ESC.
+// When set to 1, you should also set THROTTLE_OUTPUT_CHANNEL to 1.
+#define USE_CASTLE_LINK_THROTTLE            0
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Servo Reversing Configuration
@@ -519,10 +524,13 @@
 // you'll also need to set up the RSSI_MIN_SIGNAL_VOLTAGE and RSSI_MAX_SIGNAL_VOLTAGE
 // to match your Receiver's RSSI format.  Note that some receivers use a higher voltage to
 // represent a lower signal strength, so you may need to set MIN higher than MAX.
+//
+// ANALOG_VOLTAGE2_INPUT_CHANNEL lets you measure Video Tx (or other second) battery voltage
 
 #define ANALOG_CURRENT_INPUT_CHANNEL        CHANNEL_UNUSED
 #define ANALOG_VOLTAGE_INPUT_CHANNEL        1     //A15 on Udb5   //A2 on Auav3
 #define ANALOG_RSSI_INPUT_CHANNEL           CHANNEL_UNUSED
+#define ANALOG_VOLTAGE2_INPUT_CHANNEL       CHANNEL_UNUSED
 
 #define MAX_CURRENT                         900 // 90.0 Amps max for the sensor from SparkFun (in tenths of Amps)
 #define CURRENT_SENSOR_OFFSET               10  // Add 1.0 Amp to whatever value we sense
@@ -531,6 +539,8 @@
 #define MAX_VOLTAGE                         1120 // 56.0 Volts max for the sensor from SparkFun (in tenths of Volts)
 #define VOLTAGE_SENSOR_OFFSET               0   // Add 0.0 Volts to whatever value we sense
 
+#define MAX_VOLTAGE2                        33  // 3.3 Volts max for direct Analog Input
+#define VOLTAGE2_SENSOR_OFFSET              0   // Add 0.0 Volts to whatever value we sense
 #define VOLTAGE_SENSOR_ALARM                105  //(in tenths of Volts) - 105 for 3S, 138 for 4S
 
 // RSSI - RC Receiver signal strength
