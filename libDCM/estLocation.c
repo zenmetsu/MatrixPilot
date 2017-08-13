@@ -102,7 +102,7 @@ void estLocation(void)
 	// markw: what is the latency? It doesn't appear numerically or as a comment
 	// in the following code. Since this method is called at the GPS reporting rate
 	// it must be assumed to be one reporting interval?
-
+#if (HILSIM != 1)
 	if (dcm_flags._.gps_history_valid)
 	{
 		cog_delta = cog_circular - cog_previous;
@@ -120,6 +120,12 @@ void estLocation(void)
 		climb_rate_delta = 0;
 		location_deltaXY.x = location_deltaXY.y = location_deltaZ = 0;
 	}
+#else
+	cog_delta = 0;
+	sog_delta = 0;
+	climb_rate_delta = 0;
+	location_deltaXY.x = location_deltaXY.y = location_deltaZ = 0;
+#endif //#if (HILSIM != 1)
 	dcm_flags._.gps_history_valid = 1;
 	actual_dir = cog_circular + cog_delta;
 	cog_previous = cog_circular;
@@ -152,11 +158,7 @@ void estLocation(void)
 	velocity_thru_air.x = GPSvelocity.x - estimatedWind[0];
 	velocity_thru_airz  = GPSvelocity.z - estimatedWind[2];
 
-#if (HILSIM == 1)
-	air_speed_3DGPS = hilsim_airspeed.BB; // use Xplane as a pitot
-#else
 	air_speed_3DGPS = vector3_mag(velocity_thru_air.x, velocity_thru_air.y, velocity_thru_airz);
-#endif
 
 	calculated_heading  = rect_to_polar(&velocity_thru_air);
 	// veclocity_thru_air.x becomes XY air speed as a by product of CORDIC routine in rect_to_polar()
