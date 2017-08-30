@@ -170,7 +170,7 @@ enum {
 #define BK_PARAM                _FD(-1, 1, 1)
 
 #if ( THERMALLING_MISSION == 1 )
-#define RT_BANK(x)              _RT_BANK(x, 1, 0)        //custom command
+#define RT_BANK(x)              _RT_BANK(x, 1, 0)           //custom command
 #define LEVEL_1S                _LEVEL_1S(1)             //custom command   //deprecated
 #define BANK_1S(x)             	_BANK_1S(x, 1, 0)        //custom command
 #endif
@@ -299,7 +299,6 @@ static int16_t motorOffTimer = 0;
 static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
 static float avgBatteryVoltage = 110;  //kickstart average filter with nominal value; it only starts when LOGO starts      
 static int16_t flyCommandCounter = 0;  //count up 40 times per sec when in a fly command
-//static int16_t interruptResult;        // used by interrupt routines to sigmal events, store as PARAM first
 #if ( MY_PERSONAL_OPTIONS == 1 )
 boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c 
 boolean forceCrossFinishLine;   //used by interrupt routine to sigmal an event that needs immediate action
@@ -376,7 +375,7 @@ void geoSetTurn();   // Call from LOGO. convert a set of score outcomes to a num
 // then stop and continue on the next run through
 
 #if ( THERMALLING_MISSION == 1 )
-#define MAX_INSTRUCTIONS_PER_CYCLE  50
+#define MAX_INSTRUCTIONS_PER_CYCLE  20
 #else
 #define MAX_INSTRUCTIONS_PER_CYCLE  32
 #endif
@@ -573,19 +572,36 @@ void flightplan_logo_update(void)
 	}
 
 	// otherwise run the interrupt handler, if configured, and not in-progress
-	if (interruptIndex && !interruptStackBase)
+	if (interruptIndex)
 	{
-		if (logoStackIndex < LOGO_STACK_DEPTH-1)
+		//if not arrived
+		if (tofinish_line >= WAYPOINT_PROXIMITY_RADIUS) // not crossed the finish line
 		{
-			logoStackIndex++;
-			logoStack[logoStackIndex].frameType = LOGO_FRAME_TYPE_SUBROUTINE;
-			logoStack[logoStackIndex].arg = 0;
-			logoStack[logoStackIndex].returnInstructionIndex = instructionIndex-1;
-			instructionIndex = interruptIndex+1;
-			interruptStackBase = logoStackIndex;
+			if (!interruptStackBase)   //if not in-progress
+			{
+				if (logoStackIndex < LOGO_STACK_DEPTH-1)
+				{
+					logoStackIndex++;
+					logoStack[logoStackIndex].frameType = LOGO_FRAME_TYPE_SUBROUTINE;
+					logoStack[logoStackIndex].arg = 0;
+					logoStack[logoStackIndex].returnInstructionIndex = instructionIndex-1;
+					instructionIndex = interruptIndex+1;
+					interruptStackBase = logoStackIndex;
+				}
+			}
 			process_instructions();
 			navigate_set_goal_height(turtleLocations[PLANE].z);
 			lastGoal.z = turtleLocations[PLANE].z;
+		}
+		else
+		{
+			if (interruptStackBase)   //if in-progress
+			{
+				//cleanup uncompleted interrupt
+				instructionIndex = logoStack[interruptStackBase].returnInstructionIndex+1;  //support both end by main and end by END SUBROUTINE
+				logoStackIndex =  interruptStackBase - 1;
+				interruptStackBase = 0;
+			}
 		}
 	}
 
@@ -612,157 +628,89 @@ void flightplan_logo_update(void)
 		// inhibit navigation for x loops, to allow drifting downwind
 		if ( fixedBankActive )
 		{
-			if (fixedBankDeg == 0) // LEVEL_1S  or	BANK_1S(0)
+			if (fixedBankDeg == 0) // LEVEL_1S
 			{
-				//reset nav constantly
-				turtleLocations[PLANE].x._.W0 = 0;
-				turtleLocations[PLANE].x._.W1 = IMUlocationx._.W1;
-				turtleLocations[PLANE].y._.W0 = 0;
-				turtleLocations[PLANE].y._.W1 = IMUlocationy._.W1;
-			
-				//move turtle WAYPOINT_PROXIMITY_RADIUS forward
-				int16_t cangle = turtleAngles[PLANE];   // 0-359 (clockwise, 0=North)
-				//int16_t cangle = get_current_angle()
-				//int16_t cangle = cog_gps.BB/100; 
-				int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
-				b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
-				
-				turtleLocations[PLANE].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
-				turtleLocations[PLANE].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
 				if (fixedBankActiveCounter <= 0)
 				{
 					fixedBankActive = false;
-					//instructionIndex = -1;  //DO (LOGO_MAIN)
+					if (interruptStackBase)   //if in-progress
+					{
+						//cleanup uncompleted interrupt
+						instructionIndex = logoStack[interruptStackBase].returnInstructionIndex+1;  //support both end by main and end by END SUBROUTINE
+						logoStackIndex =  interruptStackBase - 1;
+						interruptStackBase = 0;
+					}
 					process_instructions();  //as if arrived
 				}
 			}
-			else    // ??BANK
+			else    // RT_BANK
 			{
-				/*
-				//use current position for main program
-				turtleLocations[PLANE].x._.W0 = 0;
-				turtleLocations[PLANE].x._.W1 = IMUlocationx._.W1;
-				turtleLocations[PLANE].y._.W0 = 0;
-				turtleLocations[PLANE].y._.W1 = IMUlocationy._.W1;
-				
-				//move turtle WAYPOINT_PROXIMITY_RADIUS forward
-				int16_t cangle = turtleAngles[PLANE];   // 0-359 (clockwise, 0=North)
-				int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
-				b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
-				
-				turtleLocations[PLANE].x.WW += (__builtin_mulss(-cosine(b_angle), 2*(int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
-				turtleLocations[PLANE].y.WW += (__builtin_mulss(-sine(b_angle), 2*(int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
-				*/
 				//check if target of 15 deg right has been reached  or timer times out
 				if ( (fixedBankActiveCounter <= 0) | ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) < 180 )) // closest direction is right of target
 
 				//use Gps heading
 				//if ( ( ( cog_gpsBB - fixedBankTargetAngle + 360) % 360 ) < 180 ) // closest direction is right of target
 				{
-
-					//reset nav once
-					turtleLocations[PLANE].x._.W0 = 0;
-					turtleLocations[PLANE].x._.W1 = IMUlocationx._.W1;
-					turtleLocations[PLANE].y._.W0 = 0;
-					turtleLocations[PLANE].y._.W1 = IMUlocationy._.W1;
-				
-					//move turtle WAYPOINT_PROXIMITY_RADIUS forward
-					int16_t cangle = turtleAngles[PLANE];   // 0-359 (clockwise, 0=North)
-					//int16_t cangle = get_current_angle()
-					//int16_t cangle = cog_gps.BB/100; 
-					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
-					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
-					
-					turtleLocations[PLANE].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
-					turtleLocations[PLANE].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
-
-
 					fixedBankActive = false;
+					if (interruptStackBase)   //if not in-progress
+					{
+						//cleanup uncompleted interrupt
+						instructionIndex = logoStack[interruptStackBase].returnInstructionIndex+1;  //support both end by main and end by END SUBROUTINE
+						logoStackIndex =  interruptStackBase - 1;
+						interruptStackBase = 0;
+					}
 					process_instructions();  //as if arrived
 				}
 			}
 		}
-		else 
+		else
 		{
 			//
 			//org code:
-			if ( (tofinish_line < WAYPOINT_PROXIMITY_RADIUS) || forceCrossFinishLine ) // crossed the finish line  or interrupt routine sigmalled an event that needs immediate action
-			//if ( (!fixedBankActive && (tofinish_line < WAYPOINT_PROXIMITY_RADIUS)) | forceCrossFinishLine | forceFinishReset ) // crossed the finish line  or interrupt routine sigmalled an event that needs immediate action
+			if ( (tofinish_line < WAYPOINT_PROXIMITY_RADIUS) || forceCrossFinishLine || forceFinishReset ) // crossed the finish line  or interrupt routine sigmalled an event that needs immediate action
 			{
-				if ( forceCrossFinishLine )
+				if (forceCrossFinishLine) // crossed the finish line  or interrupt routine sigmalled an event that needs immediate action
 				{
 					forceCrossFinishLine= false;  
-					/*
-					//USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
-					//FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
-					
-					//use current position for main program
-					turtleLocations[PLANE].x._.W0 = 0;
-					turtleLocations[PLANE].x._.W1 = IMUlocationx._.W1;
-					turtleLocations[PLANE].y._.W0 = 0;
-					turtleLocations[PLANE].y._.W1 = IMUlocationy._.W1;
-					
-					//move turtle WAYPOINT_PROXIMITY_RADIUS forward
-					int16_t cangle = turtleAngles[PLANE];   // 0-359 (clockwise, 0=North)
-					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
-					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
-					
-					turtleLocations[PLANE].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
-					turtleLocations[PLANE].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
-					
-					
-					//erase traces of override
-					lastGoal.x = (turtleLocations[PLANE].x._.W1);
-					lastGoal.y = (turtleLocations[PLANE].y._.W1);
-					lastGoal.z = turtleLocations[PLANE].z;
-					*/
+					if ( forceFinishReset )
+					{
+						forceFinishReset = false;
+						//reset Logo
+						interruptIndex = 0;       // clear interrupt; instruction index of the beginning of the interrupt function
+						instructionsProcessed = 0;
+						interruptStackBase = 0;  // stack depth when entering interrupt (clear interrupt when dropping below this depth)
+						logoStackIndex = 0;
+						currentTurtle = 0;
+						logoStack[logoStackIndex].returnInstructionIndex = -1;  // When starting over, begin on instruction 0
+						instructionIndex = -1;
+					}
 				}
-				if ( forceFinishReset )
+				//handle main instructione
+				if (interruptStackBase)   //if not in-progress
 				{
-					forceFinishReset = false;
-					//reset Logo
-/*
-					interruptIndex = 0;       // clear interrupt; instruction index of the beginning of the interrupt function
-					instructionsProcessed = 0;
-					interruptStackBase = 0;  // stack depth when entering interrupt (clear interrupt when dropping below this depth)
-					logoStackIndex = 0;
-					currentTurtle = 0;
-*/
-//					logoStack[logoStackIndex].returnInstructionIndex = -1;  // When starting over, begin on instruction 0   
-					//use current position for main program
-					/*
-					turtleLocations[PLANE].x._.W0 = 0;
-					turtleLocations[PLANE].x._.W1 = IMUlocationx._.W1;
-					turtleLocations[PLANE].y._.W0 = 0;
-					turtleLocations[PLANE].y._.W1 = IMUlocationy._.W1;
-					
-					
-					//move turtle WAYPOINT_PROXIMITY_RADIUS forward
-					int16_t cangle = turtleAngles[PLANE];   // 0-359 (clockwise, 0=North)
-					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
-					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
-					
-					turtleLocations[PLANE].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
-					turtleLocations[PLANE].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
-					*/
-					instructionIndex = -1;  //DO (LOGO_MAIN)
-				}		
+					//cleanup uncompleted interrupt
+					instructionIndex = logoStack[interruptStackBase].returnInstructionIndex+1;  //support both end by main and end by END SUBROUTINE
+					logoStackIndex =  interruptStackBase - 1;
+					interruptStackBase = 0;
+				}
 				process_instructions();
 			}
 		}
 #endif  //THERMALLING_MISSION
 	}
 #if ( THERMALLING_MISSION == 1 )
-	if ( ( flyCommandCounter > 0 ) && (!forceCrossFinishLine) && (!forceFinishReset) )
-	{                                                                                          
+	//if ( ( flyCommandCounter > 0 ) && (!forceCrossFinishLine) && (!forceFinishReset) )
+	if ( flyCommandCounter > 0 )
+	{
 		flyCommandCounter++;   //count up @ 40Hz
 	}
-	
 	if ( fixedBankActive )
 	{
-		fixedBankActiveCounter--;   //countdown @ 40Hz
+		if ( fixedBankActiveCounter > 0 )
+		{
+			fixedBankActiveCounter--;   //count down @ 40Hz
+		}
 	}
-	
 	letHeartbeat++;
 	if ( letHeartbeat % 40 == 0 )   //1Hz
 	{
@@ -776,7 +724,8 @@ void flightplan_logo_update(void)
 		{
 			motorOffTimer--;
 		}
-		if ((desired_behavior.W & F_LAND) == 0) // set to 4 as long as motor runs, to know time after stopping motor
+		//if ((desired_behavior.W & F_LAND) == 0) // set to 4 as long as motor runs, to know time after stopping motor
+		if (udb_pwOut[THROTTLE_OUTPUT_CHANNEL] > 2300 ) // set to 4 as long as motor runs, to know time after stopping motor
 		{
 			motorOffTimer = 4;  // start timer, wait 4 sec before detecting thermals, used by system value MOTOR_OFF_TIMER
 		}
@@ -1037,7 +986,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			//return battery_voltage._.W1;
 			return (int16_t)avgBatteryVoltage;
 		}
-		
+
 		case AIR_SPEED_Z_DELTA: //  used for waiting for a decrease in climbrate in a thermal
 		{
 			static int16_t airSpeedZDelta;
@@ -1086,27 +1035,40 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 
 		case FORCE_CROSS_FINISH_LINE: // used by interrupt routine to sigmal an event that needs immediate action
 		{
-			flyCommandCounter = 0;
 			forceCrossFinishLine = true;
 			return 0;
 		}
-
 		case READ_FLY_COMMAND_COUNTER: // used by interrupt routines to sigmal fly commands that take too long
 		{
 			return flyCommandCounter;
 		}
-
 		case FORCE_FINISH_BAD_NAV: // used by interrupt routine to sigmal an event that needs immediate action
 		{
+			turtleLocations[currentTurtle].x._.W0 = 0;
+			turtleLocations[currentTurtle].x._.W1 = IMUlocationx._.W1;
+			turtleLocations[currentTurtle].y._.W0 = 0;
+			turtleLocations[currentTurtle].y._.W1 = IMUlocationy._.W1;
 			flyCommandCounter = 0;
-			forceCrossFinishLine = true;       
+			forceCrossFinishLine = true;
 			return 0;
 		}
-
 		case FORCE_RESET: // used by interrupt routine to sigmal an event that needs immediate action
 		{
+			turtleLocations[0].x._.W0 = 0;
+			turtleLocations[0].x._.W1 = IMUlocationx._.W1;
+			turtleLocations[0].y._.W0 = 0;
+			turtleLocations[0].y._.W1 = IMUlocationy._.W1;
 			flyCommandCounter = 0;
+			forceCrossFinishLine = true;
 			forceFinishReset = true;
+			/*
+			interruptIndex = 0;       // clear interrupt; instruction index of the beginning of the interrupt function
+			instructionsProcessed = 0;
+			interruptStackBase = 0;  // stack depth when entering interrupt (clear interrupt when dropping below this depth)
+			logoStackIndex = 0;
+			currentTurtle = 0;
+			//flightplan_logo_begin(0); //clear interrupt and restart main
+			*/
 			return 0;
 		}
 
@@ -1303,6 +1265,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 				case 3: // BANK_1S
 				{
 					
+					/*
 					//rotate turtle too, like RT(). Set the rotation target 30 deg to the right
 					fixedBankTargetAngle = turtleAngles[currentTurtle] + instr.arg; // ~0.5 - 1 sec == 30 deg headingchange
 					//fixedBankTargetAngle = get_current_angle() + 30; // ~0.5 - 1 sec == 30 deg headingchange
@@ -1318,6 +1281,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					// selected a fixed number I used before, combined with servo calculation
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+					*/
 					
 					fixedBankDeg = instr.arg;  //controls roll and yaw,
 					fixedBankActiveCounter = 40; //40Hz = 1s
