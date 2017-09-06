@@ -111,8 +111,7 @@ enum {
 #define _FD(x, fl, pr)          {3,   fl,  pr,  0,   x},
 #if ( THERMALLING_MISSION == 1 )
 #define _RT_BANK(x, fl, pr)     {3,   fl,  pr,  1,   x},  //custom command
-#define _LEVEL_1S(fl)           {3,   fl,  0,   2,   0},  //custom command  // deprecated
-#define _BANK_1S(x, fl, pr)    	{3,   fl,  pr,  3,   x},  //custom command
+#define _BANK_1S(x, fl, pr)    	{3,   fl,  pr,  2,   x},  //custom command
 #endif
 
 #define _RT(x, pr)              {4,   0,   pr,  0,   x},
@@ -171,7 +170,6 @@ enum {
 
 #if ( THERMALLING_MISSION == 1 )
 #define RT_BANK(x)              _RT_BANK(x, 1, 0)           //custom command
-#define LEVEL_1S                _LEVEL_1S(1)             //custom command   //deprecated
 #define BANK_1S(x)             	_BANK_1S(x, 1, 0)        //custom command
 #endif
 
@@ -288,9 +286,10 @@ static int16_t numInstructionsInCurrentSet = NUM_INSTRUCTIONS;
 int16_t vario = 0;// in cm/s ,used for Logo  - defined in flightplan_logo.c and set in altitudeCntrlVariable.c - running average (3s)
 static int16_t vario_old = 0;// in cm/s ,used for AIR_SPEED_Z_DELTA
 int16_t fixedBankTargetAngle = 0; // heading,  used for Logo  - for RT_BANK command
-int16_t fixedBankActiveCounter; //  used for Logo  - for RT_BANK and LEVEL_1S commands
-boolean fixedBankActive = false; // used for Logo  - for RT_BANK and LEVEL_1S commands
-int16_t fixedBankDeg;  // deg bank, used for Logo  - for RT_BANK and LEVEL_1S commands
+int16_t fixedBankActiveCounter; //  used for Logo  - for RT_BANK and BANK_1S commands
+boolean fixedBankActive = false; // used for Logo  - for RT_BANK and BANK_1S commands
+boolean angleTargetActive = false; // used for Logo  - for RT_BANK command
+int16_t fixedBankDeg;  // deg bank, used for Logo  - for RT_BANK and BANK_1S commands
 #ifndef THERMALLING_TURN     // in case not specified
 #define THERMALLING_TURN  0  // not implemented
 #endif
@@ -375,7 +374,7 @@ void geoSetTurn();   // Call from LOGO. convert a set of score outcomes to a num
 // then stop and continue on the next run through
 
 #if ( THERMALLING_MISSION == 1 )
-#define MAX_INSTRUCTIONS_PER_CYCLE  20
+#define MAX_INSTRUCTIONS_PER_CYCLE  10
 #else
 #define MAX_INSTRUCTIONS_PER_CYCLE  32
 #endif
@@ -628,11 +627,28 @@ void flightplan_logo_update(void)
 		// inhibit navigation for x loops, to allow drifting downwind
 		if ( fixedBankActive )
 		{
-			if (fixedBankDeg == 0) // LEVEL_1S
+			if (!angleTargetActive) // BANK_1S(0)
 			{
 				if (fixedBankActiveCounter <= 0)
 				{
 					fixedBankActive = false;
+					
+					//a second has passed, so force this fly command to end
+
+					// Use current position (for x and y)
+					turtleLocations[currentTurtle].x._.W0 = 0;
+					turtleLocations[currentTurtle].x._.W1 = IMUlocationx._.W1;
+					turtleLocations[currentTurtle].y._.W0 = 0;
+					turtleLocations[currentTurtle].y._.W1 = IMUlocationy._.W1;
+					
+					// move turtle to simulate arrival, to allow the program flow to continue right away
+					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
+					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+
+					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);  //
+					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+					
 					if (interruptStackBase)   //if in-progress
 					{
 						//cleanup uncompleted interrupt
@@ -643,7 +659,7 @@ void flightplan_logo_update(void)
 					process_instructions();  //as if arrived
 				}
 			}
-			else    // RT_BANK
+			else    // RT_BANK  
 			{
 				//check if target of 15 deg right has been reached  or timer times out
 				if ( (fixedBankActiveCounter <= 0) | ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) < 180 )) // closest direction is right of target
@@ -652,6 +668,23 @@ void flightplan_logo_update(void)
 				//if ( ( ( cog_gpsBB - fixedBankTargetAngle + 360) % 360 ) < 180 ) // closest direction is right of target
 				{
 					fixedBankActive = false;
+					
+					//force this fly command to end
+
+					// Use current position (for x and y)
+					turtleLocations[currentTurtle].x._.W0 = 0;
+					turtleLocations[currentTurtle].x._.W1 = IMUlocationx._.W1;
+					turtleLocations[currentTurtle].y._.W0 = 0;
+					turtleLocations[currentTurtle].y._.W1 = IMUlocationy._.W1;
+					
+					// move turtle to simulate arrival, to allow the program flow to continue right away
+					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
+					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+
+					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);  //
+					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+
 					if (interruptStackBase)   //if not in-progress
 					{
 						//cleanup uncompleted interrupt
@@ -1237,14 +1270,13 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);
 
 					fixedBankDeg = instr.arg;  //controls roll and yaw,
-					fixedBankActiveCounter = 240; //40Hz = 4s
+					fixedBankActiveCounter = 240; //40Hz = 4 sec
 					fixedBankActive = true;     //controls roll and yaw, will be reset when rotation is reached
+					angleTargetActive = true;
 					break;
 				}
-				case 2: // LEVEL_1S
-				{
-					//caution: reset navigation after this command
-					/*
+				case 2: //BANK_1S
+				{				
 					//this is a fly command, do the same as FD()
 					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
 					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
@@ -1254,38 +1286,11 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					// selected a fixed number I used before, combined with servo calculation
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 25) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);
-					*/
 
-					//this is a fly command, based on time only
-					fixedBankDeg = 0;  //controls roll and yaw, level
-					fixedBankActiveCounter = 40; //40Hz = 1s
-					fixedBankActive = true;     //controls roll and yaw, will end after one sec
-					break;
-				}
-				case 3: // BANK_1S
-				{
-					
-					/*
-					//rotate turtle too, like RT(). Set the rotation target 30 deg to the right
-					fixedBankTargetAngle = turtleAngles[currentTurtle] + instr.arg; // ~0.5 - 1 sec == 30 deg headingchange
-					//fixedBankTargetAngle = get_current_angle() + 30; // ~0.5 - 1 sec == 30 deg headingchange
-					while (fixedBankTargetAngle < 0) fixedBankTargetAngle += 360;
-					fixedBankTargetAngle = fixedBankTargetAngle % 360;
-
-					//this is a fly command, do the same as FD()
-					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
-					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
-					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
-
-					// 25: should be fd(groundspeed) in m from m/s (ideally)
-					// selected a fixed number I used before, combined with servo calculation
-					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
-					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
-					*/
-					
-					fixedBankDeg = instr.arg;  //controls roll and yaw,
-					fixedBankActiveCounter = 40; //40Hz = 1s
-					fixedBankActive = true;     //controls roll and yaw, will be reset when rotation is reached
+					fixedBankDeg = instr.arg;  //controls roll
+					fixedBankActiveCounter = 40; //40Hz = 1 sec
+					fixedBankActive = true; 
+					angleTargetActive = false;   
 					break;
 				}
 #endif  //THERMALLING_MISSION

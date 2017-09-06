@@ -90,7 +90,7 @@
 // RT(x)                - Rotate the turtle to the right by x degrees.
 // LT(x)                - Rotate the turtle to the left by x degrees.
 // RT_BANK              - Perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored (THERMALLING_MISSION)
-// LEVEL_1S             - Perform level flight for 1 second, position/navigation will be ignored. This is used for centering in thermals (THERMALLING_MISSION)
+// BANK_1S             - Perform level flight for 1 second, position/navigation will be ignored. This is used for centering in thermals (THERMALLING_MISSION)
 // SET_ANGLE(x)         - Set the turtle to point x degrees clockwise from N.
 // USE_CURRENT_ANGLE    - Aim the turtle in the direction that the plane is currently headed.
 // USE_ANGLE_TO_GOAL    - Aim the turtle in the direction of the goal from the location of the plane.
@@ -1064,7 +1064,6 @@ const struct logoInstructionDef instructions[] = {
 
 //Thermals
 #define WAIT_DECREASE_CLIMBRATE              13
-#define CHECK_THERMALS                   	 14
 #define THERMALLING_TURN                     15
 #define INT_THERMALLING                      16
 #define THERMALLING_SHIFT_CIRCLE             17
@@ -1137,6 +1136,7 @@ const struct logoInstructionDef instructions[] = {
 		SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
 		PEN_DOWN
 		SET_INTERRUPT(INT_CRUISE)
+		DO (PLAN_RETURN_GEOFENCE)   //geofence
 		DO (PLAN_SOFT_GEOFENCE)   //soft geofence
 		IF_EQ( MOTOR_OFF_TIMER,0 )  //motor stopped more than 4 seconds ago
 			DO (CRUISE)   // prevent overshoots
@@ -1159,24 +1159,26 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (PLAN_RETURN_GEOFENCE)
-		REPEAT(5)
+		IF_EQ(GEOFENCE_STATUS, 2)
 			SET_INTERRUPT(INT_RETURN_GEOFENCE)
-			IF_EQ(GEOFENCE_STATUS, 2)
-				IF_NE(GEOFENCE_TURN, 0)
-					IF_LT(GEOFENCE_TURN, 0)
-						LT(10)
+			REPEAT(5)
+				IF_EQ(GEOFENCE_STATUS, 2)
+					IF_NE(GEOFENCE_TURN, 0)
+						IF_LT(GEOFENCE_TURN, 0)
+							LT(10)
+						ELSE
+							RT(10)
+						END
+					END
+					IF_EQ( MOTOR_OFF_TIMER,0 )
+						DO (RETURN_GEOFENCE)
 					ELSE
-						RT(10)
+						DO (RETURN_MC_GEOFENCE)
 					END
 				END
-				IF_EQ( MOTOR_OFF_TIMER,0 )
-					DO (RETURN_GEOFENCE)
-				ELSE
-					DO (RETURN_MC_GEOFENCE)
-				END
 			END
+			EXEC (LOGO_MAIN)
 		END
-		EXEC (LOGO_MAIN)
 	END
 	END
 
@@ -1214,6 +1216,7 @@ const struct logoInstructionDef instructions[] = {
 					DO (RETURN_MC_SOFT_GEOFENCE)
 				END
 			END
+			EXEC (LOGO_MAIN)
 		END
 	END
 	END
@@ -1224,46 +1227,6 @@ const struct logoInstructionDef instructions[] = {
 	//Thermalling routines
 
 
-	TO (CHECK_THERMALS)
-		//check for thermals
-		IF_LE( GEOFENCE_STATUS,1 )      // ok to start a new thermal in status 1, status 0 is ok anyway
-			IF_EQ( MOTOR_OFF_TIMER,0 )  //motor has stopped more than 4 secons ago
-				//glided into a thermal
-				IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)  //>= 0.2 m/s climb is the trigger, also check GEOFENCE
-					//lift found
-					//keep flying straight until decreasing lift
-					//wait for decrease of lift
-					DO (WAIT_DECREASE_CLIMBRATE)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
-					//current is less
-					//now beyond the best climbrate..
-					//turn up to 270 deg + 3sec straight if not better
-					//abort the turn if better climbrate is found
-					EXEC (THERMALLING_TURN)
-					//every check: if positive, take action, then restart program
-					EXEC (LOGO_MAIN)
-				END // 0.4 m/s trigger
-			ELSE
-				//termalling could still be justified if detected just after or during motorclimb
-				IF_GE(AIR_SPEED_Z,MOTOR_CLIMB_MAX)  //>= 1.2 m/s climb is the trigger, also check GEOFENCE
-					//lift found
-					//keep flying straight until decreasing lift
-					//wait for decrease of lift
-					DO (WAIT_DECREASE_CLIMBRATE)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
-					//current is less
-					//now beyond the best climbrate..
-					//turn up to 270 deg + 3sec straight if not better
-					//abort the turn if better climbrate is found
-					EXEC (THERMALLING_TURN)
-					//every check: if positive, take action, then restart program
-					EXEC (LOGO_MAIN)
-				END // 1.2 m/s trigger
-			END
-		END
-	END
-	END
-
-
-
 	TO (WAIT_DECREASE_CLIMBRATE)
 		SET_INTERRUPT(INT_THERMALLING)
 		FLAG_ON(F_LAND)    //Motor off
@@ -1271,12 +1234,14 @@ const struct logoInstructionDef instructions[] = {
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta
 		BANK_1S(0)
-		DO(RESET_NAVIGATION)
+		//DO(RESET_NAVIGATION)
 		REPEAT(5)    //6 sec
 			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
-			IF_GE(PARAM,0)
+			IF_LT(PARAM,0)
+				EXEC (THERMALLING_TURN)				
+			ELSE
 				BANK_1S(0)
-				DO(RESET_NAVIGATION)
+				//DO(RESET_NAVIGATION)
 			END
 		END
 		//return.. check not cruise..
@@ -1329,7 +1294,7 @@ const struct logoInstructionDef instructions[] = {
 			BANK_1S(0)
 			BANK_1S(0)
 			BANK_1S(0)
-			DO (RESET_NAVIGATION)
+			//DO (RESET_NAVIGATION)
 		END
 		IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)		
 			EXEC (WAIT_DECREASE_CLIMBRATE)
@@ -1412,7 +1377,7 @@ const struct logoInstructionDef instructions[] = {
 			REPEAT(60)
 				//SET_INTERRUPT(INT_RETURN_GEOFENCE)
 				IF_LT(ALT, 10)  //below: auto takeoff / hand launch with motor on in Autonomous mode
-					//LEVEL_1S  //allow heading to stabilize on takeoff
+					//BANK_1S  //allow heading to stabilize on takeoff
 					BANK_1S(0)
 					//DO (RESET_NAVIGATION)
 				ELSE
@@ -1502,7 +1467,6 @@ const struct logoInstructionDef instructions[] = {
 			USE_CURRENT_ANGLE
 			USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
 			FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
-			FD(DESIRED_SPEED_NORMAL_F0/10)
 		PEN_DOWN
 	END
 	END
