@@ -1234,14 +1234,12 @@ const struct logoInstructionDef instructions[] = {
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta
 		BANK_1S(0)
-		//DO(RESET_NAVIGATION)
 		REPEAT(5)    //6 sec
 			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			IF_LT(PARAM,0)
 				EXEC (THERMALLING_TURN)				
 			ELSE
 				BANK_1S(0)
-				//DO(RESET_NAVIGATION)
 			END
 		END
 		//return.. check not cruise..
@@ -1254,7 +1252,6 @@ const struct logoInstructionDef instructions[] = {
 	//270 deg method
 	TO (THERMALLING_TURN)
 		SET_INTERRUPT(INT_THERMALLING)
-		//DO(RESET_NAVIGATION)
 		FLAG_ON(F_LAND)    //Motor off
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
 		LOAD_TO_PARAM(AIR_SPEED_Z)    //to detect better lift
@@ -1271,14 +1268,10 @@ const struct logoInstructionDef instructions[] = {
 			IF_EQ( MOTOR_OFF_TIMER,0 )   //only with motor off
 				//Custom solution using new command RT_BANK()
 				RT_BANK(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
-				DO (RESET_NAVIGATION)
+			ELSE
+				EXEC (LOGO_MAIN)
 			END
-
 		END  //repeat
-		//DO (RESET_NAVIGATION)
-		//true in normal exit (no better climb found)
-
-		//if param 0 (bug?) shift only done if current clibrate <= 0
 		//Shift the circle for 3 sec
 		EXEC (THERMALLING_SHIFT_CIRCLE)
 	END
@@ -1294,7 +1287,6 @@ const struct logoInstructionDef instructions[] = {
 			BANK_1S(0)
 			BANK_1S(0)
 			BANK_1S(0)
-			//DO (RESET_NAVIGATION)
 		END
 		IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)		
 			EXEC (WAIT_DECREASE_CLIMBRATE)
@@ -1379,7 +1371,6 @@ const struct logoInstructionDef instructions[] = {
 				IF_LT(ALT, 10)  //below: auto takeoff / hand launch with motor on in Autonomous mode
 					//BANK_1S  //allow heading to stabilize on takeoff
 					BANK_1S(0)
-					//DO (RESET_NAVIGATION)
 				ELSE
 					EXEC (LOGO_MAIN)
 				END
@@ -1479,12 +1470,10 @@ const struct logoInstructionDef instructions[] = {
 			IF_LT(AILERON_INPUT_CHANNEL ,2850)
 				IF_GT(AILERON_INPUT_CHANNEL ,1700)
 					BANK_1S(-20)
-					DO (RESET_NAVIGATION)
 				END
 			END
 			IF_GT(AILERON_INPUT_CHANNEL,3150)
 				BANK_1S(20)
-				DO (RESET_NAVIGATION)
 			END
 		END
 		EXEC (LOGO_MAIN)

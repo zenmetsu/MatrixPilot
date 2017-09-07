@@ -310,7 +310,7 @@
 #define RUDDER_OFFSET_REVERSED                              0          //0 or 1 Make postive offset move surface up or to the right (seen from aft)
 #define RUDDER_DIR_REVERSED                                 1          //0 or 1 don't or do reverse
 //                                                           
-#define THROTTLE_FACTOR                                     0.50       //Reduce throttle
+#define THROTTLE_FACTOR                                     0.55       //Reduce throttle
 
 
 #endif

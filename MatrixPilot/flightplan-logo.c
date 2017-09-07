@@ -627,7 +627,7 @@ void flightplan_logo_update(void)
 		// inhibit navigation for x loops, to allow drifting downwind
 		if ( fixedBankActive )
 		{
-			if (!angleTargetActive) // BANK_1S(0)
+			if (!angleTargetActive) // BANK_1S()
 			{
 				if (fixedBankActiveCounter <= 0)
 				{
@@ -1253,6 +1253,11 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 #if ( THERMALLING_MISSION == 1 )
 				case 1: // RT_BANK
 				{
+					//rotate 30 deg right wirh a fixed bank or timeout after 4 sec
+					
+					//USE_CURRENT_ANGLE
+					turtleAngles[currentTurtle] = get_current_angle();
+					
 					//rotate turtle too, like RT(). Set the rotation target 30 deg to the right
 					fixedBankTargetAngle = turtleAngles[currentTurtle] + 30; // ~0.5 - 1 sec == 30 deg headingchange
 					//fixedBankTargetAngle = get_current_angle() + 30; // ~0.5 - 1 sec == 30 deg headingchange
@@ -1264,7 +1269,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
 					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
 
-					// 25: should be fd(groundspeed) in m from m/s (ideally)
+					// 25: should be fd(groundspeed) in m from m/s (ideally), with added margen to keep turtle ahead
 					// selected a fixed number I used before, combined with servo calculation
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 25) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);
@@ -1277,12 +1282,16 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 				}
 				case 2: //BANK_1S
 				{				
+					//maintain a fixed bank or level for one sec
+					
+					//USE_CURRENT_ANGLE
+					turtleAngles[currentTurtle] = get_current_angle();
 					//this is a fly command, do the same as FD()
 					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
 					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
 					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
 
-					// 25: should be fd(groundspeed) in m from m/s (ideally)
+					// 25: should be fd(groundspeed) in m from m/s (ideally), with added margen to keep turtle ahead
 					// selected a fixed number I used before, combined with servo calculation
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 25) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);
