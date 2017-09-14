@@ -90,7 +90,7 @@
 // RT(x)                - Rotate the turtle to the right by x degrees.
 // LT(x)                - Rotate the turtle to the left by x degrees.
 // RT_BANK              - Perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored (THERMALLING_MISSION)
-// BANK_1S             - Perform level flight for 1 second, position/navigation will be ignored. This is used for centering in thermals (THERMALLING_MISSION)
+// BANK_1S              - Perform level flight for 1 second, position/navigation will be ignored. This is used for centering in thermals (THERMALLING_MISSION)
 // SET_ANGLE(x)         - Set the turtle to point x degrees clockwise from N.
 // USE_CURRENT_ANGLE    - Aim the turtle in the direction that the plane is currently headed.
 // USE_ANGLE_TO_GOAL    - Aim the turtle in the direction of the goal from the location of the plane.
@@ -150,7 +150,7 @@
 // F_INVERTED           - Fly with the plane upside down. (only if STABILIZE_INVERTED_FLIGHT is set to 1 in options.h)
 // F_HOVER              - Hover the plane with the nose up. (only if STABILIZE_HOVER is set to 1 in options.h)
 //                        NOTE: while hovering, no navigation is performed, and throttle is under manual control.
-// F_TRIGGER            - Trigger an action to happen at this point in the flight.  (See the Trigger Action section of the options.h file.) 
+// F_TRIGGER            - Trigger an action to happen at this point in the flight.  (See the Trigger Action section of the options.h file.)
 // F_ALTITUDE_GOAL      - Climb or descend to the given altitude.
 // F_CROSS_TRACK        - Navigate using cross-tracking.  Best used for longer flight legs.
 // F_LAND               - Fly with the throttle off.
@@ -187,7 +187,7 @@
 // PARAM_SET(x)         - Sets the current subroutine's current parameter value to x.
 // 
 // LOAD_TO_PARAM(val)   - Loads a system value (listed below) into the current subroutine's parameter value.
-// 
+//
 // All parameter-related commands: 
 //        FD_PARAM, BK_PARAM, RT_PARAM, LT_PARAM, SET_ANGLE_PARAM, 
 //        EAST_PARAM, WEST_PARAM, NORTH_PARAM, SOUTH_PARAM, ALT_UP_PARAM, ALT_DOWN_PARAM, 
@@ -1038,7 +1038,7 @@ const struct logoInstructionDef instructions[] = {
 #define SPEED_MAX				      113  // in dm/h     41 km/h	
 #elif ( MODEL_LINEA == 1 )
 #define FINAL_ALT                      16  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
-#define SPEED_MIN			           95  // in dm/h      km/h	
+#define SPEED_MIN			           95  // in dm/h      km/h
 #define SPEED_MAX				      105  // in dm/h      km/h	
 #else   //Fantasy
 #define FINAL_ALT                      18  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
@@ -1121,11 +1121,6 @@ const struct logoInstructionDef instructions[] = {
 #define PP_MOTOR_CLIMB_FORWARD               89
 
 const struct logoInstructionDef instructions[] = {
-
-	IF_GT(TEST_MODE_INPUT_CHANNEL ,3900)     // automode only
-		EXEC (PP_POLAR_PLOT)
-	END
-
 
 	//Main  -  main program when motor is off
 	//LOGO_MAIN  LET
@@ -1519,7 +1514,6 @@ const struct logoInstructionDef instructions[] = {
 			IF_GT(BRAKE_THR_SEL_INPUT_CHANNEL ,1700) // abstract flightplan workaround: only real low, ignore 0
 				EXEC (LOITER_LAND)
 			END
-			END
 		END
 		IF_LT(BATTERY_VOLTAGE, VOLTAGE_SENSOR_ALARM)     // land automatically when battery is low, usefull when no telemetry is available
 			EXEC (LOITER_LAND)
@@ -1908,13 +1902,16 @@ const struct logoInstructionDef instructions[] = {
 	TO (PP_CHECKS)        // is motor needed, landing requested, is pilot in control?
 		//see if calling subroutine needs to end
 
-		IF_LT(BRAKE_THR_SEL_INPUT_CHANNEL ,2700)     // automode only
+		IF_LT(BRAKE_THR_SEL_INPUT_CHANNEL ,2700)
 			IF_GT(BRAKE_THR_SEL_INPUT_CHANNEL ,1700) // abstract flightplan workaround: only real low, ignore 0
 				EXEC (LOITER_LAND)
 			END
 		END
 		IF_LT(BATTERY_VOLTAGE, VOLTAGE_SENSOR_ALARM)     // land automatically when battery is low, usefull when no telemetry is available
 			EXEC (LOITER_LAND)
+		END
+		IF_LT(TEST_MODE_INPUT_CHANNEL ,2200)
+			EXEC (LOGO_MAIN)
 		END
 	END
 	END
