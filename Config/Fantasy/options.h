@@ -88,6 +88,15 @@
 #define GPS_TYPE                            GPS_UBX_4HZ
 //#define DEFAULT_GPS_BAUD                    57600   // added for GPS_NMEA support
 
+////////////////////////////////////////////////////////////////////////////////
+// You can specify a level of good GNSS reception before MatrixPilot accepts "GPS ACQUIRED".
+// You can generally leaves these lines at their default values. A value of zero switches off the check.
+// The VDOP parameter is only available for Ublox GNSS devices. It is ignored for other GNSS units.
+// The metrics are not used by HILSIM or SILSIM.
+
+#define GNSS_HDOP_REQUIRED_FOR_STARTUP       20  //  Horizontal Dilution of Precision
+#define GNSS_VDOP_REQUIRED_FOR_STARTUP	     60  //  Vertical Dilution of Precision
+#define GNSS_SVS_REQUIRED_FOR_STARTUP	      6  //  Number of Sattelites in View
 
 ////////////////////////////////////////////////////////////////////////////////
 // Enable/Disable core features of this firmware
@@ -704,7 +713,21 @@
 // ELEVATOR_TRIM_INVERTED               Elevator trim in fractional servo units (-1.0 to 1.0 ) for inverted straight and level flight at cruise speed.
 // Note: ELEVATOR_TRIM_INVERTED is usually negative, with typical values in the -0.5 to -1.0 range.
 
-#define REFERENCE_SPEED                 (  11.3 )
+//#define REFERENCE_SPEED                 (  11.3 )
+#if ( MODEL_FANTASY == 1 && HILSIM == 0 )
+#define REFERENCE_SPEED                       11.30     // meters/second   41 km/h
+#endif
+#if ( MODEL_FANTASY == 1 && HILSIM == 1 )
+//Hilsim Fantasy
+#define REFERENCE_SPEED                       11.30     // meters/second   41 km/h
+#endif
+#if ( MODEL_GRAFAS == 1 )
+#define REFERENCE_SPEED                       10.83     // meters/second   39 km/h
+#endif
+#if ( MODEL_LINEA == 1 )
+#define REFERENCE_SPEED                       10.83     // meters/second   39 km/h
+#endif
+
 #define ANGLE_OF_ATTACK_NORMAL          (   0.0 )
 #define ANGLE_OF_ATTACK_INVERTED        (   0.0 )
 #define ELEVATOR_TRIM_NORMAL            (   0.0 )
