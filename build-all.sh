@@ -7,19 +7,29 @@ mkdir -p _build
 cd _build
  
 mkdir -p XPlane; cd XPlane
-#if ! make -j 8 -f ../../makefile TARGET_NAME=XPlane DEVICE=HIL
-#	then
-#	command_failed=true
-#fi
+if ! make -j 8 -f ../../makefile TARGET_NAME=XPlane DEVICE=HIL
+	then
+	command_failed=true
+fi
 cd ..
  
 mkdir -p MatrixPilot; cd MatrixPilot
 
-mkdir -p SIL; cd SIL
-#if ! make -j 8 -f ../../../makefile TARGET_NAME=MPSIM DEVICE=SIL CONFIG=Cessna DEFS=CONSOLE_UART=0 
-#	then
-#	command_failed=true
-#fi
+mkdir -p SIL_MAVLINK; cd SIL_MAVLINK
+if ! make -j 8 -f ../../../makefile TARGET_NAME=MPSIM DEVICE=SIL CONFIG=Cessna DEFS=CONSOLE_UART=0 
+	then
+	command_failed=true
+fi
+cd ..; mkdir -p SIL_UDB_EXTRA; cd SIL_UDB_EXTRA
+if ! make -j 8 -f ../../../makefile TARGET_NAME=MPSIM DEVICE=SIL CONFIG=Cessna DEFS='CONSOLE_UART=0 SERIAL_OUTPUT_FORMAT=SERIAL_UDB_EXTRA'
+	then
+	command_failed=true
+fi
+cd ..; mkdir -p SIL_NONE; cd SIL_NONE
+if ! make -j 8 -f ../../../makefile TARGET_NAME=MPSIM DEVICE=SIL CONFIG=Cessna DEFS='CONSOLE_UART=0 SERIAL_OUTPUT_FORMAT=SERIAL_NONE'
+	then
+	command_failed=true
+fi
 cd ..; mkdir -p AUAV3; cd AUAV3
 if ! make -j 8 -f ../../../makefile TARGET_NAME=MatrixPilot DEVICE=UDB5 CONFIG=Cessna
 	then

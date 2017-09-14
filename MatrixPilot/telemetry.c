@@ -39,10 +39,10 @@
 #include "../libUDB/osd.h"
 #include "options_magnetometer.h"
 #include "options_osd.h"
-#if (SILSIM != 1)
+//#if (SILSIM != 1) // this caused a build failure when SILSIM and SERIAL_UDB_EXTRA are both defined
 #include "../libUDB/libUDB.h" // Needed for access to RCON
 #include "../libUDB/ADchannel.h"
-#endif
+//#endif
 #include "../libUDB/mcu.h"
 //#include "../libDCM/libDCM_internal.h" // Needed for access to internal DCM values
 #include "../libDCM/libDCM.h" // Needed for access to internal DCM value
@@ -1201,7 +1201,7 @@ void telemetry_output_8hz(void)
 					serial_output("stk%d:", (int16_t)(4096-maxstack));
 #endif // RECORD_FREE_STACK_SPACE
 					serial_output("\r\n");
-					serial_output("F23:G%i:\r\n",gps_parse_errors);
+					serial_output("F23:G%i:V%i:\r\n",gps_parse_errors,vdop);
 				}
 			}
 #endif  // me SUE
