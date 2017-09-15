@@ -79,8 +79,8 @@ enum {
 	WIND_SPEED_X,
 	WIND_SPEED_Y,
 	WIND_SPEED_Z,
-#if ( THERMALLING_MISSION == 1 )  //custom commands
 	WIND_FROM_ANGLE,
+#if ( THERMALLING_MISSION == 1 )  //custom system values
 	BATTERY_VOLTAGE,
 	AIR_SPEED_Z_DELTA,
 	AIR_SPEED_Z_VS_START,
@@ -570,10 +570,9 @@ void flightplan_logo_update(void)
 		return;
 	}
 
-	// otherwise run the interrupt handler, if configured, and not in-progress
+	// otherwise run the interrupt handler, if configured.
 	if (interruptIndex)
 	{
-		//if not arrived
 		if (tofinish_line >= WAYPOINT_PROXIMITY_RADIUS) // not crossed the finish line
 		{
 			if (!interruptStackBase)   //if not in-progress
@@ -1004,16 +1003,16 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		case WIND_SPEED_Z: // in cm/s
 			return estimatedWind[2];
 
-#if ( THERMALLING_MISSION == 1 )
 		case WIND_FROM_ANGLE: // wind from in degrees 0-359, 0 = North
 		{
 			int16_t angle = get_angle_to_point(estimatedWind[0], estimatedWind[1]);
-			while (angle < 0) angle += 360;
-			while (angle > 359) angle -= 360;
+			if (angle < 0) angle += 360;
+			if (angle > 359) angle -= 360;
 
 			return angle;
 		}
 
+#if ( THERMALLING_MISSION == 1 )
 		case BATTERY_VOLTAGE: // 
 		{
 			//return battery_voltage._.W1;
