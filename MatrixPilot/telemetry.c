@@ -988,17 +988,17 @@ void telemetry_output_8hz(void)
 					serial_output("mb%i:", desiredSpeed); // DesireSpeed output (log only) as MAG N (mb%i:) for place in csv to Dashware
 					if ( (pwIn_save[1] > 3000) && (pwIn_save[1] < 3100) )  //mc1 = "Pilot input" as MAG Z for dashware, if aileron input is not centered
 					{
-					    serial_output("mc0:"); 
+					    serial_output("mc0:");
 					}
 					else
 					{
-					    serial_output("mc1:"); 
-					}				
-					
-					//Dashware  locationErrorEarth[0] = thermalSteps, locationErrorEarth[1] = , locationErrorEarth[2] = 
+					    serial_output("mc1:");
+					}
+
+					//Dashware  locationErrorEarth[0] = thermalSteps, locationErrorEarth[1] = , locationErrorEarth[2] =
 					if (logoSubroutine == 13 || logoSubroutine == 55) // WAIT_DECREASE_CLIMBRATE   BETTER_LIFT
 					{
-						thermalSteps = 1; 
+						thermalSteps = 1;
 						thermalSector = cog_gps.BB / 4500; // (0..7)
 					}
 					else if (logoSubroutine == 15 ) //  THERMALLING_TURN
@@ -1007,14 +1007,18 @@ void telemetry_output_8hz(void)
 						{
 							thermalSector = cog_gps.BB / 4500; // (0..7)
 						    thermalSteps++;
-						}	
-						thermalSteps = thermalSteps % 8;  //2..8
+						}
+						//thermalSteps = thermalSteps % 8;  //2..8
+						if (thermalSteps > 8)
+						{
+                            thermalSteps = 8;
+                        }
 					}
 					else if (logoSubroutine ==  17 ) //  THERMALLING_SHIFT_CIRCLE
 					{
 						thermalSteps = 9;
 					}
-					else  // 
+					else  //
 					{
 						thermalSteps = 0;
 					}
@@ -1023,58 +1027,58 @@ void telemetry_output_8hz(void)
 					switch (logoSubroutine)
 					{
 						case 3:
-							logoProgramCode = 1; 
+							logoProgramCode = 1;
 							break;
 						case 5:
-							logoProgramCode = 2; 
+							logoProgramCode = 2;
 							break;
 						case 9:
-							logoProgramCode = 3; 
+							logoProgramCode = 3;
 							break;
 						case 19:
-							logoProgramCode = 4; 
+							logoProgramCode = 4;
 							break;
 						case 23:
-							logoProgramCode = 5; 
+							logoProgramCode = 5;
 							break;
 						case 27:
-							logoProgramCode = 6; 
+							logoProgramCode = 6;
 							break;
 						case 33:
-							logoProgramCode = 7; 
+							logoProgramCode = 7;
 							break;
 						case 35:
-							logoProgramCode = 8; 
+							logoProgramCode = 8;
 							break;
 						case 47:
-							logoProgramCode = 9; 
+							logoProgramCode = 9;
 							break;
 						case 53:
-							logoProgramCode = 10; 
+							logoProgramCode = 10;
 							break;
 						case 55:
-							logoProgramCode = 20; 
+							logoProgramCode = 20;
 							break;
 						case 57:
-							logoProgramCode = 30; 
+							logoProgramCode = 30;
 							break;
 						case 59:
-							logoProgramCode = 40; 
+							logoProgramCode = 40;
 							break;
 						case 41:
-							logoProgramCode = 50; 
+							logoProgramCode = 50;
 							break;
 						case 43:
-							logoProgramCode = 60; 
+							logoProgramCode = 60;
 							break;
 						case 45:
-							logoProgramCode = 70; 
+							logoProgramCode = 70;
 							break;
 						case 87:
-							logoProgramCode = 80; 
+							logoProgramCode = 80;
 							break;
 					}
-					
+
 					int16_t logoProgramGroup=0;   // ___
 					switch (logoSubroutine)
 					{
@@ -1123,7 +1127,7 @@ void telemetry_output_8hz(void)
 							logoProgramGroup = 7;  //Polar Plot
 							break;
 					}
-					
+
 					serial_output("imx%i:imy%i:imz%i:lex%i:ley%i:lez%i:fgs%X:ofc%i:tx%i:ty%i:tz%i:G%d,%d,%d:",IMUlocationx._.W1,IMUlocationy._.W1,IMUlocationz._.W1,
 					    //locationErrorEarth[0], locationErrorEarth[1], locationErrorEarth[2],
 					    thermalSteps, logoProgramCode, logoProgramGroup,
@@ -1138,11 +1142,11 @@ void telemetry_output_8hz(void)
 					    state_flags.WW, osc_fail_count,
 					    IMUvelocityx._.W1, IMUvelocityy._.W1, IMUvelocityz._.W1, goal.x, goal.y, goal.z, aero_force[0], aero_force[1], aero_force[2]);
 #endif  //MY_PERSONAL_OPTIONS
-					
+
 #if ( MY_PERSONAL_OPTIONS != 1 )
 #if (USE_BAROMETER_ALTITUDE == 1)
 					serial_output("tmp%i:prs%li:alt%li:",
-					    get_barometer_temperature(), get_barometer_pressure(), 
+					    get_barometer_temperature(), get_barometer_pressure(),
 					    get_barometer_altitude());
 #endif
 					serial_output("bmv%i:mA%i:mAh%i:",
