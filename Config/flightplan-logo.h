@@ -223,12 +223,24 @@
 // WIND_SPEED_X         - in cm/s
 // WIND_SPEED_Y         - in cm/s
 // WIND_SPEED_Z         - in cm/s
-// WIND_FROM_ANGLE      - in degrees Wind from 0-359 (clockwise, 0=North).  (THERMALLING_MISSION)
-// BATTERY_VOLTAGE,     - in tens of volts  (THERMALLING_MISSION)
-// AIR_SPEED_Z_DELTA,   - in cm/s   (THERMALLING_MISSION)
-// READ_F_LAND,         - read the LAND flag, 0 if off, 1 if on  (THERMALLING_MISSION)
-// READ_THROTTLE_OUTPUT_CHANNEL - read the LAND flag, 0 if off, 1 if on  (THERMALLING_MISSION)
-// FORCE_RESET   - (THERMALLING_MISSION)  reset program from within interrupt programs
+// WIND_FROM_ANGLE      - in degrees Wind from 0-359 (clockwise, 0=North).
+
+//THERMALLING_MISSION //custom system values
+//  AIR_SPEED_Z_DELTA   - in cm/s   (THERMALLING_MISSION)
+// 	AIR_SPEED_Z_VS_START
+// 	GEOFENCE_STATUS
+// 	GEOFENCE_TURN
+// 	MOTOR_OFF_TIMER
+// 	READ_DESIRED_SPEED
+// 	FORCE_CROSS_FINISH_LINE
+// 	READ_FLY_COMMAND_COUNTER
+// 	FORCE_FINISH_BAD_NAV
+//  BATTERY_VOLTAGE     - in tens of volts  
+//  READ_F_LAND         - read the LAND flag, 0 if off, 1 if on 
+//  READ_THROTTLE_OUTPUT_CHANNEL - read the LAND flag, 0 if off, 1 if on  
+//  FORCE_RESET    reset program from within interrupt programs
+//THERMALLING_MISSION //custom system values
+
 // PARAM                - current param value
 // XX_INPUT_CHANNEL     - channel value from 2000-4000 (any channel defined in options.h, e.g. THROTTLE_INPUT_CHANNEL)
 
@@ -959,18 +971,16 @@ const struct logoInstructionDef instructions[] = {
 // It does geofencing, motor climbs and thermalling
 // The program navigates the area randomly to search for rising air.
 // The program detects and then moves the glider to the center of thermals, even if the thermals drift downwind.
-// The script has two similar sets of scripts, for two main program flows "gliding" and "motor climb"
-// This is needed to remember a motorclimb was started in case of an interruption (there is no method to read a flag in LOGO)
 // Two types of geofences are used: normal geofence and wind geofence
 // The wind geofence allows for optimisation of the position of the glider, to have enough space to thermal if rising air is found.
 // the wind geofence is only enforced if no thermals are found
 // the soft geofences are smaller in size and are intended to position the aircraft in the geofence, crossing the bigger (real) geofence should be a rare event
 // The motor is controlled to maintain altitude when no thermals are found.
-// The fixed throttle climbrate is optimized for longer flights. The motor is stopped when too much sink or much lift is encountered, to preserve battery power.
+// The adaptive throttle climbrate is optimized for longer flights. The motor is stopped when too much sink or much lift is encountered, to preserve battery power.
 // multiple smaller subroutines are used to allow recording as waypoints in telemetry for debugging
 // 'Check' routines have an even number, odd numbered subroutines (actions) will be logged as waypoint
 // 'Forward' commands are usualy timed to last about 1 sec
-// Gps data is used to measure altitude and climbrate
+// Barometer data is used to measure altitude and climbrate
 // Glide speed control is selected by LOGO (slow, normal and fast). Flaps (camber) are controlled simultaneously (F4,F0 or F-4)
 
 // to use this script:

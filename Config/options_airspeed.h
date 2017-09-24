@@ -47,12 +47,14 @@
 
 // Maximum rate of pitch demand change in deg/s.  Used to make control smoother.
 // Default 10.0, Higher for small aircraft. Too low may cause instability.
-// Maximum value is 720deg/s.  
+// Maximum value is 720deg/s.
 #define AIRSPEED_PITCH_ADJ_RATE     12.0
 
 // Airspeed error integrator
 #define AIRSPEED_PITCH_KI            0.010   // Integration rate.  low = unstable, high = slow response.
 #define AIRSPEED_PITCH_KI_MAX        8.0     // Limit of integration control in degrees.  Start with 5.0.
+
+#define MOTOR_ON_PITCH_UP            0.0     // added feed forward pitch if motor on
 
 #endif //Fantasy
 
@@ -77,15 +79,17 @@
 // linearly interpolated from cruise airspeed to min and max airspeed
 #define AIRSPEED_PITCH_MIN_ASPD     -4.2    // Default off, start with 5.0
 #define AIRSPEED_PITCH_MAX_ASPD    -11.0    // Default off, start with -10.0
- 
+
 // Maximum rate of pitch demand change in deg/s.  Used to make control smoother.
 // Default 10.0, Higher for small aircraft. Too low may cause instability.
-// Maximum value is 720deg/s.  
+// Maximum value is 720deg/s.
 #define AIRSPEED_PITCH_ADJ_RATE     20.0
 
 // Airspeed error integrator
-#define AIRSPEED_PITCH_KI           0.011   // Integration rate.  High = unstable, low = slow response.
-#define AIRSPEED_PITCH_KI_MAX       7.0     // Limit of integration control in degrees.  Start with 5.0.
+#define AIRSPEED_PITCH_KI            0.011   // Integration rate.  High = unstable, low = slow response.
+#define AIRSPEED_PITCH_KI_MAX        7.0     // Limit of integration control in degrees.  Start with 5.0.
+
+#define MOTOR_ON_PITCH_UP            0.0     // added feed forward pitch if motor on
 
 #endif //Fantasy hilsim
 
@@ -114,13 +118,15 @@
 
 // Maximum rate of pitch demand change in deg/s.  Used to make control smoother.
 // Default 10.0, Higher for small aircraft. Too low may cause instability.
-// Maximum value is 720deg/s.  
-	
+// Maximum value is 720deg/s.
+
 #define AIRSPEED_PITCH_ADJ_RATE     16.0
-	
+
 // Airspeed error integrator
 #define AIRSPEED_PITCH_KI            0.010   // Integration rate.  High? = unstable, low? = slow response.
 #define AIRSPEED_PITCH_KI_MAX       10.0     // Limit of integration control in degrees.  Start with 5.0.
+
+#define MOTOR_ON_PITCH_UP           -2.0     // added feed forward pitch if motor on
 
 #endif //Grafas
 
@@ -155,6 +161,8 @@
 // Airspeed error integrator
 #define AIRSPEED_PITCH_KI            0.2    // Integrataion rate.  High = unstable, low = slow response.
 #define AIRSPEED_PITCH_KI_MAX        4.0    // Limit of integration control in degrees.  Start with 5.0.
+
+#define MOTOR_ON_PITCH_UP            0.0     // added feed forward pitch if motor on
 
 #endif //Linea
 
