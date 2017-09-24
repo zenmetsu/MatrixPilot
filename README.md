@@ -1,12 +1,17 @@
 # MatrixPilot 
 ## Firmware for Bill Premerlani's IMU based UAV Dev Board and its successors
 
-Welcome to the MatrixPilot codebase. Three board types are supported:-
-* the [UDB4] (https://www.sparkfun.com/products/retired/11115) 
-* the [UDB5] (https://www.sparkfun.com/products/11703) from SparkFun
-* the [AUAV3] (http://arsovtech.com/?p=1257) from Arsov RC Technology.
+Welcome to the MatrixPilot codebase. 
 
-Projects for the three boards are provided for the MPLAB-X Integrated Development Environment (IDE) and XC16 compiler. From October 2016, the master branch no longer supports the legacy MPLAB IDE.
+The UAV Dev Board, originally designed and open sourced by Bill Premerlani, is an IMU-based development platform for building controllers for Unmanned Aerial Vehicles.  This site hosts the development of the MatrixPIlot UAV code that runs on this board, allowing it to stabilize an airplane, maintain altitude, and navigate to specific locations, or back to the launch site.
+
+The [UAV Dev Board from Spark Fun](https://www.sparkfun.com/products/11703) has been retired. The UDB5 is an open source hardware design, and some members of the group are fabricating new boards using [MacroFab](https://macrofab.com/).
+
+You can still buy an AUAV3 Dev Board from Nick Arsov: 
+[International Site](http://arsovtech.com/?p=1257).
+[USA Site](http://www.auav.co/product-p/auav3.htm)
+
+Projects for the boards are provided for the MPLAB-X Integrated Development Environment (IDE) and XC16 compiler. From October 2016, the master branch no longer supports the legacy MPLAB IDE.
 
 There are 4 projects in the repository. They are listed here in order of increasing complexity:-
 
