@@ -314,7 +314,11 @@ uint16_t get_reset_flags(void)
 
 void sil_reset(void)
 {
+#ifdef _MSC_VER
+	const char* const args[3] = {mp_argv[0], UDB_HW_RESET_ARG, 0};
+#else
 	char* const args[3] = {mp_argv[0], UDB_HW_RESET_ARG, 0};
+#endif
 
 	sil_ui_will_reset();
 
@@ -460,6 +464,7 @@ static magnetometer_callback_funcptr magnetometer_callback = NULL;
 uint8_t rxMagnetometer(magnetometer_callback_funcptr callback)
 {
 	magnetometer_callback = callback;
+	return MAGNETOMETER_SERVICE_CAN_PAUSE;
 }
 
 void I2C_doneReadMagData(void)
