@@ -223,7 +223,7 @@
 // WIND_SPEED_X         - in cm/s
 // WIND_SPEED_Y         - in cm/s
 // WIND_SPEED_Z         - in cm/s
-// WIND_FROM_ANGLE      - in degrees Wind from 0-359 (clockwise, 0=North).
+// WIND_FROM_ANGLE      - in degrees Wind from 0-359 (clockwise, 0=North)
 
 //THERMALLING_MISSION //custom system values
 //  AIR_SPEED_Z_DELTA   - in cm/s   (THERMALLING_MISSION)

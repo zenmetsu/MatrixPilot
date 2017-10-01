@@ -1011,8 +1011,8 @@ void telemetry_output_8hz(void)
 						//thermalSteps = thermalSteps % 8;  //2..8
 						if (thermalSteps > 8)
 						{
-                            thermalSteps = 8;
-                        }
+							thermalSteps = 8;
+						}
 					}
 					else if (logoSubroutine ==  17 ) //  THERMALLING_SHIFT_CIRCLE
 					{
