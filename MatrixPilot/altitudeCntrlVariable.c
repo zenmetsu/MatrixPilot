@@ -536,8 +536,15 @@ static void normalAltitudeCntrl(void)
 				}
 				else
 				{
-					// reduce throttle for a 0.7 m/s climb
-					throttleAccum.WW = (int16_t)((float)(throttleAccum.WW) * steadyClimbPowerFactor);
+					if ( (IMUlocationz._.W1) < 50 )
+					{
+							throttleAccum.WW = (int16_t)(max_throttle);
+					}
+					else
+					{
+						// reduce throttle for a 0.7 m/s climb
+						throttleAccum.WW = (int16_t)((float)(throttleAccum.WW) * steadyClimbPowerFactor);
+					}
 				}
 			}
 			//control autopilotBrake : brakes when too high or above glideslope
