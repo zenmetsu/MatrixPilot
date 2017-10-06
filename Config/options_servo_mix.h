@@ -300,7 +300,7 @@
 #define AILERON_LEFT_OFFSET_REVERSED                       1          //0 or 1 Make postive offset move surface up
 #define AILERON_LEFT_DIR_REVERSED                          0          //0 or 1 don't or do reverse
 //                                                           
-#define ELEVATOR_BRAKE_FACTOR                              -0.45       //mix brakes (brake) to elevator, usually negative for brake
+#define ELEVATOR_BRAKE_FACTOR                              -0.60       //mix brakes (brake) to elevator, usually negative for brake
 #define ELEVATOR_THROTTLE_FACTOR                            0.00       //apply elevator mix from throttle
 #define ELEVATOR_OFFSET_REVERSED                            0          //0 or 1 Make postive offset move nose up 
 #define ELEVATOR_DIR_REVERSED                               1          //0 or 1 don't or do reverse
