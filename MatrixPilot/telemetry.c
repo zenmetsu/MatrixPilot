@@ -924,7 +924,6 @@ void telemetry_output_8hz(void)
 				if (toggle)
 
 				{
-<<<<<<< HEAD
 
 #if ( MY_PERSONAL_OPTIONS != 1 )
 
