@@ -1033,7 +1033,7 @@ const struct logoInstructionDef instructions[] = {
 #define SPEED_MAX				      116  // in dm/h     42 km/h	11,67
 #else
 //Dutch rules outside of Knvvl fields...
-#define MOTOR_ON_TRIGGER_ALT           50  // in meters
+#define MOTOR_ON_TRIGGER_ALT           70  // in meters
 #define MOTOR_ON_IN_SINK_ALT           50  // in meters, set low. Altitude where ground objects must be avoided using motor despite sink
 #define MOTOR_OFF_TRIGGER_ALT          90  // in meters
 #define MAX_THERMALLING_ALT           120  // in meters
@@ -1544,7 +1544,7 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (CHECK_THERMAL)
 		//check for thermals
-		IF_GE( ALT,MOTOR_ON_TRIGGER_ALT+10)      // ok to start a new thermal in status 1, status 0 is ok anyway
+		IF_GE( ALT,MOTOR_ON_IN_SINK_ALT+10)
 			IF_EQ( MOTOR_OFF_TIMER,0 )  //motor has stopped more than 4 secons ago
 				//glided into a thermal
 				IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)  //>= 0.2 m/s climb is the trigger, also check GEOFENCE
