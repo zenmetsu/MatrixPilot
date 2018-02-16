@@ -9,19 +9,26 @@ $(warning **********************************************************************
 endif
 
 CONFIG  ?= .
+UNAME_S := $(shell uname -s)
+$(info Development Environment is $(UNAME_S))
 
 ifeq ($(OS),Windows_NT)
     DEFINES    = -DWIN=1
     BINARY     = .exe
     OSOBJS     = UDBSocketWin.o
     OSLIB      = ws2_32
-    RM         = del /Q /F
     ARCH_FLAGS = 
     WARN       = -Wall -Wextra -Wno-unused-parameter -Wno-unused-but-set-variable
+    ifeq ($(findstring MINGW,$(UNAME_S)),MINGW) 
+	DEFINES += -DMINGW
+	RM     = rm -rf
+    else
+    	RM     = del /Q /F
+        $(error This make file must be run under the MSYS2 development environment on Windows)
+    endif
 else
     ARCH         := $(shell getconf LONG_BIT)
-    ARCH_FLAGS   := -DMP_WORDSIZE=32 -m32
-    ARCH_FLAGS   := -DMP_WORDSIZE=64 -m64
+    ARCH_FLAGS   := -DMP_WORDSIZE=$(ARCH) -m$(ARCH)
     DEFINES  = -DNIX=1
     BINARY   =
     OSOBJS   = UDBSocketUnix.o
@@ -34,7 +41,7 @@ else
     endif
     ifeq ($(UNAME_S),Darwin)
         DEFINES = -DAPL=1 -DIBM=0 -DLIN=0 -DNIX=1
-        WARN       = -Wall -Wextra -Wno-unused-parameter -Wno-unused-const-variable
+        WARN       = -Wall -Wextra -Wno-unused-parameter -Wno-address-of-packed-member -Wno-unused-const-variable
     endif
 endif
 
