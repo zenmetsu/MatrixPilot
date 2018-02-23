@@ -1233,70 +1233,85 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (WAIT_DECREASE_CLIMBRATE)
+		//intial turn after rising air has been detected
+		//after decrease, it is assumed the core has been crossed
+		//then circle the core, first a tighter half turn, then a wider one
+
 		SET_INTERRUPT(INT_THERMALLING)
 		FLAG_ON(F_LAND)    //Motor off
-		//wait up to 6 sec for the climbrate to decrease, keep the best climbrate
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
+		//wait up to 6 sec for the climbrate to decrease, keep the best climbrate
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta
 		BANK_1S(0)
 		REPEAT(5)    //6 sec
 			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
-			IF_LT(PARAM,0)
-				EXEC (THERMALLING_TURN)				
-			ELSE
+			IF_GT(PARAM,0)
 				BANK_1S(0)
 			END
 		END
-		//return.. check not cruise..
-		EXEC (THERMALLING_TURN)
-	END
-	END
 
-
-
-	//270 deg method
-	TO (THERMALLING_TURN)
-		SET_INTERRUPT(INT_THERMALLING)
-		FLAG_ON(F_LAND)    //Motor off
-		SET_SPEED(DESIRED_SPEED_SLOW_F4)
-		LOAD_TO_PARAM(AIR_SPEED_Z)    //to detect better lift
-		PARAM_ADD(50)                 //add a margin
-		//do while turn upto 270 deg if climb does not improve irt startvalue	if improves: race to exit
-		REPEAT(9) //14 sec =~ 270 deg = 9 * "30 deg per loop"
-			IF_GE(AIR_SPEED_Z_VS_START,50) //even better than at start of turn so start over
-				EXEC (BETTER_LIFT)  // report just once, start new thermalling cycle
-			END
-			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)		
-				EXEC (LOGO_MAIN)
-			END
-
+		//do while turn upto 210 deg if climb does not improve irt startvalue	if improves: do BETTER_LIFT
+		REPEAT(7) //11 sec =~ 210 deg = 7 * "30 deg per loop"
 			IF_EQ( MOTOR_OFF_TIMER,0 )   //only with motor off
 				//Custom solution using new command RT_BANK()
-				RT_BANK(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
+				DO (THERMALLING_TURN)
 			ELSE
 				EXEC (LOGO_MAIN)
 			END
 		END  //repeat
+
 		//Shift the circle for 3 sec
-		EXEC (THERMALLING_SHIFT_CIRCLE)
+		DO (THERMALLING_SHIFT_CIRCLE)
+		DO (THERMALLING_SHIFT_CIRCLE)
+		DO (THERMALLING_SHIFT_CIRCLE)
+
+		//now continue around the core
+		REPEAT_FOREVER
+
+			LOAD_TO_PARAM(AIR_SPEED_Z)    //to detect better lift
+			//do while turn upto 240 deg if climb does not improve irt startvalue	if improves, race to end of loop
+			REPEAT(8) //13 sec =~ 240 deg = 7 * "30 deg per loop"
+				IF_LT(AIR_SPEED_Z_VS_START,50) //even better than at start of turn so start over
+					DO (THERMALLING_TURN)
+				END
+			END  //repeat
+			IF_GE(AIR_SPEED_Z_VS_START,50) //better lift, turn 240 and shift circle
+				REPEAT(8) //13 sec =~ 240 deg = 7 * "30 deg per loop"
+					DO (THERMALLING_TURN)
+				END  //repeat
+				DO (THERMALLING_SHIFT_CIRCLE)  // small cicle shift
+			END
+
+		END
+	END
+	END
+
+
+
+	TO (THERMALLING_TURN)
+		IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
+			EXEC (LOGO_MAIN)
+		END
+
+		RT_BANK(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
 	END
 	END
 
 
 
 	TO (THERMALLING_SHIFT_CIRCLE)
-		//Level off/Shift the circle for 3 sec, log the action as a "waypoint"
-		SET_INTERRUPT(INT_THERMALLING)
-		SET_SPEED(DESIRED_SPEED_SLOW_F4)
-		IF_EQ( MOTOR_OFF_TIMER,0 )  //motor has stopped more than 4 secons ago
-			BANK_1S(0)
-			BANK_1S(0)
-			BANK_1S(0)
-		END
-		IF_GT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)		
-			EXEC (WAIT_DECREASE_CLIMBRATE)
-		END
-		EXEC (LOGO_MAIN)
+		//Level off/Shift the circle for 1 sec, log the action as a "waypoint"
+		BANK_1S(0)
+	END
+	END
+
+
+
+	TO (BETTER_LIFT)
+		//indicates lift is better then it was at the beginnning of the thermalling turn
+		//try to core the thermal in small steps
+
+		BANK_1S(0)     // reduce bank for one sec, shifting the circle slightly
 	END
 	END
 
@@ -1340,8 +1355,8 @@ const struct logoInstructionDef instructions[] = {
 
 				RT(10)
 				FD(DESIRED_SPEED_FAST_FMIN4/10)	//"SINK"
-			END 
-		END 
+			END
+		END
 
 		// end with straight (not likely) with checks
 		PARAM_SET(5)
@@ -1446,17 +1461,6 @@ const struct logoInstructionDef instructions[] = {
 
 
 
-	TO (BETTER_LIFT)
-		//indicates lift is better then it was at the beginnning of the thermalling turn
-
-		//FD(DESIRED_SPEED_NORMAL_F0/10)
-		BANK_1S(0)
-		EXEC(LOGO_MAIN)
-	END
-	END
-
-
-
 	TO (RESET_NAVIGATION)
 		//the pilot has changed the angle of the aircraft, now use that as the new heading
 		PEN_UP
@@ -1502,7 +1506,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (CHECK_GF)
-		IF_EQ(GEOFENCE_STATUS,2 )              //outside geofence  
+		IF_EQ(GEOFENCE_STATUS,2 )              //outside geofence
 			EXEC (PLAN_RETURN_GEOFENCE)
 		END
 	END
@@ -1714,7 +1718,7 @@ const struct logoInstructionDef instructions[] = {
 		REPEAT(3)
 			DO (CHECK_PILOT)
 			DO (CHECK_GF)
-	
+
 			DO (CHECK_LAND)
 			DO (CHECK_SINK)
 			DO (CHECK_THERMAL)
