@@ -1233,24 +1233,28 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (WAIT_DECREASE_CLIMBRATE)
-		//intial turn after rising air has been detected
+	    //intial turn after rising air has been detected
 		//after decrease, it is assumed the core has been crossed
-		//then circle the core, first a tighter half turn, then a wider one
+		//then first a tighter half turn, then a wider one
+		//consecutive turns use fine shifts if needed
 
 		SET_INTERRUPT(INT_THERMALLING)
 		FLAG_ON(F_LAND)    //Motor off
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
 		//wait up to 6 sec for the climbrate to decrease, keep the best climbrate
-		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta
+		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 		BANK_1S(0)
 		REPEAT(5)    //6 sec
-			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
-			IF_GT(PARAM,0)
+			IF_NE( MOTOR_OFF_TIMER,0 )   //only with motor off
+				EXEC (LOGO_MAIN)
+			END
+			IF_GE(PARAM,0)
 				BANK_1S(0)
+				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			END
 		END
 
-		//do while turn upto 210 deg if climb does not improve irt startvalue	if improves: do BETTER_LIFT
+		//do while turn upto 210 deg if climb does not improve irt startvalue
 		REPEAT(7) //11 sec =~ 210 deg = 7 * "30 deg per loop"
 			IF_EQ( MOTOR_OFF_TIMER,0 )   //only with motor off
 				//Custom solution using new command RT_BANK()
@@ -1260,7 +1264,8 @@ const struct logoInstructionDef instructions[] = {
 			END
 		END  //repeat
 
-		//Shift the circle for 3 sec
+		//Shift the circle for 4 sec
+		DO (THERMALLING_SHIFT_CIRCLE)
 		DO (THERMALLING_SHIFT_CIRCLE)
 		DO (THERMALLING_SHIFT_CIRCLE)
 		DO (THERMALLING_SHIFT_CIRCLE)
@@ -1268,18 +1273,16 @@ const struct logoInstructionDef instructions[] = {
 		//now continue around the core
 		REPEAT_FOREVER
 
-			LOAD_TO_PARAM(AIR_SPEED_Z)    //to detect better lift
-			//do while turn upto 240 deg if climb does not improve irt startvalue	if improves, race to end of loop
-			REPEAT(8) //13 sec =~ 240 deg = 7 * "30 deg per loop"
-				IF_LT(AIR_SPEED_Z_VS_START,50) //even better than at start of turn so start over
-					DO (THERMALLING_TURN)
-				END
-			END  //repeat
-			IF_GE(AIR_SPEED_Z_VS_START,50) //better lift, turn 240 and shift circle
+			//do while climb improved irt last value	if decrease (past top), skip to shift loop
+			IF_GE(PARAM,0)
+				DO (THERMALLING_TURN)
+				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
+			ELSE //decreasing value must mean now in best part lift, turn 240 deg and shift circle
 				REPEAT(8) //13 sec =~ 240 deg = 7 * "30 deg per loop"
 					DO (THERMALLING_TURN)
-				END  //repeat
+				END
 				DO (THERMALLING_SHIFT_CIRCLE)  // small cicle shift
+				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			END
 
 		END
@@ -1293,7 +1296,12 @@ const struct logoInstructionDef instructions[] = {
 			EXEC (LOGO_MAIN)
 		END
 
-		RT_BANK(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
+		IF_EQ( MOTOR_OFF_TIMER,0 )   //only with motor off
+			//Custom solution using new command RT_BANK()
+			RT_BANK(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
+		ELSE
+			EXEC (LOGO_MAIN)
+		END
 	END
 	END
 
