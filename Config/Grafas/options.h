@@ -986,7 +986,7 @@
 // X is Longitude in degrees * 10^7
 // Y is Latitude in degrees * 10^7
 // Z is altitude above sea level, in meters, as a floating point value.
-// 
+//
 // If you are using waypoints for an autonomous landing, it is a good idea to set the altitude value
 // to be the altitude of the landing point, and then express the heights of all of the waypoints with
 // respect to the landing point.
@@ -996,7 +996,9 @@
 
 #define USE_FIXED_ORIGIN	    0
 //#define FIXED_ORIGIN_LOCATION	    { -1219950467, 374124664, 30.0 }	// A point in Baylands Park in Sunnyvale, CA
-#define FIXED_ORIGIN_LOCATION	    { 113480854, 472580108, 578 }	// Innsbruck, useful for X-Plane flight simulator
+//#define FIXED_ORIGIN_LOCATION	    { 113480854, 472580108, 578 }	// Innsbruck, useful for X-Plane flight simulator
+#define FIXED_ORIGIN_LOCATION	    { 518264641,  42985454, -1 }	// My home field
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Vehicle and Pilot Identification
