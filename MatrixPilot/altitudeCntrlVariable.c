@@ -78,16 +78,16 @@ int16_t rtl_pitch_down;
 #if ( THERMALLING_MISSION == 1 )
 #if ( HILSIM == 1 )
 static int32_t speed_height_old = 0;
-#endif 
+#endif
 static int16_t varioCounter = 0;            // 0..3 to create 1Hz from 4Hz
 extern int16_t vario;                       // in cm/s   used for Logo by  - defined in flightplan_logo.c and set in altitudeCntrlVariable.c
-static boolean motorClimbRunStarted;        // boolean climbing with motor so far this run 
+static boolean motorClimbRunStarted;        // boolean climbing with motor so far this run
 static int16_t avgMotorRunClimbrate;        // average climbrate in cm/s in this run
 static int16_t sinkMotorOffTimer;           // wait period to postpone climbing with motor due to sink  (30 sec)
 static int16_t motorClimbRunCount;          // counter (40Hz steps) for motor run
 static float avgMotorClimbrate;             // average climbrate after settle all runs in m/s
 static float steadyClimbPowerFactor = 0.8;  // reduce throttle for a 0.7 m/s climb, start with 0.7
-static boolean motorClimbSinkStarted;       // boolean climbing with motor in sink between 50 and 50 m 
+static boolean motorClimbSinkStarted;       // boolean climbing with motor in sink between 50 and 50 m
 #endif  //THERMALLING_MISSION
 
 // Internal computed variables.
@@ -150,7 +150,7 @@ static int32_t excess_energy_height(int16_t targetAspd, int16_t acutalAirspeed) 
 {
 	union longww accum;
 
-	// targetAspd * 6 / 10 
+	// targetAspd * 6 / 10
 	// 1/10 to scale from cm/s to dm/s
 	// 6 is ~1/(2*g) with adjustments?
 	accum.WW = __builtin_mulsu(targetAspd, 39321);
@@ -205,7 +205,7 @@ static void set_throttle_control(int16_t throttle)
 		{
 			if (temp < udb_pwTrim[THROTTLE_INPUT_CHANNEL]) throttle = udb_pwTrim[THROTTLE_INPUT_CHANNEL] - throttleIn;
 		}
-		
+
 		throttle_control = throttle;
 	}
 	else
@@ -342,7 +342,7 @@ static void normalAltitudeCntrl(void)
 			if (desiredHeight < (int16_t)(height_target_min)) desiredHeight = (int16_t)(height_target_min);
 			if (desiredHeight > (int16_t)(height_target_max)) desiredHeight = (int16_t)(height_target_max);
 		}
-		
+
 		if (throttleInOffset < (int16_t)(DEADBAND) && udb_flags._.radio_on)
 		{
 			pitchAltitudeAdjust = 0;
@@ -389,13 +389,13 @@ static void normalAltitudeCntrl(void)
 
 
 #if ( THERMALLING_MISSION == 1 )
-			//motorClimbRunStarted - boolean climbing with motor so far this run 
+			//motorClimbRunStarted - boolean climbing with motor so far this run
 			//avgMotorRunClimbrate - average climbrate of seconds in this run
 			//sinkMotorOffTimer - wait period to postpone climbing with motor due to sink
-			//should save battery power by not climbing in sink, but dropping to and maintaining minimal altitude 
+			//should save battery power by not climbing in sink, but dropping to and maintaining minimal altitude
 			//monitor mc, stop if avg since start is not minimal climb
 			//glide to minimal and/or wait 30 sec
-			// land flag off, alt set to 50m
+			//land flag off, alt set to 50m
 			//normal mc: use avg power for climbrate 0.7
 			if (state_flags._.GPS_steering && ( desiredHeight > 70 ) )   //LOGO only, and not in landing phase.
 			{
@@ -508,7 +508,7 @@ static void normalAltitudeCntrl(void)
 						if (throttleAccum.WW > (int16_t)(max_throttle)) throttleAccum.WW = (int16_t)(max_throttle);
 						if(throttleAccum.WW < (int16_t)((float)(max_throttle) * 0.5))
 						{
-							 throttleAccum.WW = (int16_t)((float)(max_throttle) * 0.5);  //use at least minimal power below 60m  
+							 throttleAccum.WW = (int16_t)((float)(max_throttle) * 0.5);  //use at least minimal power below 60m
 						}
 					}
 					*/
@@ -517,9 +517,9 @@ static void normalAltitudeCntrl(void)
 					{
 						if ( (IMUlocationz._.W1) < 50 )
 						{
-							motorClimbSinkStarted = true;  // boolean climbing with motor in sink between 50 and 50 m 
+							motorClimbSinkStarted = true;  // boolean climbing with motor in sink between 50 and 50 m
 						}
-						if ( motorClimbSinkStarted)       
+						if ( motorClimbSinkStarted)
 						{
 							throttleAccum.WW = (int16_t)(max_throttle);
 						}
@@ -536,7 +536,7 @@ static void normalAltitudeCntrl(void)
 				}
 				else
 				{
-					if ( desiredHeight > 60 ) // not when landing
+					if ( desiredHeight > 60 ) // if not landing (in that case, don't modify throttleAccum.WW)
 					{
 						if ( (IMUlocationz._.W1) < 50 )
 						{
@@ -586,12 +586,12 @@ static void normalAltitudeCntrl(void)
 #if ( THERMALLING_MISSION == 1 )
 		if ( sinkMotorOffTimer > 0 )
 		{
-			sinkMotorOffTimer++; 
+			sinkMotorOffTimer++;
 			// this will suppress motor , climb was insufficient due to sink
 			if ( sinkMotorOffTimer > (40 * 30) )  //30 sec
 			{
 				motorClimbRunStarted = 0;	//motor climrate tuning must start over next time
-				sinkMotorOffTimer = 0;      //end suppress motor 
+				sinkMotorOffTimer = 0;      //end suppress motor
 			}
 		}
 #endif // ( THERMALLING_MISSION == 1 )

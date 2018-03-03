@@ -1273,16 +1273,20 @@ const struct logoInstructionDef instructions[] = {
 		//now continue around the core
 		REPEAT_FOREVER
 
-			//do while climb improved irt last value	if decrease (past top), skip to shift loop
-			IF_GE(PARAM,0)
-				DO (THERMALLING_TURN)
-				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
-			ELSE //decreasing value must mean now in best part lift, turn 240 deg and shift circle
-				REPEAT(8) //13 sec =~ 240 deg = 7 * "30 deg per loop"
-					DO (THERMALLING_TURN)
-				END
+			//only check climbrate 1 of 4 30 deg segments, to make small changes only
+			DO (THERMALLING_TURN)
+			DO (THERMALLING_TURN)
+			//store current vario value
+			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
+			DO (THERMALLING_TURN)
+			//read delta
+			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
+			//if climb improved 0.1 m/s irt last value, shortly reduce bank, shifting the cicle towards better climb
+			//ToDo - finetune
+			IF_GE(PARAM,10)
 				DO (THERMALLING_SHIFT_CIRCLE)  // small cicle shift
-				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
+			ELSE
+				DO (THERMALLING_TURN)
 			END
 
 		END
@@ -1829,7 +1833,7 @@ const struct logoInstructionDef instructions[] = {
 		LOAD_TO_PARAM(READ_DESIRED_SPEED)      //make script restartable, continue with last desiredSpeed
 
 		REPEAT_FOREVER
-			
+
 			IF_LT(PARAM,SPEED_MAX+0)
 				PARAM_ADD(1+0)          // Increases the target speed by x m/s   custom: 1 dm/s !
 			ELSE
@@ -1882,7 +1886,7 @@ const struct logoInstructionDef instructions[] = {
 						DO (PP_CRUISE)   	// glide, measure sinkrate
 					END
 				ELSE
-					DO (PP_MOTOR_CLIMB_FORWARD)  
+					DO (PP_MOTOR_CLIMB_FORWARD)
 				END
 			END
 		ELSE
@@ -1892,7 +1896,7 @@ const struct logoInstructionDef instructions[] = {
 			END
 		END
 
-		//prepare motor on, continue glide, but log it as motor to prevent motor influence  
+		//prepare motor on, continue glide, but log it as motor to prevent motor influence
 		DO (PP_MOTOR_CLIMB_FORWARD)            // log as motor
 		FLAG_OFF(F_LAND)    //Motor on
 	END
@@ -1912,14 +1916,14 @@ const struct logoInstructionDef instructions[] = {
 		FD(11)
 	END
 	END
-	
+
 
 	TO (PP_RETURN_MC_SOFT_GEOFENCE)   //use this for (wider) turns
 		DO (PP_CHECKS)
 		FD(23)
 	END
 	END
-	
+
 
 	TO (PP_CHECKS)        // is motor needed, landing requested, is pilot in control?
 		//see if calling subroutine needs to end
