@@ -1241,11 +1241,11 @@ const struct logoInstructionDef instructions[] = {
 		SET_INTERRUPT(INT_THERMALLING)
 		FLAG_ON(F_LAND)    //Motor off
 		SET_SPEED(DESIRED_SPEED_SLOW_F4)
-		//wait up to 6 sec for the climbrate to decrease, keep the best climbrate
+		//wait up to 6 sec for the climbrate to decrease
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
-		BANK_1S(0)
-		REPEAT(5)    //6 sec
-			IF_NE( MOTOR_OFF_TIMER,0 )   //only with motor off
+		PARAM_SET(0) //clear;
+		REPEAT(6)    //6 sec max
+			IF_NE( MOTOR_OFF_TIMER,0 )   //only with motor off at least 4 seconds ago
 				EXEC (LOGO_MAIN)
 			END
 			IF_GE(PARAM,0)
