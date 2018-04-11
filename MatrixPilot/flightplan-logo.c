@@ -1268,7 +1268,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
 					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
 
-					// 25: should be fd(groundspeed) in m from m/s (ideally), with added margen to keep turtle ahead
+					// 25: should be fd(groundspeed) in m from m/s (ideally), with added margin to keep turtle ahead
 					// selected a fixed number I used before, combined with servo calculation
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 25) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);

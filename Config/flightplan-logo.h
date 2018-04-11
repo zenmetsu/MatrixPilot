@@ -1044,12 +1044,12 @@ const struct logoInstructionDef instructions[] = {
 
 #if ( MODEL_GRAFAS == 1 )
 #define FINAL_ALT                      16  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
-#define SPEED_MIN			           97  // in dm/h     35 km/h	
-#define SPEED_MAX				      113  // in dm/h     41 km/h	
+#define SPEED_MIN			           97  // in dm/h     35 km/h
+#define SPEED_MAX				      113  // in dm/h     41 km/h
 #elif ( MODEL_LINEA == 1 )
 #define FINAL_ALT                      16  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
 #define SPEED_MIN			           95  // in dm/h      km/h
-#define SPEED_MAX				      105  // in dm/h      km/h	
+#define SPEED_MAX				      105  // in dm/h      km/h
 #else   //Fantasy
 #define FINAL_ALT                      18  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
 #define SPEED_MIN			          105  // in dm/h     38 km/h	10,56
@@ -1244,7 +1244,16 @@ const struct logoInstructionDef instructions[] = {
 		//wait up to 6 sec for the climbrate to decrease
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 		PARAM_SET(0) //clear;
-		REPEAT(6)    //6 sec max
+		REPEAT(4)    //4 sec max
+			IF_NE( MOTOR_OFF_TIMER,0 )   //wait for motor stop
+				BANK_1S(0)
+			END
+			IF_GE(PARAM,0)
+				BANK_1S(0)
+				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
+			END
+		END
+ 		REPEAT(2)    //2 sec max
 			IF_NE( MOTOR_OFF_TIMER,0 )   //only with motor off at least 4 seconds ago
 				EXEC (LOGO_MAIN)
 			END
@@ -1254,15 +1263,23 @@ const struct logoInstructionDef instructions[] = {
 			END
 		END
 
-		//do while turn upto 210 deg if climb does not improve irt startvalue
+		//do while turn 210 deg, aim for the starting point of a turn around the core
 		REPEAT(7) //11 sec =~ 210 deg = 7 * "30 deg per loop"
+			/*
 			IF_EQ( MOTOR_OFF_TIMER,0 )   //only with motor off
 				//Custom solution using new command RT_BANK()
 				DO (THERMALLING_TURN)
 			ELSE
 				EXEC (LOGO_MAIN)
 			END
+			*/
+			//use motor to compensate sink if turn takes us outside of the thermal
+			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)
+				FLAG_OFF(F_LAND)    //Motor on
+			END
+			RT_BANK(30)
 		END  //repeat
+		FLAG_ON(F_LAND)    //Motor off
 
 		//Shift the circle for 4 sec
 		DO (THERMALLING_SHIFT_CIRCLE)
