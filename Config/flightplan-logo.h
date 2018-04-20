@@ -1277,7 +1277,8 @@ const struct logoInstructionDef instructions[] = {
 			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)
 				FLAG_OFF(F_LAND)    //Motor on
 			END
-			RT_BANK(30)
+
+			DO (THERMALLING_TURN)
 		END  //repeat
 		FLAG_ON(F_LAND)    //Motor off
 
@@ -1287,8 +1288,24 @@ const struct logoInstructionDef instructions[] = {
 		DO (THERMALLING_SHIFT_CIRCLE)
 		DO (THERMALLING_SHIFT_CIRCLE)
 
+		//Wait for a climbrate decrease again
+		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
+		PARAM_SET(0) //clear;
+		REPEAT(6)    //6 sec max
+			IF_GE(PARAM,0)
+				BANK_1S(0)
+				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
+			END
+		END
+
 		//now continue around the core
 		REPEAT_FOREVER
+			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
+				EXEC (LOGO_MAIN)
+			END
+			IF_GT( MOTOR_OFF_TIMER,0 )   //only with motor off
+				EXEC (LOGO_MAIN)
+			END
 
 			//only check climbrate 1 of 4 30 deg segments, to make small changes only
 			DO (THERMALLING_TURN)
@@ -1313,16 +1330,8 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (THERMALLING_TURN)
-		IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
-			EXEC (LOGO_MAIN)
-		END
-
-		IF_EQ( MOTOR_OFF_TIMER,0 )   //only with motor off
-			//Custom solution using new command RT_BANK()
-			RT_BANK(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
-		ELSE
-			EXEC (LOGO_MAIN)
-		END
+		//Custom solution using new command RT_BANK()
+		RT_BANK(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
 	END
 	END
 
