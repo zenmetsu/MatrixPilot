@@ -238,7 +238,7 @@ fractional gliding_airspeed_pitch_adjust(void)
 	{
 #if (THERMALLING_MISSION == 1 )
 #if ( MY_PERSONAL_OPTIONS == 1 )
-	aspd_pitch_adj -= (signed int)( get_autopilotBrake() / 170 ) ; //with brakes active, maintain the same speed
+	aspd_pitch_adj -= (fractional)( get_autopilotBrake() / 100 ) ; //with brakes active, maintain the same speed
 #endif
 #endif
 	}
