@@ -252,7 +252,7 @@
 #if ( MODEL_GRAFAS == 1 && HILSIM == 0 )
 //Grafas
 
-#define RUDDER_OUTPUT_OFFSET                               50          // right = +  surface moves right, seen from behind
+#define RUDDER_OUTPUT_OFFSET                              -20          // right = +  surface moves right, seen from behind
 #define ELEVATOR_OUTPUT_OFFSET                            350          // up = +  nose up
 #define AILERON_RIGHT_OUTPUT_OFFSET                        50          // n  up = +
 #define AILERON_LEFT_OUTPUT_OFFSET                          0          // y  up = +

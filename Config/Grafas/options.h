@@ -751,8 +751,11 @@
 #define ZRATE_OFFSET  (  000 ) // not used by the UDB4
 */
 
-#if ( MODEL_LINEA == 1 )
+//#if ( MODEL_LINEA == 1 )
 //Linea Auav3
+
+//swapped to Grafas
+
 #define CUSTOM_OFFSETS
 #define XACCEL_OFFSET (208)
 #define YACCEL_OFFSET (209)
@@ -760,6 +763,7 @@
 #define XRATE_OFFSET  (-32)
 #define YRATE_OFFSET  (-37)
 #define ZRATE_OFFSET  (21)
+/*
 #else
 //Fantasy, Fantasy_Hil, Grafas  Auav3
 #define CUSTOM_OFFSETS
@@ -770,6 +774,7 @@
 #define YRATE_OFFSET  (289)
 #define ZRATE_OFFSET  (88)
 #endif
+*/
 
 // Rudder/Yaw Control Gains
 // YAWKP_RUDDER is the proportional feedback gain for rudder control of yaw orientation.
