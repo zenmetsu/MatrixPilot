@@ -1073,6 +1073,7 @@ const struct logoInstructionDef instructions[] = {
 #define INT_CRUISE                           20
 
 //Thermals
+#define THERMALLING                          14
 #define WAIT_DECREASE_CLIMBRATE              13
 #define THERMALLING_TURN                     15
 #define INT_THERMALLING                      16
@@ -1232,7 +1233,7 @@ const struct logoInstructionDef instructions[] = {
 	//Thermalling routines
 
 
-	TO (WAIT_DECREASE_CLIMBRATE)
+	TO (THERMALLING)
 	    //intial turn after rising air has been detected
 		//after decrease, it is assumed the core has been crossed
 		//then first a tighter half turn, then a wider one
@@ -1246,10 +1247,10 @@ const struct logoInstructionDef instructions[] = {
 		PARAM_SET(0) //clear;
 		REPEAT(4)    //4 sec max
 			IF_NE( MOTOR_OFF_TIMER,0 )   //wait for motor stop
-				BANK_1S(0)
+				DO (WAIT_DECREASE_CLIMBRATE)
 			END
 			IF_GE(PARAM,0)
-				BANK_1S(0)
+				DO (WAIT_DECREASE_CLIMBRATE)
 				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			END
 		END
@@ -1258,21 +1259,13 @@ const struct logoInstructionDef instructions[] = {
 				EXEC (LOGO_MAIN)
 			END
 			IF_GE(PARAM,0)
-				BANK_1S(0)
+				DO (WAIT_DECREASE_CLIMBRATE)
 				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			END
 		END
 
 		//do while turn 210 deg, aim for the starting point of a turn around the core
 		REPEAT(7) //11 sec =~ 210 deg = 7 * "30 deg per loop"
-			/*
-			IF_EQ( MOTOR_OFF_TIMER,0 )   //only with motor off
-				//Custom solution using new command RT_BANK()
-				DO (THERMALLING_TURN)
-			ELSE
-				EXEC (LOGO_MAIN)
-			END
-			*/
 			//use motor to compensate sink if turn takes us outside of the thermal
 			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)
 				FLAG_OFF(F_LAND)    //Motor on
@@ -1286,14 +1279,13 @@ const struct logoInstructionDef instructions[] = {
 		DO (THERMALLING_SHIFT_CIRCLE)
 		DO (THERMALLING_SHIFT_CIRCLE)
 		DO (THERMALLING_SHIFT_CIRCLE)
-		DO (THERMALLING_SHIFT_CIRCLE)
 
 		//Wait for a climbrate decrease again
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 		PARAM_SET(0) //clear;
 		REPEAT(6)    //6 sec max
 			IF_GE(PARAM,0)
-				BANK_1S(0)
+				DO (WAIT_DECREASE_CLIMBRATE)
 				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			END
 		END
@@ -1322,8 +1314,15 @@ const struct logoInstructionDef instructions[] = {
 			ELSE
 				DO (THERMALLING_TURN)
 			END
-
 		END
+	END
+	END
+
+
+
+	TO (WAIT_DECREASE_CLIMBRATE)
+		//Level off/Shift the circle for 1 sec, log the action as a "waypoint"
+		BANK_1S(0)
 	END
 	END
 
@@ -1593,7 +1592,7 @@ const struct logoInstructionDef instructions[] = {
 					//lift found
 					//keep flying straight until decreasing lift
 					//wait for decrease of lift
-					EXEC (WAIT_DECREASE_CLIMBRATE)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
+					EXEC (THERMALLING)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
 					//current is less
 					//now beyond the best climbrate..
 					//turn up to 270 deg + 3sec straight if not better
@@ -1606,7 +1605,7 @@ const struct logoInstructionDef instructions[] = {
 					//lift found
 					//keep flying straight until decreasing lift
 					//wait for decrease of lift
-					EXEC (WAIT_DECREASE_CLIMBRATE)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
+					EXEC (THERMALLING)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
 					//current is less
 					//now beyond the best climbrate..
 					//turn up to 270 deg + 3sec straight if not better
