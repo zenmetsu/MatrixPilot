@@ -1264,8 +1264,8 @@ const struct logoInstructionDef instructions[] = {
 			END
 		END
 
-		//do while turn 210 deg, aim for the starting point of a turn around the core
-		REPEAT(7) //11 sec =~ 210 deg = 7 * "30 deg per loop"
+		//do while turn 180 deg, aim for 4 sec behind the starting point for a turn around the core. compensate for the widening turn during the time it takes to level of
+		REPEAT(6) //9 sec =~ 180 deg = 6 * "30 deg per loop"
 			//use motor to compensate sink if turn takes us outside of the thermal
 			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)
 				FLAG_OFF(F_LAND)    //Motor on
