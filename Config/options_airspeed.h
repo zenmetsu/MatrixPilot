@@ -126,7 +126,7 @@
 #define AIRSPEED_PITCH_KI            0.010   // Integration rate.  High? = unstable, low? = slow response.
 #define AIRSPEED_PITCH_KI_MAX       10.0     // Limit of integration control in degrees.  Start with 5.0.
 
-#define MOTOR_ON_PITCH_UP           -2.0     // added feed forward pitch if motor on
+#define MOTOR_ON_PITCH_UP           -3.0     // added feed forward pitch if motor on
 
 #endif //Grafas
 

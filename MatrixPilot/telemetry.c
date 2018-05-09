@@ -954,11 +954,11 @@ void telemetry_output_8hz(void)
 #endif // MAG_YAW_DRIFT
 				    svs, hdop);
 #else  //MY_PERSONAL_OPTIONS
-					logoSubroutine = waypointIndex;  
+					logoSubroutine = waypointIndex;
 					if ( !state_flags._.GPS_steering )  //only if Auto/Logo is active
 					{
 						logoSubroutine = 0;
-					}	
+					}
 					serial_output("F2:T%li:S%d%d%d:N%li:E%li:A%li:W%i:"
 					              "a%i:b%i:c%i:d%i:e%i:f%i:g%i:h%i:i%i:"
 					              "c%u:s%i:cpu%u:"
@@ -968,7 +968,7 @@ void telemetry_output_8hz(void)
 					    rmat[0], rmat[1], rmat[2],
 					    rmat[3], rmat[4], rmat[5],
 					    rmat[6], rmat[7], rmat[8],
-					    (uint16_t)cog_gps.BB, sog_gps.BB, (uint16_t)udb_cpu_load(), 
+					    (uint16_t)cog_gps.BB, sog_gps.BB, (uint16_t)udb_cpu_load(),
 					    airspeed,
 					    estimatedWind[0], estimatedWind[1], estimatedWind[2],
 					    svs, hdop);
@@ -976,7 +976,7 @@ void telemetry_output_8hz(void)
 
 					// Approximate time passing between each telemetry line, even though
 					// we may not have new GPS time data each time through.
-					if (tow.WW > 0) tow.WW += 250; 
+					if (tow.WW > 0) tow.WW += 250;
 
 					// Save  pwIn and PwOut buffers for printing next time around
 					for (i = 0; i <= NUM_INPUTS; i++)
@@ -1140,7 +1140,11 @@ void telemetry_output_8hz(void)
 
 					serial_output("imx%i:imy%i:imz%i:lex%i:ley%i:lez%i:fgs%X:ofc%i:tx%i:ty%i:tz%i:G%d,%d,%d:",IMUlocationx._.W1,IMUlocationy._.W1,IMUlocationz._.W1,
 					    //locationErrorEarth[0], locationErrorEarth[1], locationErrorEarth[2],
-					    thermalSteps, logoProgramCode, logoProgramGroup,
+
+					    //thermalSteps,
+						get_barometer_altitude(),
+						
+						logoProgramCode, logoProgramGroup,
 					    state_flags.WW, osc_fail_count,
 					    IMUvelocityx._.W1, IMUvelocityy._.W1, vario,
 					    goal.x, goal.y, goal.z
@@ -1165,10 +1169,10 @@ void telemetry_output_8hz(void)
 #else
 	                (int16_t)0,
 #endif
-#if (ANALOG_CURRENT_INPUT_CHANNEL != CHANNEL_UNUSED)                        
+#if (ANALOG_CURRENT_INPUT_CHANNEL != CHANNEL_UNUSED)
 					battery_current._.W1, battery_mAh_used._.W1);
 #else
-					(int16_t)0, (int16_t)0);                    
+					(int16_t)0, (int16_t)0);
 #endif
 					serial_output("DH%i:",desiredHeight);
 #else  //MY_PERSONAL_OPTIONS
@@ -1181,32 +1185,32 @@ void telemetry_output_8hz(void)
 							motorSecondsSUE++;
 						}
 						//store start of flight
-						if (flightTimeSUE > 0) 
+						if (flightTimeSUE > 0)
 						{
 							//add one second
 							flightTimeSUE++;
 						}
 						else
-						{	
+						{
 							if (udb_pwOut[THROTTLE_OUTPUT_CHANNEL] > 2512 ) // Throttle > 10% = flight start
 							{
 								flightTimeSUE = 1;
 							}
 						}
-					}	
+					}
 					//serial_output("ftt%i:",
 					//    flightTimeSUE);
 					//serial_output("mts%i:",
 					//	motorSecondsSUE);
-					
+
 					//serial_output("bmv%i:",
 					//  battery_voltage._.W1);
-		
+
 					avgBatteryVoltage = (avgBatteryVoltage * 119.0 + (float)battery_voltage._.W1 )/120.0;   //heavy filter for voltage
 					serial_output("bmv%i:",
 					    (int16_t)avgBatteryVoltage);
-					    
-					    
+
+
 					//serial_output("bma%i:",
 					//	(int16_t)(get_barometer_altitude()/10) );          //from estAltitude.c   in cm
 #endif  //MY_PERSONAL_OPTIONS
@@ -1250,7 +1254,7 @@ void telemetry_output_8hz(void)
 				//determines if we are flying from my regular flying field; in that case we will move home to the landing point (angle 130, 60m) for convenience
 /*
 #if ( HILSIM == 1 )
-				//F13:week15810:origN521729011:origE44317998:origA18:	52.1677,4.42448					
+				//F13:week15810:origN521729011:origE44317998:origA18:	52.1677,4.42448
 				if ( (lat_origin.WW > 521720000 ) && (lat_origin.WW < 521730000 ) && ( lon_origin.WW > 44310000 ) && ( lon_origin.WW < 44320000 ) )
 				{
 //					regularFlyingField = true;
