@@ -1248,10 +1248,11 @@ const struct logoInstructionDef instructions[] = {
 		REPEAT(4)    //4 sec max
 			IF_NE( MOTOR_OFF_TIMER,0 )   //wait for motor stop
 				DO (WAIT_DECREASE_CLIMBRATE)
-			END
-			IF_GE(PARAM,0)
-				DO (WAIT_DECREASE_CLIMBRATE)
-				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
+			ELSE
+				IF_GE(PARAM,0)
+					DO (WAIT_DECREASE_CLIMBRATE)
+					LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
+				END
 			END
 		END
  		REPEAT(2)    //2 sec max
@@ -1263,12 +1264,19 @@ const struct logoInstructionDef instructions[] = {
 				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			END
 		END
+		
+		//lock turn direction here
+		// LOAD_TO_PARAM(SET_DIRECTION)  //todo
 
 		//do while turn 180 deg, aim for 4 sec behind the starting point for a turn around the core. compensate for the widening turn during the time it takes to level of
 		REPEAT(6) //9 sec =~ 180 deg = 6 * "30 deg per loop"
 			//use motor to compensate sink if turn takes us outside of the thermal
 			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)
 				FLAG_OFF(F_LAND)    //Motor on
+			END
+			//and off when no longer needed
+ 			IF_GT(AIR_SPEED_Z,MOTOR_CLIMB_MAX)
+				FLAG_ON(F_LAND)    //Motor off
 			END
 
 			DO (THERMALLING_TURN)

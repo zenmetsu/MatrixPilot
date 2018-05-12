@@ -1142,7 +1142,7 @@ void telemetry_output_8hz(void)
 					    //locationErrorEarth[0], locationErrorEarth[1], locationErrorEarth[2],
 
 					    //thermalSteps,
-						get_barometer_altitude(),
+						(int16_t)(get_barometer_altitude()/10) ),
 						
 						logoProgramCode, logoProgramGroup,
 					    state_flags.WW, osc_fail_count,
