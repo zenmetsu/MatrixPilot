@@ -1266,7 +1266,7 @@ const struct logoInstructionDef instructions[] = {
 		END
 		
 		//lock turn direction here
-		// LOAD_TO_PARAM(SET_DIRECTION)  //todo
+		LOAD_TO_PARAM(SET_DIRECTION) 
 
 		//do while turn 180 deg, aim for 4 sec behind the starting point for a turn around the core. compensate for the widening turn during the time it takes to level of
 		REPEAT(6) //9 sec =~ 180 deg = 6 * "30 deg per loop"

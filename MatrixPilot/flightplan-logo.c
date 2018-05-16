@@ -94,6 +94,7 @@ enum {
 	READ_FLY_COMMAND_COUNTER,
 	FORCE_FINISH_BAD_NAV,
 	FORCE_RESET,
+	SET_DIRECTION,
 #endif
 	PARAM
 };
@@ -290,6 +291,9 @@ int16_t fixedBankActiveCounter; //  used for Logo  - for RT_BANK and BANK_1S com
 boolean fixedBankActive = false; // used for Logo  - for RT_BANK and BANK_1S commands
 boolean angleTargetActive = false; // used for Logo  - for RT_BANK command
 int16_t fixedBankDeg;  // deg bank, used for Logo  - for RT_BANK and BANK_1S commands
+static int16_t oldAngle;      // for SET_DIRECTION and FIXED_BANK_ROTATE   set by BANK_1S
+static boolean rotateClockwise;  //topview   for SET_DIRECTION and FIXED_BANK_ROTATE
+
 #ifndef THERMALLING_TURN     // in case not specified
 #define THERMALLING_TURN  0  // not implemented
 #endif
@@ -661,8 +665,11 @@ void flightplan_logo_update(void)
 			else    // RT_BANK  
 			{
 				//check if target of 15 deg right has been reached  or timer times out
-				if ( (fixedBankActiveCounter <= 0) | ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) < 180 )) // closest direction is right of target
-
+				if ( (fixedBankActiveCounter <= 0) | 
+					 ( rotateClockwise && ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) < 180 ) | 
+					 ( !rotateClockwise && ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) > 180 ) ) ) 
+					 )// closest direction is right of target
+                
 				//use Gps heading
 				//if ( ( ( cog_gpsBB - fixedBankTargetAngle + 360) % 360 ) < 180 ) // closest direction is right of target
 				{
@@ -1103,6 +1110,12 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			*/
 			return 0;
 		}
+		case SET_DIRECTION: // used by FIXED_BANK_ROTATE routine to sigmal left or right rotation
+		{
+			// if angle decreased: right turn
+			rotateClockwise = ( ( ( get_current_angle() - oldAngle + 360) % 360 ) > 180 );
+			return 0;
+		}
 
 #endif  //THERMALLING_MISSION
 
@@ -1257,8 +1270,15 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					//USE_CURRENT_ANGLE
 					turtleAngles[currentTurtle] = get_current_angle();
 					
-					//rotate turtle too, like RT(). Set the rotation target 30 deg to the right
-					fixedBankTargetAngle = turtleAngles[currentTurtle] + 30; // ~0.5 - 1 sec == 30 deg headingchange
+					//rotate turtle too, like RT(). Set the rotation target 30 deg to the right or left
+					if ( rotateClockwise )  //topview
+					{
+						fixedBankTargetAngle = turtleAngles[currentTurtle] + 30; // ~0.5 - 1 sec == 30 deg headingchange
+					}
+					else
+					{	
+						fixedBankTargetAngle = turtleAngles[currentTurtle] - 30; // ~0.5 - 1 sec == 30 deg headingchange
+					}	
 					//fixedBankTargetAngle = get_current_angle() + 30; // ~0.5 - 1 sec == 30 deg headingchange
 					while (fixedBankTargetAngle < 0) fixedBankTargetAngle += 360;
 					fixedBankTargetAngle = fixedBankTargetAngle % 360;
@@ -1295,6 +1315,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 25) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);
 
+                    oldAngle = get_current_angle();  //for SET_DIRECTION
 					fixedBankDeg = instr.arg;  //controls roll
 					fixedBankActiveCounter = 40; //40Hz = 1 sec
 					fixedBankActive = true; 
