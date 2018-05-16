@@ -1274,10 +1274,12 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					if ( rotateClockwise )  //topview
 					{
 						fixedBankTargetAngle = turtleAngles[currentTurtle] + 30; // ~0.5 - 1 sec == 30 deg headingchange
+						fixedBankDeg = instr.arg;  //controls roll and yaw,
 					}
 					else
 					{	
 						fixedBankTargetAngle = turtleAngles[currentTurtle] - 30; // ~0.5 - 1 sec == 30 deg headingchange
+						fixedBankDeg = -instr.arg;  //controls roll and yaw,
 					}	
 					//fixedBankTargetAngle = get_current_angle() + 30; // ~0.5 - 1 sec == 30 deg headingchange
 					while (fixedBankTargetAngle < 0) fixedBankTargetAngle += 360;
@@ -1293,7 +1295,6 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 25) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);
 
-					fixedBankDeg = instr.arg;  //controls roll and yaw,
 					fixedBankActiveCounter = 80; //40Hz = 2 sec
 					fixedBankActive = true;     //controls roll and yaw, will be reset when rotation is reached
 					angleTargetActive = true;
