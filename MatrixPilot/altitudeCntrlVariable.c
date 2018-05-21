@@ -519,9 +519,17 @@ static void normalAltitudeCntrl(void)
 						{
 							motorClimbSinkStarted = true;  // boolean climbing with motor in sink between 50 and 50 m
 						}
-						if ( motorClimbSinkStarted)
+						if ( motorClimbSinkStarted )
 						{
-							throttleAccum.WW = (int16_t)(max_throttle);
+							if ( vario > 70 )
+							{
+								// reduce throttle for a 0.7 m/s climb
+								throttleAccum.WW = (int16_t)((float)(throttleAccum.WW) * steadyClimbPowerFactor);
+							}
+							else
+							{
+								throttleAccum.WW = (int16_t)(max_throttle);
+							}
 						}
 						else
 						{
