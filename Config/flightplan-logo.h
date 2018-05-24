@@ -89,7 +89,7 @@
 
 // RT(x)                - Rotate the turtle to the right by x degrees.
 // LT(x)                - Rotate the turtle to the left by x degrees.
-// RT_BANK              - Perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored (THERMALLING_MISSION)
+// FIXED_BANK_ROTATE              - Perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored (THERMALLING_MISSION)
 // BANK_1S              - Perform level flight for 1 second, position/navigation will be ignored. This is used for centering in thermals (THERMALLING_MISSION)
 // SET_ANGLE(x)         - Set the turtle to point x degrees clockwise from N.
 // USE_CURRENT_ANGLE    - Aim the turtle in the direction that the plane is currently headed.
@@ -1337,8 +1337,8 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (THERMALLING_TURN)
-		//Custom solution using new command RT_BANK()
-		RT_BANK(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
+		//Custom solution using new command FIXED_BANK_ROTATE()
+		FIXED_BANK_ROTATE(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
 	END
 	END
 

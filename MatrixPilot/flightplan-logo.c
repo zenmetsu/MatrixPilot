@@ -111,7 +111,7 @@ enum {
 
 #define _FD(x, fl, pr)          {3,   fl,  pr,  0,   x},
 #if ( THERMALLING_MISSION == 1 )
-#define _RT_BANK(x, fl, pr)     {3,   fl,  pr,  1,   x},  //custom command
+#define _FIXED_BANK_ROTATE(x, fl, pr)     {3,   fl,  pr,  1,   x},  //custom command
 #define _BANK_1S(x, fl, pr)    	{3,   fl,  pr,  2,   x},  //custom command
 #endif
 
@@ -170,7 +170,7 @@ enum {
 #define BK_PARAM                _FD(-1, 1, 1)
 
 #if ( THERMALLING_MISSION == 1 )
-#define RT_BANK(x)              _RT_BANK(x, 1, 0)           //custom command
+#define FIXED_BANK_ROTATE(x)              _FIXED_BANK_ROTATE(x, 1, 0)           //custom command
 #define BANK_1S(x)             	_BANK_1S(x, 1, 0)        //custom command
 #endif
 
@@ -286,11 +286,11 @@ static int16_t numInstructionsInCurrentSet = NUM_INSTRUCTIONS;
 #if ( THERMALLING_MISSION == 1 )
 int16_t vario = 0;// in cm/s ,used for Logo  - defined in flightplan_logo.c and set in altitudeCntrlVariable.c - running average (3s)
 static int16_t vario_old = 0;// in cm/s ,used for AIR_SPEED_Z_DELTA
-int16_t fixedBankTargetAngle = 0; // heading,  used for Logo  - for RT_BANK command
-int16_t fixedBankActiveCounter; //  used for Logo  - for RT_BANK and BANK_1S commands
-boolean fixedBankActive = false; // used for Logo  - for RT_BANK and BANK_1S commands
-boolean angleTargetActive = false; // used for Logo  - for RT_BANK command
-int16_t fixedBankDeg;  // deg bank, used for Logo  - for RT_BANK and BANK_1S commands
+int16_t fixedBankTargetAngle = 0; // heading,  used for Logo  - for FIXED_BANK_ROTATE command
+int16_t fixedBankActiveCounter; //  used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
+boolean fixedBankActive = false; // used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
+boolean angleTargetActive = false; // used for Logo  - for FIXED_BANK_ROTATE command
+int16_t fixedBankDeg;  // deg bank, used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
 static int16_t oldAngle;      // for SET_DIRECTION and FIXED_BANK_ROTATE   set by BANK_1S
 static boolean rotateClockwise;  //topview   for SET_DIRECTION and FIXED_BANK_ROTATE
 
@@ -662,7 +662,7 @@ void flightplan_logo_update(void)
 					process_instructions();  //as if arrived
 				}
 			}
-			else    // RT_BANK  
+			else    // FIXED_BANK_ROTATE  
 			{
 				//check if target of 15 deg right has been reached  or timer times out
 				if ( (fixedBankActiveCounter <= 0) | 
@@ -1263,9 +1263,9 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 				break;
 
 #if ( THERMALLING_MISSION == 1 )
-				case 1: // RT_BANK
+				case 1: // FIXED_BANK_ROTATE
 				{
-					//rotate 30 deg right wirh a fixed bank or timeout after 4 sec
+					//rotate 30 deg right with a fixed bank or timeout after 2 sec
 					
 					//USE_CURRENT_ANGLE
 					turtleAngles[currentTurtle] = get_current_angle();
