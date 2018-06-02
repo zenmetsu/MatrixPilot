@@ -1245,6 +1245,7 @@ const struct logoInstructionDef instructions[] = {
 		//wait up to 6 sec for the climbrate to decrease
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 		PARAM_SET(0) //clear;
+/*
 		REPEAT(4)    //4 sec max
 			IF_NE( MOTOR_OFF_TIMER,0 )   //wait for motor stop
 				DO (WAIT_DECREASE_CLIMBRATE)
@@ -1264,9 +1265,17 @@ const struct logoInstructionDef instructions[] = {
 				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			END
 		END
-		
+*/
+ 		REPEAT(6)    //6 sec max
+			IF_GE(PARAM,0)
+				DO (WAIT_DECREASE_CLIMBRATE)
+				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
+			END
+		END
+
+
 		//lock turn direction here
-		LOAD_TO_PARAM(SET_DIRECTION) 
+		LOAD_TO_PARAM(SET_DIRECTION)
 
 		//do while turn 180 deg, aim for 4 sec behind the starting point for a turn around the core. compensate for the widening turn during the time it takes to level of
 		REPEAT(6) //9 sec =~ 180 deg = 6 * "30 deg per loop"
@@ -1288,6 +1297,10 @@ const struct logoInstructionDef instructions[] = {
 		DO (THERMALLING_SHIFT_CIRCLE)
 		DO (THERMALLING_SHIFT_CIRCLE)
 
+		IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
+			EXEC (LOGO_MAIN)
+		END
+
 		//Wait for a climbrate decrease again
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 		PARAM_SET(0) //clear;
@@ -1307,7 +1320,7 @@ const struct logoInstructionDef instructions[] = {
 				EXEC (LOGO_MAIN)
 			END
 
-			//only check climbrate 1 of 4 30 deg segments, to make small changes only
+			//only check climbrate 1 of 3 30 deg segments, to make small changes only
 			DO (THERMALLING_TURN)
 			DO (THERMALLING_TURN)
 			//store current vario value
@@ -1321,6 +1334,9 @@ const struct logoInstructionDef instructions[] = {
 				DO (THERMALLING_SHIFT_CIRCLE)  // small cicle shift
 			ELSE
 				DO (THERMALLING_TURN)
+			END
+			IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
+				EXEC (LOGO_MAIN)
 			END
 		END
 	END
@@ -1593,7 +1609,7 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (CHECK_THERMAL)
 		//check for thermals
-		IF_GE( ALT,MOTOR_ON_IN_SINK_ALT+10)
+		IF_GE( ALT,MOTOR_ON_IN_SINK_ALT+15)
 			IF_EQ( MOTOR_OFF_TIMER,0 )  //motor has stopped more than 4 secons ago
 				//glided into a thermal
 				IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)  //>= 0.2 m/s climb is the trigger, also check GEOFENCE
@@ -1666,6 +1682,13 @@ const struct logoInstructionDef instructions[] = {
 		IF_LT(ALT, MOTOR_ON_TRIGGER_ALT)            // not low,  check every cycle
 			IF_GT(THROTTLE_INPUT_CHANNEL, 3400)     // matches level at wich ESC would start motor, which is close to full throttle
 				FLAG_OFF(F_LAND)                    //Motor on
+			END
+		END
+		IF_GT(ALT, MOTOR_ON_TRIGGER_ALT+3)            // delay from 70m motor start
+			IF_EQ(READ_F_LAND,0)                      // motor is requested
+			    IF_EQ( MOTOR_OFF_TIMER,0 )            // but is not running
+					FLAG_ON(F_LAND)                   // give up 
+				END	
 			END
 		END
 		IF_GT(ALT,MOTOR_OFF_TRIGGER_ALT)             //settle into gliding
