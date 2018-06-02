@@ -37,10 +37,16 @@ static long barometer_altitude;        // above sea level altitude - ASL (millim
 long barometer_pressure;
 int16_t barometer_temperature;
 float sea_level_pressure;
+#if ( THERMALLING_MISSION == 1 )
+static long barometer_vert_velocity; //new-old for vario  millimeters/sec
+#endif  //THERMALLING_MISSION
 
 inline int16_t get_barometer_temperature(void)   { return barometer_temperature; }
 inline long get_barometer_pressure(void)     { return barometer_pressure; }
 inline long get_barometer_altitude(void)     { return barometer_altitude; }
+#if ( THERMALLING_MISSION == 1 )
+inline long get_barometer_vert_velocity(void) { return barometer_vert_velocity; }
+#endif  //THERMALLING_MISSION
 
 int16_t barometerInterval = 0;
 /**
@@ -84,6 +90,10 @@ void estAltitude(void)
 		{
 			
 			barometer_alt = 44330.0f * ((1-pow((pressure_ambient/sea_level_pressure),(1/5.255f)))); // Meters
+
+#ifdef MY_PERSONAL_OPTIONS
+			barometer_vert_velocity = (long)(barometer_alt * 1000) - barometer_altitude;  //new-old for vario  millimeters/sec
+#endif // MY_PERSONAL_OPTIONS
 			barometer_altitude = (long)(barometer_alt * 1000); // millimeters
 #ifdef USE_DEBUG_IO
 			// estimate sea level pressure assuming we're still on the ground

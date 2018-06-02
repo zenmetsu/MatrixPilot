@@ -1,0 +1,14 @@
+diff a/Tools/flight_analyzer/flan waypoints per subroutine.pyw b/Tools/flight_analyzer/flan waypoints per subroutine.pyw	(rejected hunks)
+@@ -2290,7 +2290,11 @@
+     initial_points = 10 # no. log entries to find origin at start if no F13 format line
+     
+     t.close()
+-
++    if log_book.gps_parse_errors > 0:
++        showinfo(title="Excessive GPS Parse Errors\n" ,
++                         message = "There appear to be gps parsing errors recorded " +
++                                    "in this telemetry file. Please review the data in your raw telemetry file " +
++                                     "and check your gps connections carefully.\n")
+     if telemetry_restarts > 1 :
+         showinfo(title ="Multiple Telemetry Starts in this File\n" ,      
+                        message = "It appears that this telemetry has multiple\n" +

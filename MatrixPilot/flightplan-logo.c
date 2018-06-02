@@ -68,13 +68,34 @@ enum {
 	ANGLE_TO_GOAL,
 	REL_ANGLE_TO_HOME,
 	REL_ANGLE_TO_GOAL,
+#if ( THERMALLING_MISSION == 1 )  //custom commands
+	REL_ANGLE_TO_OPPOSITE, 
+	REL_ANGLE_TO_WIND,
+#endif
 	GROUND_SPEED,
 	AIR_SPEED,
-	AIR_SPEED_Z,
+	AIR_SPEED_Z,   // if THERMALLING_MISSION custom command
 	WIND_SPEED,
 	WIND_SPEED_X,
 	WIND_SPEED_Y,
 	WIND_SPEED_Z,
+	WIND_FROM_ANGLE,
+#if ( THERMALLING_MISSION == 1 )  //custom system values
+	BATTERY_VOLTAGE,
+	AIR_SPEED_Z_DELTA,
+	AIR_SPEED_Z_VS_START,
+	READ_F_LAND,
+ 	GEOFENCE_STATUS,
+	GEOFENCE_TURN,
+	MOTOR_OFF_TIMER,
+	READ_DESIRED_SPEED,
+	READ_THROTTLE_OUTPUT_CHANNEL,
+	FORCE_CROSS_FINISH_LINE,
+	READ_FLY_COMMAND_COUNTER,
+	FORCE_FINISH_BAD_NAV,
+	FORCE_RESET,
+	SET_DIRECTION,
+#endif
 	PARAM
 };
 
@@ -89,6 +110,10 @@ enum {
 #define _EXEC(fn, x, pr)        {10,  0,   pr,  fn,  x},
 
 #define _FD(x, fl, pr)          {3,   fl,  pr,  0,   x},
+#if ( THERMALLING_MISSION == 1 )
+#define _FIXED_BANK_ROTATE(x, fl, pr)     {3,   fl,  pr,  1,   x},  //custom command
+#define _BANK_1S(x, fl, pr)    	{3,   fl,  pr,  2,   x},  //custom command
+#endif
 
 #define _RT(x, pr)              {4,   0,   pr,  0,   x},
 #define _SET_ANGLE(x, pr)       {4,   0,   pr,  1,   x},
@@ -143,6 +168,11 @@ enum {
 #define BK(x)                   _FD(-x, 1, 0)
 #define FD_PARAM                _FD(1, 1, 1)
 #define BK_PARAM                _FD(-1, 1, 1)
+
+#if ( THERMALLING_MISSION == 1 )
+#define FIXED_BANK_ROTATE(x)              _FIXED_BANK_ROTATE(x, 1, 0)           //custom command
+#define BANK_1S(x)             	_BANK_1S(x, 1, 0)        //custom command
+#endif
 
 #define RT(x)                   _RT(x, 0)
 #define LT(x)                   _RT(-x, 0)
@@ -253,14 +283,116 @@ static union longww absoluteXLong;
 static struct logoInstructionDef *currentInstructionSet = (struct logoInstructionDef*)instructions;
 static int16_t numInstructionsInCurrentSet = NUM_INSTRUCTIONS;
 
+#if ( THERMALLING_MISSION == 1 )
+int16_t vario = 0;// in cm/s ,used for Logo  - defined in flightplan_logo.c and set in altitudeCntrlVariable.c - running average (3s)
+static int16_t vario_old = 0;// in cm/s ,used for AIR_SPEED_Z_DELTA
+int16_t fixedBankTargetAngle = 0; // heading,  used for Logo  - for FIXED_BANK_ROTATE command
+int16_t fixedBankActiveCounter; //  used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
+boolean fixedBankActive = false; // used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
+boolean angleTargetActive = false; // used for Logo  - for FIXED_BANK_ROTATE command
+int16_t fixedBankDeg;  // deg bank, used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
+static int16_t oldAngle;      // for SET_DIRECTION and FIXED_BANK_ROTATE   set by BANK_1S
+static boolean rotateClockwise;  //topview   for SET_DIRECTION and FIXED_BANK_ROTATE
+
+#ifndef THERMALLING_TURN     // in case not specified
+#define THERMALLING_TURN  0  // not implemented
+#endif
+static int16_t get_current_angle(void);
+static int16_t motorOffTimer = 0;
+static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
+static float avgBatteryVoltage = 110;  //kickstart average filter with nominal value; it only starts when LOGO starts      
+static int16_t flyCommandCounter = 0;  //count up 40 times per sec when in a fly command
+#if ( MY_PERSONAL_OPTIONS == 1 )
+boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c 
+boolean forceCrossFinishLine;   //used by interrupt routine to sigmal an event that needs immediate action
+static boolean forceFinishReset = false;   //used by interrupt routine to sigmal an event that needs immediate action
+#endif
+
+
+//Geofence
+
+// define a struct with geofence shapes
+typedef struct tag_geofenceShape {
+	float ellips_diameter_x;
+	float ellips_diameter_y;
+	float fuzzy_factor;
+	float linear_x_slope;
+	float linear_y_slope;
+	float offset_x_plus_y;
+	int16_t sign;  
+} geofenceShape;
+
+//define an array of geofence shapes - define on what side of the lines the aicraft should be
+//shapes can be any combination of lines, circles and ellipses
+//Calculating the parameters:
+//LOGO defines HOME as {x, y} = {0,0}. This is the centre of the geofence
+//For a straight line, or the longitudinal axis of an ellipse:
+//How many meters is the line from Home to North? "Fill it in at offset_x_plus_y.
+//If x 'x + 1, what happens to y. Devide by 1000. use this in linear_y_slope  .
+//For an ellipse
+//What is the biggest East-West distance from your field? "The root of it? => 1 / ellips_diameter_x.  Devide by 1000
+//What is the greatest distance north-south from your field? "The root of it? => 1 / ellips_diameter_y.   Devide by 1000
+//                        (Square to put tilted ellipse)
+//For a circle:
+//Above you have already completed the same for ellips_diameter_x and ellips_diameter_y. No further news.
+//And guess the fuzzy_factor. Start at 0, i have no idea what effect it has.
+
+#define NUMB_OF_GEO_SHAPES      2  //per set
+geofenceShape geofenceShapes[NUMB_OF_GEO_SHAPES * 2]=
+{
+	{0.0000013,0.0000013,0,0,0,0.78,1},   //circle, Lageweg, 400m radius
+	{0,0,0,0.0015,0.00285,0.96,1},        //line, Lageweg, through Home, powerlines,  angle > 296 || angle < 116 
+	{0.0000013,0.0000013,0,0,0,0.854,1},  //circle, Lageweg, ~350m radius
+	{0,0,0,0.0015,0.00285,1.159,1}        //line, Lageweg, below Home, powerlines,  angle > 296 || angle < 116 
+};
+
+//define a set for outcomes of the geofence check, for left, ahead and right
+typedef struct tag_geoScores {
+	float geoScoreLeft;
+	float geoScoreAhead;
+	float geoScoreRight;
+} geoScores;
+
+geoScores geofenceScore;
+geoScores geofenceScore_old;
+
+int16_t geoTurn;       //turn -40, 0, or 40 deg in 4 sec    scope: flightplan_logo.c
+int16_t geoStatus;     //0,1,2  0= soft/wind gf, 1=wind gf, 2 geofence (alarm)   scope: flightplan_logo.c  
+static int16_t letHeartbeat;  //to get 1Hz timebase
+int16_t bestFarScore = 0;          //of four directions, find the angle to the farthest point possible
+int16_t bestFarScoreAngle = -1;
+int16_t relAngleToOpposite = 0;  
+
+#define AHEAD_PREFERENCE 1.0001    //used to give geofence turns less preference over straight ahead
+//definitions, should be in header file?
+float geoPreference(float x, float y, int16_t shapeNumb);   //use linear programmming to test position against a single geofence shape, return a score 0..1
+void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds);  //return three scores 40m ahead, one for left 40 deg, one ahead , and one for right 40 deg windSeconds; translate x and y downwind, equivalent of x sec drift
+void geoSetStatus(); // run once a second. windSeconds; translate x and y downwind, equivalent of x sec drift
+void geoSetTurn();   // Call from LOGO. convert a set of score outcomes to a number of degrees for a turn (-40, 0, 40) from (set before) global variable   geofenceScore 
+
+#endif //THERMALLING_MISSION
+
+
+
 // If we've processed this many instructions without commanding the plane to fly,
 // then stop and continue on the next run through
+
+#if ( THERMALLING_MISSION == 1 )
+#define MAX_INSTRUCTIONS_PER_CYCLE  10
+#else
 #define MAX_INSTRUCTIONS_PER_CYCLE  32
+#endif
+
 static int16_t instructionsProcessed = 0;
 
 // Storage for command injection
 static struct logoInstructionDef logo_inject_instr;
 static uint8_t logo_inject_pos = 0;
+
+#if ( MY_PERSONAL_OPTIONS == 1 )
+boolean regularFlyingField; //  declared and used by flightplan_logo.c and set by telemetry.c
+#endif
+
 #define LOGO_INJECT_READY 255
 
 // Storage for interrupt handling
@@ -442,20 +574,36 @@ void flightplan_logo_update(void)
 		return;
 	}
 
-	// otherwise run the interrupt handler, if configured, and not in-progress
-	if (interruptIndex && !interruptStackBase)
+	// otherwise run the interrupt handler, if configured.
+	if (interruptIndex)
 	{
-		if (logoStackIndex < LOGO_STACK_DEPTH-1)
+		if (tofinish_line >= WAYPOINT_PROXIMITY_RADIUS) // not crossed the finish line
 		{
-			logoStackIndex++;
-			logoStack[logoStackIndex].frameType = LOGO_FRAME_TYPE_SUBROUTINE;
-			logoStack[logoStackIndex].arg = 0;
-			logoStack[logoStackIndex].returnInstructionIndex = instructionIndex-1;
-			instructionIndex = interruptIndex+1;
-			interruptStackBase = logoStackIndex;
+			if (!interruptStackBase)   //if not in-progress
+			{
+				if (logoStackIndex < LOGO_STACK_DEPTH-1)
+				{
+					logoStackIndex++;
+					logoStack[logoStackIndex].frameType = LOGO_FRAME_TYPE_SUBROUTINE;
+					logoStack[logoStackIndex].arg = 0;
+					logoStack[logoStackIndex].returnInstructionIndex = instructionIndex-1;
+					instructionIndex = interruptIndex+1;
+					interruptStackBase = logoStackIndex;
+				}
+			}
 			process_instructions();
 			navigate_set_goal_height(turtleLocations[PLANE].z);
 			lastGoal.z = turtleLocations[PLANE].z;
+		}
+		else
+		{
+			if (interruptStackBase)   //if in-progress
+			{
+				//cleanup uncompleted interrupt
+				instructionIndex = logoStack[interruptStackBase].returnInstructionIndex+1;  //support both end by main and end by END SUBROUTINE
+				logoStackIndex =  interruptStackBase - 1;
+				interruptStackBase = 0;
+			}
 		}
 	}
 
@@ -473,11 +621,205 @@ void flightplan_logo_update(void)
 	}
 	else
 	{
+#if ( THERMALLING_MISSION != 1 )
 		if (tofinish_line < WAYPOINT_PROXIMITY_RADIUS) // crossed the finish line
 		{
 			process_instructions();
 		}
+#else
+		// inhibit navigation for x loops, to allow drifting downwind
+		if ( fixedBankActive )
+		{
+			if (!angleTargetActive) // BANK_1S()
+			{
+				if (fixedBankActiveCounter <= 0)
+				{
+					fixedBankActive = false;
+					
+					//a second has passed, so force this fly command to end
+
+					// Use current position (for x and y)
+					turtleLocations[currentTurtle].x._.W0 = 0;
+					turtleLocations[currentTurtle].x._.W1 = IMUlocationx._.W1;
+					turtleLocations[currentTurtle].y._.W0 = 0;
+					turtleLocations[currentTurtle].y._.W1 = IMUlocationy._.W1;
+					
+					// move turtle to simulate arrival, to allow the program flow to continue right away
+					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
+					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+
+					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);  //
+					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+					
+					if (interruptStackBase)   //if in-progress
+					{
+						//cleanup uncompleted interrupt
+						instructionIndex = logoStack[interruptStackBase].returnInstructionIndex+1;  //support both end by main and end by END SUBROUTINE
+						logoStackIndex =  interruptStackBase - 1;
+						interruptStackBase = 0;
+					}
+					process_instructions();  //as if arrived
+				}
+			}
+			else    // FIXED_BANK_ROTATE  
+			{
+				//check if target of 15 deg right has been reached  or timer times out
+				if ( (fixedBankActiveCounter <= 0) | 
+					 ( rotateClockwise && ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) < 180 ) | 
+					 ( !rotateClockwise && ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) > 180 ) ) ) 
+					 )// closest direction is right of target
+                
+				//use Gps heading
+				//if ( ( ( cog_gpsBB - fixedBankTargetAngle + 360) % 360 ) < 180 ) // closest direction is right of target
+				{
+					fixedBankActive = false;
+					
+					//force this fly command to end
+
+					// Use current position (for x and y)
+					turtleLocations[currentTurtle].x._.W0 = 0;
+					turtleLocations[currentTurtle].x._.W1 = IMUlocationx._.W1;
+					turtleLocations[currentTurtle].y._.W0 = 0;
+					turtleLocations[currentTurtle].y._.W1 = IMUlocationy._.W1;
+					
+					// move turtle to simulate arrival, to allow the program flow to continue right away
+					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
+					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+
+					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);  //
+					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+
+					if (interruptStackBase)   //if not in-progress
+					{
+						//cleanup uncompleted interrupt
+						instructionIndex = logoStack[interruptStackBase].returnInstructionIndex+1;  //support both end by main and end by END SUBROUTINE
+						logoStackIndex =  interruptStackBase - 1;
+						interruptStackBase = 0;
+					}
+					process_instructions();  //as if arrived
+				}
+			}
+		}
+		else
+		{
+			//
+			//org code:
+			if ( (tofinish_line < WAYPOINT_PROXIMITY_RADIUS) || forceCrossFinishLine || forceFinishReset ) // crossed the finish line  or interrupt routine sigmalled an event that needs immediate action
+			{
+				if (forceCrossFinishLine) // crossed the finish line  or interrupt routine sigmalled an event that needs immediate action
+				{
+					forceCrossFinishLine= false;  
+					if ( forceFinishReset )
+					{
+						forceFinishReset = false;
+						//reset Logo
+						interruptIndex = 0;       // clear interrupt; instruction index of the beginning of the interrupt function
+						instructionsProcessed = 0;
+						interruptStackBase = 0;  // stack depth when entering interrupt (clear interrupt when dropping below this depth)
+						logoStackIndex = 0;
+						currentTurtle = 0;
+						logoStack[logoStackIndex].returnInstructionIndex = -1;  // When starting over, begin on instruction 0
+						instructionIndex = -1;
+					}
+				}
+				//handle main instructione
+				if (interruptStackBase)   //if not in-progress
+				{
+					//cleanup uncompleted interrupt
+					instructionIndex = logoStack[interruptStackBase].returnInstructionIndex+1;  //support both end by main and end by END SUBROUTINE
+					logoStackIndex =  interruptStackBase - 1;
+					interruptStackBase = 0;
+				}
+				process_instructions();
+			}
+		}
+#endif  //THERMALLING_MISSION
 	}
+#if ( THERMALLING_MISSION == 1 )
+	//if ( ( flyCommandCounter > 0 ) && (!forceCrossFinishLine) && (!forceFinishReset) )
+	if ( flyCommandCounter > 0 )
+	{
+		flyCommandCounter++;   //count up @ 40Hz
+	}
+	if ( fixedBankActive )
+	{
+		if ( fixedBankActiveCounter > 0 )
+		{
+			fixedBankActiveCounter--;   //count down @ 40Hz
+		}
+	}
+	letHeartbeat++;
+	if ( letHeartbeat % 40 == 0 )   //1Hz
+	{
+		
+		//avgBatteryVoltage = (int16_t)( battery_voltage._.W1 );   //heavy filter for voltage
+		avgBatteryVoltage = (avgBatteryVoltage * 14.0 + (float)battery_voltage._.W1 )/15.0;   //heavy filter for voltage
+		
+		geoSetStatus();         //read geofencee status and update status system value
+
+		if (motorOffTimer > 0)   //monitor motor run
+		{
+			motorOffTimer--;
+		}
+		//if ((desired_behavior.W & F_LAND) == 0) // set to 4 as long as motor runs, to know time after stopping motor
+		if (udb_pwOut[THROTTLE_OUTPUT_CHANNEL] > 2300 ) // set to 4 as long as motor runs, to know time after stopping motor
+		{
+			motorOffTimer = 4;  // start timer, wait 4 sec before detecting thermals, used by system value MOTOR_OFF_TIMER
+		}
+	}
+	//calculate heading to where there is room to fly 400m, for REL_ANGLE_TO_OPPOSITE... 
+	if ( letHeartbeat % 40 == 10 )   //1Hz
+	{
+		bestFarScore = 2;   //start bad
+		bestFarScoreAngle = -1;
+		areaGeoScore(-150,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
+		// score 
+		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
+		{
+			bestFarScore = geofenceScore.geoScoreAhead;
+			bestFarScoreAngle = -150;
+		}
+	}
+	if ( letHeartbeat % 40 == 20 )   //1Hz
+	{
+		areaGeoScore(150,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
+		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
+		{
+			bestFarScore = geofenceScore.geoScoreAhead;
+			bestFarScoreAngle = 150;
+		}
+	}
+	if ( letHeartbeat % 40 == 25 )   //1Hz
+	{
+		areaGeoScore(-90,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
+		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
+		{
+			bestFarScore = geofenceScore.geoScoreAhead;
+			bestFarScoreAngle = -90;
+		}
+	}
+	if ( letHeartbeat % 40 == 30 )   //1Hz
+	{
+		areaGeoScore(90,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
+		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
+		{
+			bestFarScore = geofenceScore.geoScoreAhead;
+			bestFarScoreAngle = 90;
+		}
+				
+		if ( bestFarScore > 1 )      //is bestFarScore inside gf?
+		{
+			bestFarScoreAngle = 0;   //no, just fly ahead
+		} 
+		else
+		{
+			relAngleToOpposite = bestFarScoreAngle; //yes
+		} 
+		//used by REL_ANGLE_TO_OPPOSITE;    
+	}
+#endif
 }
 
 // For DO and EXEC, find the location of the given subroutine
@@ -565,7 +907,12 @@ static int16_t get_angle_to_point(int16_t x, int16_t y)
 	angle = (dir_to_goal * 180 + 64) >> 7;  // 0-359 (ccw, 0=East)
 	angle = -angle + 90;                    // 0-359 (clockwise, 0=North)
 	if (angle < 0) angle += 360;
+#if ( MY_PERSONAL_OPTIONS == 1 )
+	if (angle >= 360) angle -= 360;
+#else
 	if (angle > 360) angle -= 360;
+#endif
+
 	return angle;
 }
 
@@ -594,7 +941,12 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			int16_t angle = get_angle_to_point(0,0);
 			angle += 180;
 			if (angle < 0) angle += 360;
+#if ( MY_PERSONAL_OPTIONS == 1 )
+			if (angle >= 360) angle -= 360;
+#else
 			if (angle > 360) angle -= 360;
+#endif
+
 			return angle;
 		}
 		case ANGLE_TO_GOAL: // in degrees. 0-359 (clockwise, 0=North)
@@ -616,6 +968,23 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			if (angle >= 180) angle -= 360;
 			return -angle;
 		}
+
+#if ( THERMALLING_MISSION == 1 )
+		case REL_ANGLE_TO_OPPOSITE: // in degrees. -180..179 (0=heading directly towards goal. clockwise offset is positive)
+		{
+			return relAngleToOpposite;
+		}
+		case REL_ANGLE_TO_WIND: // in degrees. -180-179 (0=heading directly towards home. clockwise offset is positive)
+		{
+			int16_t angle = get_current_angle() - get_angle_to_point(estimatedWind[0], estimatedWind[1]);
+			angle += 180;
+			if (angle < -180) angle += 360;
+			if (angle >= 180) angle -= 360;
+
+			return -angle;
+		}
+#endif
+
 		case GROUND_SPEED: // in cm/s
 			return ground_velocity_magnitudeXY;
 
@@ -623,7 +992,11 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			return air_speed_magnitudeXY;
 
 		case AIR_SPEED_Z: // in cm/s
+#if ( THERMALLING_MISSION != 1 )
 			return IMUvelocityz._.W1 - estimatedWind[2];
+#else
+			return vario;     // in cm/s
+#endif
 
 		case WIND_SPEED: // in cm/s
 			return sqrt_long(estimatedWind[0] * (int32_t)estimatedWind[0] + estimatedWind[1] * (int32_t)estimatedWind[1]);
@@ -636,6 +1009,115 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 
 		case WIND_SPEED_Z: // in cm/s
 			return estimatedWind[2];
+
+		case WIND_FROM_ANGLE: // wind from in degrees 0-359, 0 = North
+		{
+			int16_t angle = get_angle_to_point(estimatedWind[0], estimatedWind[1]);
+			if (angle < 0) angle += 360;
+			if (angle > 359) angle -= 360;
+
+			return angle;
+		}
+
+#if ( THERMALLING_MISSION == 1 )
+		case BATTERY_VOLTAGE: // 
+		{
+			//return battery_voltage._.W1;
+			return (int16_t)avgBatteryVoltage;
+		}
+
+		case AIR_SPEED_Z_DELTA: //  used for waiting for a decrease in climbrate in a thermal
+		{
+			static int16_t airSpeedZDelta;
+			airSpeedZDelta = vario - vario_old; 
+			vario_old = vario;
+			airSpeedZStart = vario;  //setup for better lift detection
+			return airSpeedZDelta;
+		}
+		
+		case AIR_SPEED_Z_VS_START: //  
+		{
+			//set in AIR_SPEED_Z_DELTA for WAIT_DECREASE
+			return vario - airSpeedZStart;
+		}
+		
+		case READ_F_LAND: // used for motor climbs 
+		{
+			return ((desired_behavior.W & F_LAND) > 0);
+		}
+		
+		case READ_DESIRED_SPEED: // used for polar plot 
+		{
+			return (desiredSpeed);
+		}
+
+		case READ_THROTTLE_OUTPUT_CHANNEL: // used for detecting motor hold low state 
+		{
+		 	return udb_pwOut[THROTTLE_OUTPUT_CHANNEL];    // 2000 - 4000
+		 	//return udb_pwOut[7];    // 2000 - 4000
+		}
+
+		case GEOFENCE_STATUS: //  used for Geofence
+		{
+			return geoStatus;
+		}
+		
+		case GEOFENCE_TURN: //  used for Geofence
+		{
+			return geoTurn;
+		}
+
+		case MOTOR_OFF_TIMER: // 4..0 sec. used for waiting after motor off before detecting a thermal
+		{
+			return motorOffTimer;
+		}
+
+		case FORCE_CROSS_FINISH_LINE: // used by interrupt routine to sigmal an event that needs immediate action
+		{
+			forceCrossFinishLine = true;
+			return 0;
+		}
+		case READ_FLY_COMMAND_COUNTER: // used by interrupt routines to sigmal fly commands that take too long
+		{
+			return flyCommandCounter;
+		}
+		case FORCE_FINISH_BAD_NAV: // used by interrupt routine to sigmal an event that needs immediate action
+		{
+			turtleLocations[currentTurtle].x._.W0 = 0;
+			turtleLocations[currentTurtle].x._.W1 = IMUlocationx._.W1;
+			turtleLocations[currentTurtle].y._.W0 = 0;
+			turtleLocations[currentTurtle].y._.W1 = IMUlocationy._.W1;
+			flyCommandCounter = 0;
+			forceCrossFinishLine = true;
+			return 0;
+		}
+		case FORCE_RESET: // used by interrupt routine to sigmal an event that needs immediate action
+		{
+			turtleLocations[0].x._.W0 = 0;
+			turtleLocations[0].x._.W1 = IMUlocationx._.W1;
+			turtleLocations[0].y._.W0 = 0;
+			turtleLocations[0].y._.W1 = IMUlocationy._.W1;
+			flyCommandCounter = 0;
+			forceCrossFinishLine = true;
+			forceFinishReset = true;
+			/*
+			interruptIndex = 0;       // clear interrupt; instruction index of the beginning of the interrupt function
+			instructionsProcessed = 0;
+			interruptStackBase = 0;  // stack depth when entering interrupt (clear interrupt when dropping below this depth)
+			logoStackIndex = 0;
+			currentTurtle = 0;
+			//flightplan_logo_begin(0); //clear interrupt and restart main
+			*/
+			return 0;
+		}
+		case SET_DIRECTION: // used by FIXED_BANK_ROTATE routine to sigmal left or right rotation
+		{
+			// if angle decreased: right turn
+			rotateClockwise = ( ( ( get_current_angle() - oldAngle + 360) % 360 ) > 180 );
+			return 0;
+		}
+
+#endif  //THERMALLING_MISSION
 
 		case PARAM:
 		{
@@ -736,6 +1218,12 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 
 		case 10: // Exec (reset the stack and then call a subroutine)
 			instructionIndex = find_start_of_subroutine(instr.subcmd);
+
+#if ( LOG_WAYPOINT_PER_SUBROUTINE == 1 )
+			//log Subroutine number instead
+			//log only odd subroutine numbers
+			if ( (instr.subcmd%2) == 1)	waypointIndex = instr.subcmd ;
+#endif
 			logoStack[0].returnInstructionIndex = instructionIndex;
 			logoStackIndex = 0;
 			interruptStackBase = 0;
@@ -750,6 +1238,11 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 				logoStack[logoStackIndex].returnInstructionIndex = instructionIndex;
 			}
 			instructionIndex = find_start_of_subroutine(instr.subcmd);
+#if ( LOG_WAYPOINT_PER_SUBROUTINE == 1 )
+			//log Subroutine number instead
+			//log only odd subroutine numbers
+			if ( (instr.subcmd%2) == 1) waypointIndex = instr.subcmd ;
+#endif
 			break;
 
 		case 3: // Forward/Back
@@ -763,8 +1256,75 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), instr.arg) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), instr.arg) << 2);
+#if ( THERMALLING_MISSION == 1 )
+					flyCommandCounter = 1;    //start counter, count up at 40Hz
+#endif  //THERMALLING_MISSION
 				}
 				break;
+
+#if ( THERMALLING_MISSION == 1 )
+				case 1: // FIXED_BANK_ROTATE
+				{
+					//rotate 30 deg right with a fixed bank or timeout after 2 sec
+					
+					//USE_CURRENT_ANGLE
+					turtleAngles[currentTurtle] = get_current_angle();
+					
+					//rotate turtle too, like RT(). Set the rotation target 30 deg to the right or left
+					if ( rotateClockwise )  //topview
+					{
+						fixedBankTargetAngle = turtleAngles[currentTurtle] + 30; // ~0.5 - 1 sec == 30 deg headingchange
+						fixedBankDeg = instr.arg;  //controls roll and yaw,
+					}
+					else
+					{	
+						fixedBankTargetAngle = turtleAngles[currentTurtle] - 30; // ~0.5 - 1 sec == 30 deg headingchange
+						fixedBankDeg = -instr.arg;  //controls roll and yaw,
+					}	
+					//fixedBankTargetAngle = get_current_angle() + 30; // ~0.5 - 1 sec == 30 deg headingchange
+					while (fixedBankTargetAngle < 0) fixedBankTargetAngle += 360;
+					fixedBankTargetAngle = fixedBankTargetAngle % 360;
+
+					//this is a fly command, do the same as FD()
+					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
+					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+
+					// 25: should be fd(groundspeed) in m from m/s (ideally), with added margin to keep turtle ahead
+					// selected a fixed number I used before, combined with servo calculation
+					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 25) << 2);
+					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);
+
+					fixedBankActiveCounter = 80; //40Hz = 2 sec
+					fixedBankActive = true;     //controls roll and yaw, will be reset when rotation is reached
+					angleTargetActive = true;
+					break;
+				}
+				case 2: //BANK_1S
+				{				
+					//maintain a fixed bank or level for one sec
+					
+					//USE_CURRENT_ANGLE
+					turtleAngles[currentTurtle] = get_current_angle();
+					//this is a fly command, do the same as FD()
+					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
+					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+
+					// 25: should be fd(groundspeed) in m from m/s (ideally), with added margen to keep turtle ahead
+					// selected a fixed number I used before, combined with servo calculation
+					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 25) << 2);
+					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);
+
+                    oldAngle = get_current_angle();  //for SET_DIRECTION
+					fixedBankDeg = instr.arg;  //controls roll
+					fixedBankActiveCounter = 40; //40Hz = 1 sec
+					fixedBankActive = true; 
+					angleTargetActive = false;   
+					break;
+				}
+#endif  //THERMALLING_MISSION
+
 			}
 			break;
 
@@ -825,10 +1385,33 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					turtleLocations[currentTurtle].y._.W1 = IMUlocationy._.W1;
 					break;
 				case 7: // HOME
+				{
 					turtleAngles[currentTurtle] = 0;
 					turtleLocations[currentTurtle].x.WW = 0;
 					turtleLocations[currentTurtle].y.WW = 0;
+#if ( MY_PERSONAL_OPTIONS == 1 )
+					//if we are flying from my regular flying field move home to the landing point (angle 130, 60m) for convenience
+					//on other field; initilize the autopilot on the landing spot
+					if ( regularFlyingField )
+					//if ( lat_origin.WW > 518260000 & lat_origin.WW < 518270000 & lon_origin.WW > 42980000 & lon_origin.WW < 42990000 )
+					{
+/*
+#if ( HILSIM == 1 )
+						turtleLocations[currentTurtle].x._.W0 = 0;
+						turtleLocations[currentTurtle].x._.W1 = -425;
+						turtleLocations[currentTurtle].y._.W0 = 0;
+						turtleLocations[currentTurtle].y._.W1 = -300;
+#else
+*/
+						turtleLocations[currentTurtle].x._.W0 = 0;
+						turtleLocations[currentTurtle].x._.W1 = 45;
+						turtleLocations[currentTurtle].y._.W0 = 0;
+						turtleLocations[currentTurtle].y._.W1 = -39;
+//#endif
+					}
+#endif
 					break;
+				}
 				case 8: // Absolute set high value
 					absoluteHighWord = instr.arg;
 					break;
@@ -934,11 +1517,57 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 			switch (instr.subcmd)
 			{
 				case 0: // Increase Speed
-					desiredSpeed += instr.arg * 10;
+					desiredSpeed += instr.arg * 1;
 					break;
 				case 1: // Set Speed
-					desiredSpeed = instr.arg * 10;
+
+#if (THERMALLING_MISSION != 1)
+					desiredSpeed = instr.arg * 1;
+#else
+				{
+					//command changed to dm/s
+					if ( ( instr.arg == DESIRED_SPEED_NORMAL_F0 ) | ( instr.arg == DESIRED_SPEED_SLOW_F4 ) | ( instr.arg == DESIRED_SPEED_FAST_FMIN4 ) )
+					{
+						//calculate and set desiredSpeed
+						//normal speed = 0, slow = -1000, high speed = 1000
+						if ( instr.arg == DESIRED_SPEED_NORMAL_F0 )
+						{
+							desiredSpeed = instr.arg; //dm/s
+						}
+						else
+						{
+							if ( instr.arg == DESIRED_SPEED_SLOW_F4 )
+							{
+								desiredSpeed = instr.arg; //dm/s
+							}
+							else
+							{
+								if ( instr.arg == DESIRED_SPEED_FAST_FMIN4 )
+								{
+									desiredSpeed = instr.arg; //dm/s
+								} //if
+							} //else
+						} //else
+					} //if
+					else
+					{
+						//    org code, needs 2 indents;
+						desiredSpeed = instr.arg * 1;
+						//
+					} //else
+					//limits
+					if (desiredSpeed < DESIRED_SPEED_SLOW_F4)
+					{
+						desiredSpeed = DESIRED_SPEED_SLOW_F4;
+					}
+					if (desiredSpeed > DESIRED_SPEED_FAST_FMIN4)
+					{
+						desiredSpeed = DESIRED_SPEED_FAST_FMIN4;
+					}
 					break;
+				}//case1
+#endif
+				//
 			}
 			if (desiredSpeed < 0) desiredSpeed = 0;
 #endif
@@ -1025,7 +1654,9 @@ static void process_instructions(void)
 			return;  // don't update goal if we didn't hit a FLY command
 	}
 
+#if ( LOG_WAYPOINT_PER_SUBROUTINE != 1 )
 	waypointIndex = instructionIndex - 1;
+#endif
 
 	if (logo_goal_has_moved())
 	{
@@ -1094,5 +1725,269 @@ void flightplan_logo_live_commit(void)
 		logo_inject_pos = 0;
 	}
 }
+#if ( THERMALLING_MISSION == 1 )
+
+//use linear programmming to test position against a set of geofence shapes
+//float geoPreference(float x, float y, geofenceShape geoshape)
+float geoPreference(float x, float y, int16_t shape)
+{
+	static float result;
+	
+	result = geofenceShapes[shape].ellips_diameter_x*x*x+ geofenceShapes[shape].ellips_diameter_y*y*y+ geofenceShapes[shape].fuzzy_factor*x*y+ geofenceShapes[shape].linear_x_slope*x+ geofenceShapes[shape].linear_y_slope*y+ geofenceShapes[shape].offset_x_plus_y;      // hoever zijn we van de lijn af
+	result *= (float)geofenceShapes[shape].sign;              // other side of the line
+	if (result < 1)
+	{
+		result = 1;        // limit when well in desired area
+	}
+	return result;
+}
+
+
+// this function returns one to three scores x m ahead, for left x deg, one ahead, and one for right x deg (if 2 or 3), using wind drift (if not 0),
+// depending on options:
+//    - only check geofence (30,0,0,0)               (strictGeofence)
+//    - check ahead, left, right with wind  angle is relatice to curent heading
+//    - check rel angle,0,90,180 or 270, at 400m distance (to find ANGLE_TO_FARTHEST_POINT) (strictGeofence)
+
+//calls geoPreference() per shape
+void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)   // windSeconds; translate x and y downwind, equivalent of x sec drift
+{
+	static int16_t shapeIndex;
+	static float result=1;
+	static float x;  //pos in meters
+	static float y;  //pos in meters
+	static boolean strictGeofence = false;
+	static int16_t cangle = 0;
+	static int8_t b_angle = 0;
+	//static geoScores geoScore;
+
+	if ( windSeconds == 0 )
+	{
+		strictGeofence = true;
+	}
+	else
+	{
+		strictGeofence = false;
+	}
+
+	if (numbOfDirections == 1 || numbOfDirections == 3);
+	{
+		geofenceScore.geoScoreAhead = 1;
+		if (metersAhead == 0)
+		{
+			x = (float)turtleLocations[PLANE].x._.W1 ;       // in m  windSeconds; translate x and y downwind, equivalent of x sec drift
+			y = (float)turtleLocations[PLANE].y._.W1 ;       // in m
+		}
+		else
+		{
+			//ahead
+			x = (float)turtleLocations[PLANE].x._.W1 + (float)windSeconds * (float)(estimatedWind[0])/100.0;       // in m  windSeconds; translate x and y downwind, equivalent of x sec drift
+			y = (float)turtleLocations[PLANE].y._.W1 + (float)windSeconds * (float)(estimatedWind[1])/100.0;       // in m
+
+			//code for LT() or RT()
+			cangle = turtleAngles[currentTurtle]+angle;   //ahead   // 0-359 (clockwise, 0=North)
+			//}
+			while (cangle < 0) cangle += 360;
+			while (cangle >= 360) cangle -= 360;
+
+			//code from FD()
+			b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+			b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+			//select point forward "metersAhead"
+			//do the check for a point xm in front of plane
+			x += (float)((__builtin_mulss(-cosine(b_angle), metersAhead) << 2)>>16);  //from 16.16 to float
+			y += (float)((__builtin_mulss(-sine(b_angle), metersAhead) << 2)>>16);
+		}
+		if ( strictGeofence )
+		{
+			//for ( i=0; i<numbOfGeoshapes; i++)
+			result = 1;
+			for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+			{
+				result *= geoPreference(x,y,shapeIndex);
+			}
+			geofenceScore.geoScoreAhead = result;
+		}
+		else
+		{
+			//for ( i=0; i<numbOfGeoshapes; i++)
+			result = 1;
+			for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+			{
+				result *= geoPreference(x,y,shapeIndex+2);  //use the smaller shapes
+			}
+			geofenceScore.geoScoreAhead = result;
+		}
+	}
+
+	if (numbOfDirections >= 2);
+	{
+		geofenceScore.geoScoreLeft = AHEAD_PREFERENCE;
+		geofenceScore.geoScoreRight = AHEAD_PREFERENCE;
+		//Left score
+		x = (float)turtleLocations[PLANE].x._.W1 + (float)windSeconds * (float)(estimatedWind[0])/100.0;       // in m  windSeconds; translate x and y downwind, equivalent of x sec drift
+		y = (float)turtleLocations[PLANE].y._.W1 + (float)windSeconds * (float)(estimatedWind[1])/100.0;       // in m
+
+		//code for LT() or RT()
+		cangle = turtleAngles[currentTurtle]-angle;   //left   // 0-359 (clockwise, 0=North)
+		while (cangle < 0) cangle += 360;
+		while (cangle >= 360) cangle -= 360;
+
+		//code from FD()
+		b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+		b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+		//select point forward "metersAhead"
+		//do the check for a point xm in front of plane
+		x += (float)((__builtin_mulss(-cosine(b_angle), metersAhead) << 2)>>16);  //from 16.16 to float
+		y += (float)((__builtin_mulss(-sine(b_angle), metersAhead) << 2)>>16);
+
+		if ( strictGeofence )
+		{
+			//for ( i=0; i<numbOfGeoshapes; i++)
+			result = 1;
+			for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+			{
+				result *= geoPreference(x,y,shapeIndex);
+			}
+			geofenceScore.geoScoreLeft = result * 1.000;
+		}
+		else
+		{
+			//for ( i=0; i<numbOfGeoshapes; i++)
+			result = 1;
+			for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+			{
+				result *= geoPreference(x,y,shapeIndex+2);  //use the smaller shapes
+			}
+			geofenceScore.geoScoreLeft = result * AHEAD_PREFERENCE;
+		}
+
+		//Right score
+		x = (float)turtleLocations[PLANE].x._.W1 + (float)windSeconds * (float)(estimatedWind[0])/100.0;       // in m  windSeconds; translate x and y downwind, equivalent of x sec drift
+		y = (float)turtleLocations[PLANE].y._.W1 + (float)windSeconds * (float)(estimatedWind[1])/100.0;       // in m
+
+		//code for LT() or RT()
+		cangle = turtleAngles[currentTurtle]+angle;   //right   // 0-359 (clockwise, 0=North)
+		while (cangle < 0) cangle += 360;
+		while (cangle >= 360) cangle -= 360;
+
+		//code from FD()
+		b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
+		b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
+		//select point forward "metersAhead"
+		//do the check for a point xm in front of plane
+		x += (float)((__builtin_mulss(-cosine(b_angle), metersAhead) << 2)>>16);  //from 16.16 to float
+		y += (float)((__builtin_mulss(-sine(b_angle), metersAhead) << 2)>>16);
+	}
+	if ( strictGeofence )
+	{
+		//for ( i=0; i<numbOfGeoshapes; i++)
+		result = 1;
+		for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+		{
+			result *= geoPreference(x,y,shapeIndex);
+		}
+		geofenceScore.geoScoreRight = result * 1.000;
+	}
+	else
+	{
+		//for ( i=0; i<numbOfGeoshapes; i++)
+		result = 1;
+		for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+		{
+			result *= geoPreference(x,y,shapeIndex+2);  //use the smaller shapes
+		}
+		geofenceScore.geoScoreRight = result * AHEAD_PREFERENCE;  //small preference for ahead
+	}
+}
+
+// LOGO will use geoStatus first (GET_GF_STATUS)
+// LOGO then will use geoTurn to plan the turn
+// test geofence shapes from strictest to least strict, does more tests if needed
+// calls areaGeoScore() several times with angle, numbOfDirections, metersAhead  and  windSeconds
+// status               advice mandatory
+//    0, soft/wind gf     0             if new thermal, thermal, else do turn (soft)
+//    1, wind gf          0             ignore if in thermal, else turn
+//    2, geofence         1             alarm, do geofence only
+void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, equivalent of x sec drift
+{
+	//float turn;     //0..1
+	//int16_t geoStatus;     //0,1,2
+	//int16_t geoTurn;       //turn -40, 0, or 40 deg in 4 sec    scope: flightplan_logo.c
+	//geofenceScore =
+	areaGeoScore(30,1,0,0);  //angle, numbOfDirections, metersAhead, windSeconds)   strict
+	if ( geofenceScore.geoScoreAhead > 1 )  //out
+	{
+		geofenceScore.geoScoreAhead = 2;  //ahead must be avoided, will in some cases cause flying far, brake the balance
+		geoStatus = 2;                             // geofence crossed, not good...
+		//now check what to do, act on soft -not strict- geofence only
+		areaGeoScore(30,1,40,0);  // - look ahead -soft-, what action?
+		//if no problem ahead (allmost back) then do nothing
+
+		if ( geofenceScore.geoScoreAhead > 1 )    // action needed
+		{                                         // what action?
+			areaGeoScore(30,2,40,0);               // l/r
+		}
+		geoSetTurn();
+	}
+	else                                          //inside, now check what to do
+	{
+		//now check ">=1 escape radius" -  maintain room for a 120+ turn on at least one side
+		areaGeoScore(60,2,150,20);
+		if ( (geofenceScore.geoScoreAhead > AHEAD_PREFERENCE) && (geofenceScore.geoScoreAhead > AHEAD_PREFERENCE) )
+		{
+			geofenceScore.geoScoreAhead = 2;          //not ahead, take best turn to maintain room for turning
+		}
+		else   //ok
+		{
+			//keep old score
+			//geofenceScore_old = geofenceScore;
+
+			areaGeoScore(30,1,50,0);  //  - look ahead, what action?
+			if ( geofenceScore.geoScoreAhead > 1 )    // no room for a new thermal turn
+			{
+				geoStatus = 1;                        // assume no room for a new thermal turn
+				areaGeoScore(30,2,50,0);              // now act (upwind side), regardless wind
+			}
+			else
+			{
+				// upwind side ok, now check downwind side
+				areaGeoScore(30,1,50,20);  //- look ahead, what action?
+				if ( geofenceScore.geoScoreAhead == 1 )  //no problem ahead + wind
+				{
+					geoStatus = 0;                        // no action, there is room for a new thermal turn
+					areaGeoScore(30,2,50,20);             //- look ahead, what action?
+				}
+				else
+				{
+					geoStatus = 1;                        // no room for a new thermal turn , act
+					areaGeoScore(30,2,50,20);             //- look ahead, what action?
+				}
+			}
+		}
+		geoSetTurn();
+	}
+}
+
+
+void geoSetTurn()   // set geoTurn;   //-40, 0 or 40 deg
+{
+	// geoScoreAhead lowest value 1 allways wins
+	// geoScoreLeft, geoScoreRight lowest values are AHEAD_PREFERENCE
+	if ( (geofenceScore.geoScoreAhead < geofenceScore.geoScoreLeft) && (geofenceScore.geoScoreAhead < geofenceScore.geoScoreRight) )
+	{
+		geoTurn = 0;
+	}
+	else if (geofenceScore.geoScoreLeft < geofenceScore.geoScoreRight)
+	{
+		geoTurn = -40;
+	}
+	else
+	{
+		geoTurn = 40;
+	}
+}
+
+#endif //THERMALLING_MISSION
 
 //#endif // (FLIGHT_PLAN_TYPE == FP_LOGO)

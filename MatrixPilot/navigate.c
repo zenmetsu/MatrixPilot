@@ -108,7 +108,23 @@ static void setup_origin(void)
 	}
 	else
 	{
+#if ( MY_PERSONAL_OPTIONS != 1 )
+
 		dcm_set_origin_location(lon_gps.WW, lat_gps.WW, alt_sl_gps.WW);
+
+#else
+        extern boolean regularFlyingField;
+
+		if ( regularFlyingField )
+		{
+		    vect3_32t origin = get_fixed_origin();
+		    dcm_set_origin_location(origin.x, origin.y, origin.z);
+		}
+		else
+		{
+		    dcm_set_origin_location(lon_gps.WW, lat_gps.WW, alt_sl_gps.WW);
+		}
+#endif
 	}
 	state_flags._.f13_print_req = 1; // Flag telemetry output that the origin can now be printed.
 }
