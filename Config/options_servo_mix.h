@@ -252,7 +252,7 @@
 #if ( MODEL_GRAFAS == 1 && HILSIM == 0 )
 //Grafas
 
-#define AILERON_LEFT_OUTPUT_OFFSET                          0          // y  up = +
+#define AILERON_LEFT_OUTPUT_OFFSET                         50          // y  up = +
 #define FLAP_LEFT_OUTPUT_OFFSET                           850          // n  up = +
 #define FLAP_RIGHT_OUTPUT_OFFSET                          800          // y  up = +
 #define AILERON_RIGHT_OUTPUT_OFFSET                       -50          // n  up = +
