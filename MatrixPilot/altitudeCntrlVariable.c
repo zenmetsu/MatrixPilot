@@ -548,7 +548,15 @@ static void normalAltitudeCntrl(void)
 					{
 						if ( (IMUlocationz._.W1) < 50 )
 						{
+							if ( vario > 70 )
+							{
+								// reduce throttle for a 0.7 m/s climb
+								throttleAccum.WW = (int16_t)((float)(throttleAccum.WW) * steadyClimbPowerFactor);
+							}
+							else
+							{
 								throttleAccum.WW = (int16_t)(max_throttle);
+							}
 						}
 						else
 						{
