@@ -49,6 +49,9 @@ int16_t barometerInterval = 0;
 void altimeter_calibrate(void)
 {
 	int ground_altitude = alt_origin.WW / 100;    // meters
+#ifdef MY_PERSONAL_OPTIONS
+    ground_altitude -= 5;
+#endif
 	barometer_temperature_gnd = barometer_temperature;
 	barometer_pressure_gnd = barometer_pressure;
 

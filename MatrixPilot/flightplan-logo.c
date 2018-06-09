@@ -635,7 +635,7 @@ void flightplan_logo_update(void)
 				if (fixedBankActiveCounter <= 0)
 				{
 					fixedBankActive = false;
-					
+
 					//a second has passed, so force this fly command to end
 
 					// Use current position (for x and y)
@@ -643,7 +643,7 @@ void flightplan_logo_update(void)
 					turtleLocations[currentTurtle].x._.W1 = IMUlocationx._.W1;
 					turtleLocations[currentTurtle].y._.W0 = 0;
 					turtleLocations[currentTurtle].y._.W1 = IMUlocationy._.W1;
-					
+
 					// move turtle to simulate arrival, to allow the program flow to continue right away
 					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
 					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
@@ -651,7 +651,7 @@ void flightplan_logo_update(void)
 
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);  //
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
-					
+
 					if (interruptStackBase)   //if in-progress
 					{
 						//cleanup uncompleted interrupt
@@ -662,19 +662,19 @@ void flightplan_logo_update(void)
 					process_instructions();  //as if arrived
 				}
 			}
-			else    // FIXED_BANK_ROTATE  
+			else    // FIXED_BANK_ROTATE
 			{
 				//check if target of 15 deg right has been reached  or timer times out
-				if ( (fixedBankActiveCounter <= 0) | 
-					 ( rotateClockwise && ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) < 180 ) | 
-					 ( !rotateClockwise && ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) > 180 ) ) ) 
+				if ( (fixedBankActiveCounter <= 0) |
+					 ( rotateClockwise && ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) < 180 ) |
+					 ( !rotateClockwise && ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) > 180 ) ) )
 					 )// closest direction is right of target
-                
+
 				//use Gps heading
 				//if ( ( ( cog_gpsBB - fixedBankTargetAngle + 360) % 360 ) < 180 ) // closest direction is right of target
 				{
 					fixedBankActive = false;
-					
+
 					//force this fly command to end
 
 					// Use current position (for x and y)
@@ -682,7 +682,7 @@ void flightplan_logo_update(void)
 					turtleLocations[currentTurtle].x._.W1 = IMUlocationx._.W1;
 					turtleLocations[currentTurtle].y._.W0 = 0;
 					turtleLocations[currentTurtle].y._.W1 = IMUlocationy._.W1;
-					
+
 					// move turtle to simulate arrival, to allow the program flow to continue right away
 					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
 					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
@@ -1266,10 +1266,10 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 				case 1: // FIXED_BANK_ROTATE
 				{
 					//rotate 30 deg right with a fixed bank or timeout after 2 sec
-					
+
 					//USE_CURRENT_ANGLE
 					turtleAngles[currentTurtle] = get_current_angle();
-					
+
 					//rotate turtle too, like RT(). Set the rotation target 30 deg to the right or left
 					if ( rotateClockwise )  //topview
 					{
@@ -1277,10 +1277,10 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 						fixedBankDeg = instr.arg;  //controls roll and yaw,
 					}
 					else
-					{	
+					{
 						fixedBankTargetAngle = turtleAngles[currentTurtle] - 30; // ~0.5 - 1 sec == 30 deg headingchange
 						fixedBankDeg = -instr.arg;  //controls roll and yaw,
-					}	
+					}
 					//fixedBankTargetAngle = get_current_angle() + 30; // ~0.5 - 1 sec == 30 deg headingchange
 					while (fixedBankTargetAngle < 0) fixedBankTargetAngle += 360;
 					fixedBankTargetAngle = fixedBankTargetAngle % 360;
@@ -1290,12 +1290,12 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
 					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
 
-					// 25: should be fd(groundspeed) in m from m/s (ideally), with added margin to keep turtle ahead
+					// 35: should be fd(groundspeed) in m from m/s (ideally), with added margin to keep turtle ahead
 					// selected a fixed number I used before, combined with servo calculation
-					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 25) << 2);
-					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);
+					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 35) << 2);
+					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 35) << 2);
 
-					fixedBankActiveCounter = 80; //40Hz = 2 sec
+					fixedBankActiveCounter = 120; //40Hz = 3 sec
 					fixedBankActive = true;     //controls roll and yaw, will be reset when rotation is reached
 					angleTargetActive = true;
 					break;
