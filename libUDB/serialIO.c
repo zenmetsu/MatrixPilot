@@ -39,6 +39,8 @@
 static int16_callback_fptr_t gps_callback_get_byte_to_send_fptr = NULL;
 static callback_uint8_fptr_t gps_callback_received_byte_fptr = NULL;
 
+static boolean udb_serial_stop_sending_flag = 0;
+
 void udb_init_GPS(int16_callback_fptr_t tx_fptr, callback_uint8_fptr_t rx_fptr)
 {
 	gps_callback_get_byte_to_send_fptr = tx_fptr;
@@ -221,28 +223,38 @@ boolean udb_serial_check_rate(int32_t rate)
 
 void udb_serial_start_sending_data(void)
 {
+	 udb_serial_stop_sending_flag = false;
 	_U2TXIF = 1; // fire the tx interrupt
+}
+
+void udb_serial_stop_sending_data(void)
+{
+	udb_serial_stop_sending_flag  = true; 
 }
 
 void __attribute__((__interrupt__, __no_auto_psv__)) _U2TXInterrupt(void)
 {
 	_U2TXIF = 0; // clear the interrupt
-	indicate_loading_inter;
-	set_ipl_on_output_pin;
-	interrupt_save_set_corcon;
+    // prevent losing a character when stop and start sending data
+    if (U2STAbits.UTXBF == 0)
+    {
+        indicate_loading_inter;
+        set_ipl_on_output_pin;
+        interrupt_save_set_corcon;
 
 //	int16_t txchar = udb_serial_callback_get_byte_to_send();
-	int16_t txchar = -1;
-	if (serial_callback_get_byte_to_send)
-	{
-		txchar = serial_callback_get_byte_to_send();
-	}
-	if (txchar != -1)
-	{
-		U2TXREG = (uint8_t)txchar;
-	}
-	interrupt_restore_corcon;
-	unset_ipl_on_output_pin;
+        int16_t txchar = -1;
+        if (serial_callback_get_byte_to_send && ! udb_serial_stop_sending_flag)
+        {
+            txchar = serial_callback_get_byte_to_send();
+        }
+        if (txchar != -1)
+        {
+            U2TXREG = (uint8_t)txchar;
+        }
+        interrupt_restore_corcon;
+        unset_ipl_on_output_pin;
+    }
 }
 
 void __attribute__((__interrupt__, __no_auto_psv__)) _U2RXInterrupt(void)
