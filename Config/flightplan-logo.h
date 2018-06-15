@@ -1104,7 +1104,7 @@ const struct logoInstructionDef instructions[] = {
 #define PILOT_INPUT                          47
 #define TOO_HIGH                             53
 #define INT_TOO_HIGH                         56
-//#define BETTER_LIFT                          55
+#define BETTER_LIFT                          55
 #define RESET_NAVIGATION                     58
 
 //Land
@@ -1245,6 +1245,27 @@ const struct logoInstructionDef instructions[] = {
 		//wait up to 6 sec for the climbrate to decrease
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 		PARAM_SET(0) //clear;
+/*
+		REPEAT(4)    //4 sec max
+			IF_NE( MOTOR_OFF_TIMER,0 )   //wait for motor stop
+				DO (WAIT_DECREASE_CLIMBRATE)
+			ELSE
+				IF_GE(PARAM,0)
+					DO (WAIT_DECREASE_CLIMBRATE)
+					LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
+				END
+			END
+		END
+ 		REPEAT(2)    //2 sec max
+			IF_NE( MOTOR_OFF_TIMER,0 )   //only with motor off at least 4 seconds ago
+				EXEC (LOGO_MAIN)
+			END
+			IF_GE(PARAM,0)
+				DO (WAIT_DECREASE_CLIMBRATE)
+				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
+			END
+		END
+*/
  		REPEAT(6)    //6 sec max
 			IF_GE(PARAM,0)
 				DO (WAIT_DECREASE_CLIMBRATE)
@@ -1252,11 +1273,12 @@ const struct logoInstructionDef instructions[] = {
 			END
 		END
 
+
 		//lock turn direction here
 		LOAD_TO_PARAM(SET_DIRECTION)
 
-		//do while turn 180 deg, aim for ~4 sec behind the starting point, for a turn around the core. compensate for the widening turn during the time it takes to level of
-		REPEAT(6) //6 sec =~ 180 deg = 6 * "30 deg per loop"
+		//do while turn 180 deg, aim for 4 sec behind the starting point for a turn around the core. compensate for the widening turn during the time it takes to level of
+		REPEAT(6) //9 sec =~ 180 deg = 6 * "30 deg per loop"
 			//use motor to compensate sink if turn takes us outside of the thermal
 			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)
 				FLAG_OFF(F_LAND)    //Motor on
@@ -1270,17 +1292,15 @@ const struct logoInstructionDef instructions[] = {
 		END  //repeat
 		FLAG_ON(F_LAND)    //Motor off
 
-		//Shift the circle for 3 sec
+		//Shift the circle for 4 sec
 		DO (THERMALLING_SHIFT_CIRCLE)
 		DO (THERMALLING_SHIFT_CIRCLE)
 		DO (THERMALLING_SHIFT_CIRCLE)
-
-/*
 
 		IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
 			EXEC (LOGO_MAIN)
 		END
-		
+
 		//Wait for a climbrate decrease again
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 		PARAM_SET(0) //clear;
@@ -1290,7 +1310,7 @@ const struct logoInstructionDef instructions[] = {
 				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			END
 		END
-*/
+
 		//now continue around the core
 		REPEAT_FOREVER
 			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
@@ -1299,26 +1319,24 @@ const struct logoInstructionDef instructions[] = {
 			IF_GT( MOTOR_OFF_TIMER,0 )   //only with motor off
 				EXEC (LOGO_MAIN)
 			END
-			IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
-				EXEC (LOGO_MAIN)
-			END
 
-/*
 			//only check climbrate 1 of 3 30 deg segments, to make small changes only
 			DO (THERMALLING_TURN)
 			DO (THERMALLING_TURN)
 			//store current vario value
 			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			DO (THERMALLING_TURN)
-*/
 			//read delta
 			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			//if climb improved 0.1 m/s irt last value, shortly reduce bank, shifting the cicle towards better climb
 			//ToDo - finetune
-			IF_GE(PARAM,8)
+			IF_GE(PARAM,10)
 				DO (THERMALLING_SHIFT_CIRCLE)  // small cicle shift
 			ELSE
 				DO (THERMALLING_TURN)
+			END
+			IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
+				EXEC (LOGO_MAIN)
 			END
 		END
 	END
@@ -1349,7 +1367,7 @@ const struct logoInstructionDef instructions[] = {
 	END
 
 
-/*
+
 	TO (BETTER_LIFT)
 		//indicates lift is better then it was at the beginnning of the thermalling turn
 		//try to core the thermal in small steps
@@ -1357,7 +1375,7 @@ const struct logoInstructionDef instructions[] = {
 		BANK_1S(0)     // reduce bank for one sec, shifting the circle slightly
 	END
 	END
-*/
+
 
 	TO (SINK)
 		SET_INTERRUPT(INT_SINK)
