@@ -285,6 +285,8 @@ void __attribute__((__interrupt__, __no_auto_psv__)) _U2RXInterrupt(void)
 static int16_callback_fptr_t serial3_callback_get_byte_to_send = NULL;
 static callback_uint8_fptr_t serial3_callback_received_byte = NULL;
 
+static boolean udb_serial3_stop_sending_flag = 0;
+
 void udb_init_USART3(int16_callback_fptr_t tx_fptr, callback_uint8_fptr_t rx_fptr)
 {
 	serial3_callback_get_byte_to_send = tx_fptr;
@@ -347,28 +349,38 @@ boolean udb_serial3_check_rate(int32_t rate)
 
 void udb_serial3_start_sending_data(void)
 {
+	 udb_serial3_stop_sending_flag = false;
 	_U3TXIF = 1; // fire the tx interrupt
+}
+
+void udb_serial3_stop_sending_data(void)
+{
+	udb_serial3_stop_sending_flag  = true; 
 }
 
 void __attribute__((__interrupt__, __no_auto_psv__)) _U3TXInterrupt(void)
 {
 	_U3TXIF = 0; // clear the interrupt
-	indicate_loading_inter;
-	set_ipl_on_output_pin;
-	interrupt_save_set_corcon;
+    // prevent losing a character when stop and start sending data
+    if (U3STAbits.UTXBF == 0)
+    {
+        indicate_loading_inter;
+        set_ipl_on_output_pin;
+        interrupt_save_set_corcon;
 
 //	int16_t txchar = udb_serial_callback_get_byte_to_send();
-	int16_t txchar = -1;
-	if (serial3_callback_get_byte_to_send)
-	{
-		txchar = serial3_callback_get_byte_to_send();
-	}
-	if (txchar != -1)
-	{
-		U3TXREG = (uint8_t)txchar;
-	}
-	interrupt_restore_corcon;
-	unset_ipl_on_output_pin;
+        int16_t txchar = -1;
+        if (serial3_callback_get_byte_to_send && ! udb_serial3_stop_sending_flag)
+        {
+            txchar = serial3_callback_get_byte_to_send();
+        }
+        if (txchar != -1)
+        {
+            U3TXREG = (uint8_t)txchar;
+        }
+        interrupt_restore_corcon;
+        unset_ipl_on_output_pin;
+    }
 }
 
 void __attribute__((__interrupt__, __no_auto_psv__)) _U3RXInterrupt(void)
