@@ -293,7 +293,7 @@
 #define AILERON_RIGHT_BRAKE_FACTOR                           0.50 
 #define AILERON_RIGHT_FLAPS_POS_FACTOR                       0.08 
 #define AILERON_RIGHT_FLAPS_NEG_FACTOR                       0.18 
-#define AILERON_RIGHT_LP_FLAPS_FACTOR                       -0.70       //left part factor of aileron with normal flaps setting
+#define AILERON_RIGHT_LP_FLAPS_FACTOR                       -0.50       //left part factor of aileron with normal flaps setting
 #define AILERON_RIGHT_RP_FLAPS_FACTOR                        1.00       //right part factor of aileron with normal flaps setting
 #define AILERON_RIGHT_LP_SPEED_FLAPS_FACTOR                 -0.60       //left part factor of aileron with speed flaps setting
 #define AILERON_RIGHT_RP_SPEED_FLAPS_FACTOR                  0.60       //right part factor of aileron with speed flaps setting
@@ -305,7 +305,7 @@
 #define ELEVATOR_OFFSET_REVERSED                            0          //0 or 1 Make postive offset move nose up 
 #define ELEVATOR_DIR_REVERSED                               1          //0 or 1 don't or do reverse
 //                                                           
-#define RUDDER_FROM_AILERON_FACTOR                          0.40       //apply rudder mix from aileron input
+#define RUDDER_FROM_AILERON_FACTOR                          0.50       //apply rudder mix from aileron input
 #define RUDDER_FACTOR                                       1          //Reduce throw
 #define RUDDER_OFFSET_REVERSED                              0          //0 or 1 Make postive offset move surface up or to the right (seen from aft)
 #define RUDDER_DIR_REVERSED                                 1          //0 or 1 don't or do reverse
