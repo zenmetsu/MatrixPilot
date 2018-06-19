@@ -2275,12 +2275,14 @@ def create_log_book(options) :
             log_book.number_of_input_channels = log.number_of_input_channels
             log_book.channel_trim_values = log.channel_trim_values
             log_book.F20 = "Recorded"
-        elif log.log_format == "F21" : # Number of Input Channels and Trim Values
-            pass # flan not yet using sensor offsets
-        elif log.log_format == "F22" : # Number of Input Channels and Trim Values
-            pass # flan not using sensor values measured at boot up time
-        elif log.log_format == "F23" :
-            log_book.gps_parse_errors = log.gps_parse_errors
+
+#        elif log.log_format == "F21" : # Number of Input Channels and Trim Values
+#            pass # flan not yet using sensor offsets
+#        elif log.log_format == "F22" : # Number of Input Channels and Trim Values
+#            pass # flan not using sensor values measured at boot up time
+#        elif log.log_format == "F23" :
+#            log_book.gps_parse_errors = log.gps_parse_errors
+
         elif log.log_format == "ARDUSTATION+++" : # Intermediate Ardustation line
             roll = log.roll
             pitch = log.pitch
@@ -2290,11 +2292,13 @@ def create_log_book(options) :
     initial_points = 10 # no. log entries to find origin at start if no F13 format line
     
     t.close()
-    if log_book.gps_parse_errors > 0:
-        showinfo(title="Excessive GPS Parse Errors\n" ,
-                         message = "There appear to be gps parsing errors recorded " +
-                                    "in this telemetry file. Please review the data in your raw telemetry file " +
-                                     "and check your gps connections carefully.\n")
+    
+#    if log_book.gps_parse_errors > 0:
+#        showinfo(title="Excessive GPS Parse Errors\n" ,
+#                         message = "There appear to be gps parsing errors recorded " +
+#                                    "in this telemetry file. Please review the data in your raw telemetry file " +
+#                                     "and check your gps connections carefully.\n")
+
     if telemetry_restarts > 1 :
         showinfo(title ="Multiple Telemetry Starts in this File\n" ,      
                        message = "It appears that this telemetry has multiple\n" +
