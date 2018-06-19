@@ -56,11 +56,11 @@
 #include "../libUDB/magnetometer.h" // Needed for SERIAL_MAGNETOMETER 
 #include <string.h>
 
-//me
+#if ( MY_PERSONAL_OPTIONS == 1 )
 #include "options_mavlink.h"
 #include "telemetry.h"
 #include "airspeedCntrl.h"
-//me
+#endif  //MY_PERSONAL_OPTIONS
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serial Output Format (Can be SERIAL_NONE, SERIAL_DEBUG, SERIAL_ARDUSTATION, SERIAL_UDB,
@@ -523,21 +523,17 @@ static void serial_output(const char* format, ...)
 
 	if (remaining > 1)
 	{
+		udb_serial_stop_sending_data();
 		int16_t wrote = vsnprintf((char*)(&serial_buffer[start_index]), (size_t)remaining, format, arglist);
 		end_index = start_index + wrote;
-	}
-
-	if (sb_index == 0)
-	{
-//me
+#if ( MY_PERSONAL_OPTIONS == 1 )
 #if (USE_MAVLINK != 1)
 		udb_serial_start_sending_data();
 #else
 		udb_serial3_start_sending_data();
 #endif
-//me
+#endif  //MY_PERSONAL_OPTIONS
 	}
-
 	va_end(arglist);
 }
 #endif // USE_TELELOG
