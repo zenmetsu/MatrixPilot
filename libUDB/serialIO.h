@@ -42,16 +42,14 @@ void udb_serial_set_rate(int32_t rate);
 boolean udb_serial_check_rate(int32_t rate);
 void udb_serial_start_sending_data(void);
 
-/*me - now in telemetry.h
 // Implement this callback to tell the UDB what byte is next to send on the serial port.
 // Return -1 to stop sending data.
 int16_t udb_serial_callback_get_byte_to_send(void);     // Callback
 
 // Implement this callback to handle receiving a byte from the serial port
 void udb_serial_callback_received_byte(uint8_t rxchar); // Callback
-me*/
 
-//me
+#if ( MY_PERSONAL_OPTIONS == 1 )
 void udb_init_USART3(int16_callback_fptr_t tx_fptr, callback_uint8_fptr_t rx_fptr);
 void udb_serial3_set_rate(int32_t rate);
 boolean udb_serial3_check_rate(int32_t rate);
@@ -59,9 +57,8 @@ void udb_serial3_start_sending_data(void);
 
 // Implement this callback to tell the UDB what byte is next to send on a fourth the serial port.
 // Return -1 to stop sending data.
-//int16_t udb_serial3_callback_get_byte_to_send(void);     // Callback
+int16_t udb_serial3_callback_get_byte_to_send(void);     // Callback
 
 // Implement this callback to handle receiving a byte from the serial port
-//void udb_serial3_callback_received_byte(uint8_t rxchar); // Callback
-//me
-
+void udb_serial3_callback_received_byte(uint8_t rxchar); // Callback
+#endif
