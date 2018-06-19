@@ -1216,7 +1216,7 @@ void telemetry_output_8hz(void)
 			}
 #endif  // me SUE
 
-//me  for any combination SUE/AUX MAVLINK/AUX:
+// for any combination SUE/AUX MAVLINK/AUX:
 			if (state_flags._.f13_print_req == 1)
 			{
 				// The F13 line of telemetry is printed when origin has been captured and in between F2 lines in SERIAL_UDB_EXTRA

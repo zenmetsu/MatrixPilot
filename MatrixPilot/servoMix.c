@@ -471,9 +471,6 @@ void servoMix(void)
 	//Flaps control or logging
 	mixerSteps = flapsSelectedStep;
 	mixerSteps += SERVOMIN;
-/*me
-	udb_pwOut[FLAPS_OUTPUT_CHANNEL] = udb_servo_pulsesat( mixerSteps );
-//me*/
 #endif
 
 	}
