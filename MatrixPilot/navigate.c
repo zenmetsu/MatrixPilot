@@ -113,9 +113,11 @@ static void setup_origin(void)
 		dcm_set_origin_location(lon_gps.WW, lat_gps.WW, alt_sl_gps.WW);
 
 #else
-        extern boolean regularFlyingField;
+//        extern boolean regularFlyingField;
 
-		if ( regularFlyingField )
+//		if ( regularFlyingField ) use_fixed_origin
+		if ( (lat_gps.WW > 518260000 ) && (lat_gps.WW < 518270000 ) && ( lon_gps.WW > 42980000 ) && ( lon_gps.WW < 42990000 ) )
+
 		{
 		    vect3_32t origin = get_fixed_origin();
 		    dcm_set_origin_location(origin.x, origin.y, origin.z);
