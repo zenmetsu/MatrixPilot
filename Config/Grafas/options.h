@@ -1002,7 +1002,7 @@
 #define USE_FIXED_ORIGIN	    0
 //#define FIXED_ORIGIN_LOCATION	    { -1219950467, 374124664, 30.0 }	// A point in Baylands Park in Sunnyvale, CA
 //#define FIXED_ORIGIN_LOCATION	    { 113480854, 472580108, 578 }	// Innsbruck, useful for X-Plane flight simulator
-#define FIXED_ORIGIN_LOCATION	    { 518264641,  42985454, -6 }	// My home field   -1, -6 to maybe compensate for weird altitude on ground with current Auav3
+#define FIXED_ORIGIN_LOCATION	    {  42985454, 518264641, -1 }	// My home field   E  N , Lon Lat
 
 
 ///////////////////////////////////////////////////////////////////////////////////
