@@ -1209,7 +1209,7 @@ void telemetry_output_8hz(void)
 					serial_output("stk%d:", (int16_t)(4096-maxstack));
 #endif // RECORD_FREE_STACK_SPACE
 					serial_output("\r\n");
-					serial_output("F23:G%i:V%i:\r\n",gps_parse_errors,vdop);
+//					serial_output("F23:G%i:V%i:\r\n",gps_parse_errors,vdop);
 				}
 			}
 #endif  // me SUE
