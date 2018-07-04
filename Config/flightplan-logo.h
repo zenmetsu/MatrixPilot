@@ -1296,6 +1296,9 @@ const struct logoInstructionDef instructions[] = {
 			ELSE
 				DO (THERMALLING_TURN)
 			END
+
+			// reduce response to delta 
+			DO (THERMALLING_TURN)
 		END
 	END
 	END
