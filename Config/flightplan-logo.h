@@ -1276,22 +1276,6 @@ const struct logoInstructionDef instructions[] = {
 		DO (THERMALLING_SHIFT_CIRCLE)
 		DO (THERMALLING_SHIFT_CIRCLE)
 
-/*
-
-		IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
-			EXEC (LOGO_MAIN)
-		END
-		
-		//Wait for a climbrate decrease again
-		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
-		PARAM_SET(0) //clear;
-		REPEAT(6)    //6 sec max
-			IF_GE(PARAM,0)
-				DO (WAIT_DECREASE_CLIMBRATE)
-				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
-			END
-		END
-*/
 		//now continue around the core
 		REPEAT_FOREVER
 			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
@@ -1304,26 +1288,17 @@ const struct logoInstructionDef instructions[] = {
 				EXEC (LOGO_MAIN)
 			END
 
-/*
-			//only check climbrate 1 of 3 30 deg segments, to make small changes only
-			DO (THERMALLING_TURN)
-			DO (THERMALLING_TURN)
-			//store current vario value
-			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
-			DO (THERMALLING_TURN)
-*/
 			//read delta
 			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
-			//if climb improved 0.1 m/s irt last value, shortly reduce bank, shifting the cicle towards better climb
-			//ToDo - finetune
-			IF_GE(PARAM,8)
-				DO (THERMALLING_SHIFT_CIRCLE)  // small cicle shift
+			//if climb improved 0.xx m/s irt last value, shortly reduce bank, shifting the cicle towards better climb
+			IF_GE(PARAM,15)
+				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift
 			ELSE
 				DO (THERMALLING_TURN)
 			END
 
-			// reduce response to delta 
-			DO (THERMALLING_TURN)
+			// reduce response to delta
+			//DO (THERMALLING_TURN)
 		END
 	END
 	END
