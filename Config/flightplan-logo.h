@@ -1290,15 +1290,15 @@ const struct logoInstructionDef instructions[] = {
 
 			//read delta
 			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
-			//if climb improved 0.1 m/s irt last value, shortly reduce bank, shifting the cicle towards better climb
-			IF_GE(PARAM,8)
-				DO (THERMALLING_SHIFT_CIRCLE)  // small cicle shift
+			//if climb improved 0.xx m/s irt last value, shortly reduce bank, shifting the cicle towards better climb
+			IF_GE(PARAM,15)
+				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift
 			ELSE
 				DO (THERMALLING_TURN)
 			END
 
-			// reduce response to delta 
-			DO (THERMALLING_TURN)
+			// reduce response to delta
+			//DO (THERMALLING_TURN)
 		END
 	END
 	END
