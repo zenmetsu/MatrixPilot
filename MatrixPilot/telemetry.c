@@ -1258,7 +1258,8 @@ void telemetry_output_8hz(void)
 				}
 #else
 */
-				if ( (lat_origin.WW > 518260000 ) && (lat_origin.WW < 518270000 ) && ( lon_origin.WW > 42980000 ) && ( lon_origin.WW < 42990000 ) )
+				//if ( (lat_origin.WW > 518260000 ) && (lat_origin.WW < 518270000 ) && ( lon_origin.WW > 42980000 ) && ( lon_origin.WW < 42990000 ) )
+				if ( (lat_origin.WW > 518251980) && (lat_origin.WW < 518274170 ) && ( lon_origin.WW > 42967330 ) && ( lon_origin.WW < 42998870 ) )
 				{
 					regularFlyingField = true;
 				}

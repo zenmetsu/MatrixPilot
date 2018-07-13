@@ -116,7 +116,7 @@ static void setup_origin(void)
 //        extern boolean regularFlyingField;
 
 //		if ( regularFlyingField ) use_fixed_origin
-		if ( (lat_gps.WW > 518260000 ) && (lat_gps.WW < 518270000 ) && ( lon_gps.WW > 42980000 ) && ( lon_gps.WW < 42990000 ) )
+		if ( (lat_gps.WW > 518251980) && (lat_gps.WW < 518274170 ) && ( lon_gps.WW > 42967330 ) && ( lon_gps.WW < 42998870 ) )
 
 		{
 		    vect3_32t origin = get_fixed_origin();
