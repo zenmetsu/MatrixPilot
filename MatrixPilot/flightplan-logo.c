@@ -1403,10 +1403,26 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 						turtleLocations[currentTurtle].y._.W1 = -300;
 #else
 */
+
+						//land_1
+						/*
 						turtleLocations[currentTurtle].x._.W0 = 0;
 						turtleLocations[currentTurtle].x._.W1 = 45;
 						turtleLocations[currentTurtle].y._.W0 = 0;
 						turtleLocations[currentTurtle].y._.W1 = -39;
+						*/
+						//land_2
+						turtleLocations[currentTurtle].x._.W0 = 0;
+						turtleLocations[currentTurtle].x._.W1 = -123;
+						turtleLocations[currentTurtle].y._.W0 = 0;
+						turtleLocations[currentTurtle].y._.W1 = +25;
+						//land_3
+						/*
+						turtleLocations[currentTurtle].x._.W0 = 0;
+						turtleLocations[currentTurtle].x._.W1 = -92;
+						turtleLocations[currentTurtle].y._.W0 = 0;
+						turtleLocations[currentTurtle].y._.W1 = -91;
+						*/
 //#endif
 					}
 #endif
