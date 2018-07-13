@@ -56,11 +56,11 @@
 #include "../libUDB/magnetometer.h" // Needed for SERIAL_MAGNETOMETER 
 #include <string.h>
 
-#if ( MY_PERSONAL_OPTIONS == 1 )
+//me
 #include "options_mavlink.h"
 #include "telemetry.h"
 #include "airspeedCntrl.h"
-#endif  //MY_PERSONAL_OPTIONS
+//me
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serial Output Format (Can be SERIAL_NONE, SERIAL_DEBUG, SERIAL_ARDUSTATION, SERIAL_UDB,
@@ -523,17 +523,21 @@ static void serial_output(const char* format, ...)
 
 	if (remaining > 1)
 	{
-		udb_serial_stop_sending_data();
 		int16_t wrote = vsnprintf((char*)(&serial_buffer[start_index]), (size_t)remaining, format, arglist);
 		end_index = start_index + wrote;
-#if ( MY_PERSONAL_OPTIONS == 1 )
+	}
+
+	if (sb_index == 0)
+	{
+//me
 #if (USE_MAVLINK != 1)
 		udb_serial_start_sending_data();
 #else
 		udb_serial3_start_sending_data();
 #endif
-#endif  //MY_PERSONAL_OPTIONS
+//me
 	}
+
 	va_end(arglist);
 }
 #endif // USE_TELELOG
@@ -711,11 +715,11 @@ void telemetry_output_8hz(void)
 	static int16_t interval = 0;
 	
 	interval++;
-	//7/8 filter, 1Hz   to improve readability
-	if ( interval >= 8 )
+	//7/8 filter, 4Hz   to improve readability
+	if ( interval >= 2 )
 	{
 		interval = 0; 
-		airspeed = (airspeed * 7 + air_speed_3DIMU)/8; //7/8 filter, 1Hz
+		airspeed = (airspeed * 7 + air_speed_3DIMU)/8; //7/8 filter, 4Hz
 	}
 //me
 	
@@ -756,7 +760,12 @@ void telemetry_output_8hz(void)
 				serial3_output("imz%i:W%i:bmv%i:"
 				              "ftt%i:as%i:wvx%i:wvy%i:"
 				              "fgs%X:mts%i:tz%i:",
-				IMUlocationz._.W1, waypointIndex, battery_voltage._.W1,     //imu z in m  
+//				              "apa%i:"
+#if (USE_BAROMETER_ALTITUDE != 1)
+				(int16_t)(alt_sl_gps.WW/100), waypointIndex, battery_voltage._.W1,
+#else
+				IMUlocationz._.W1, waypointIndex, battery_voltage._.W1,     //imu z in m  uses barometer alt
+#endif
 				flightTimeUDB, airspeed, estimatedWind[0], estimatedWind[1], 
 				    //int_aspd_pitch_adj,
 				    state_flags.WW,	motorSecondsUDB, vario); 
@@ -1152,7 +1161,6 @@ void telemetry_output_8hz(void)
 					    get_barometer_temperature(), get_barometer_pressure(),
 					    get_barometer_altitude());
 #endif
-					
 					serial_output("bmv%i:mA%i:mAh%i:",
 #if (ANALOG_VOLTAGE_INPUT_CHANNEL != CHANNEL_UNUSED)
 	                battery_voltage._.W1,
@@ -1209,12 +1217,11 @@ void telemetry_output_8hz(void)
 					serial_output("stk%d:", (int16_t)(4096-maxstack));
 #endif // RECORD_FREE_STACK_SPACE
 					serial_output("\r\n");
-//					serial_output("F23:G%i:V%i:\r\n",gps_parse_errors,vdop);
 				}
 			}
 #endif  // me SUE
 
-// for any combination SUE/AUX MAVLINK/AUX:
+//me  for any combination SUE/AUX MAVLINK/AUX:
 			if (state_flags._.f13_print_req == 1)
 			{
 				// The F13 line of telemetry is printed when origin has been captured and in between F2 lines in SERIAL_UDB_EXTRA
