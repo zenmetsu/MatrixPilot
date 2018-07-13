@@ -760,7 +760,12 @@ void telemetry_output_8hz(void)
 				serial3_output("imz%i:W%i:bmv%i:"
 				              "ftt%i:as%i:wvx%i:wvy%i:"
 				              "fgs%X:mts%i:tz%i:",
-				IMUlocationz._.W1, waypointIndex, battery_voltage._.W1,     //imu z in m  
+//				              "apa%i:"
+#if (USE_BAROMETER_ALTITUDE != 1)
+				(int16_t)(alt_sl_gps.WW/100), waypointIndex, battery_voltage._.W1,
+#else
+				IMUlocationz._.W1, waypointIndex, battery_voltage._.W1,     //imu z in m  uses barometer alt
+#endif
 				flightTimeUDB, airspeed, estimatedWind[0], estimatedWind[1], 
 				    //int_aspd_pitch_adj,
 				    state_flags.WW,	motorSecondsUDB, vario); 
