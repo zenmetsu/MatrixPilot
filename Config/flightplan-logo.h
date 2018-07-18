@@ -1037,10 +1037,10 @@ const struct logoInstructionDef instructions[] = {
 #define MOTOR_ON_IN_SINK_ALT           50  // in meters, set low. Altitude where ground objects must be avoided using motor despite sink
 #define MOTOR_OFF_TRIGGER_ALT          90  // in meters
 #define MAX_THERMALLING_ALT           120  // in meters
-#define CLIMBR_THERMAL_TRIGGER         20  // cm/sec >= 0.2 m/s climb is the trigger to start thermalling
+#define CLIMBR_THERMAL_TRIGGER          0  // cm/sec >= 0 m/s climb is the trigger to start thermalling
 #define CLIMBR_THERMAL_CLIMB_MIN     -100  // cm/sec > -1.0 maximum sink allowed, else abort thermalling
 //#define MOTOR_CLIMB_MIN                 0  // cm/sec minimal climbrate that is expected   else abort the Motor climb
-#define MOTOR_CLIMB_MAX               120  // cm/sec maximal climbrate that is expected   else start thermalling
+#define MOTOR_CLIMB_MAX               100  // cm/sec maximal climbrate that is expected   else start thermalling
 
 #if ( MODEL_GRAFAS == 1 )
 #define FINAL_ALT                      16  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
@@ -1292,9 +1292,9 @@ const struct logoInstructionDef instructions[] = {
 			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			//if climb improved 0.xx m/s irt last value, shortly reduce bank, shifting the cicle towards better climb
 			IF_GE(PARAM,15)
-				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift
+				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift, maintain as long as climbrate keeps improving
 			ELSE
-				DO (THERMALLING_TURN)
+				DO (THERMALLING_TURN)           
 			END
 
 			// reduce response to delta
