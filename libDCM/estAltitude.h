@@ -30,9 +30,6 @@ void estAltitude(void);
 inline long get_barometer_altitude(void);
 inline long get_barometer_pressure(void);
 inline int16_t get_barometer_temperature(void);
-#if ( THERMALLING_MISSION == 1 )
-inline long get_barometer_vert_velocity(void);
-#endif  //THERMALLING_MISSION
 
 
 #endif // ESTALTITUDE_H
