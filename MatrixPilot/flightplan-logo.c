@@ -1037,8 +1037,30 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		
 		case AIR_SPEED_Z_VS_START: //  
 		{
-			//set in AIR_SPEED_Z_DELTA for WAIT_DECREASE
-			return vario - airSpeedZStart;
+			//returns 1 if best climbrate exists for 9 samples
+			//call this 9 times to clear history
+			static int16_t airSpeedZBest;
+			static int16_t airSpeedZBestUnbeatenCount;
+
+			if (airSpeedZBest > vario) 
+			{
+				airSpeedZBestUnbeatenCount++;
+			}
+			else
+			{
+				airSpeedZBest = vario;
+				airSpeedZBestUnbeatenCount = 1;
+			}
+			if (airSpeedZBestUnbeatenCount >= 9)
+			{
+				airSpeedZBestUnbeatenCount = 0;
+				airSpeedZBest = 0;
+				return 1;
+			}
+			else
+			{
+				return 0;
+			}		
 		}
 		
 		case READ_F_LAND: // used for motor climbs 
@@ -1301,9 +1323,9 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					break;
 				}
 				case 2: //BANK_1S
-				{				
+				{
 					//maintain a fixed bank or level for one sec
-					
+
 					//USE_CURRENT_ANGLE
 					turtleAngles[currentTurtle] = get_current_angle();
 					//this is a fly command, do the same as FD()

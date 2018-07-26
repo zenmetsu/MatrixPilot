@@ -1234,7 +1234,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (THERMALLING)
-	    //intial turn after rising air has been detected
+		//intial turn after rising air has been detected
 		//after decrease, it is assumed the core has been crossed
 		//then first a tighter half turn, then a wider one
 		//consecutive turns use fine shifts if needed
@@ -1276,6 +1276,9 @@ const struct logoInstructionDef instructions[] = {
 		DO (THERMALLING_SHIFT_CIRCLE)
 		DO (THERMALLING_SHIFT_CIRCLE)
 
+		REPEAT(9) //initialize best climbrate record
+			LOAD_TO_PARAM(AIR_SPEED_Z_VS_START)
+		END
 		//now continue around the core
 		REPEAT_FOREVER
 			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
@@ -1288,17 +1291,22 @@ const struct logoInstructionDef instructions[] = {
 				EXEC (LOGO_MAIN)
 			END
 
-			//read delta
-			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
-			//if climb improved 0.xx m/s irt last value, shortly reduce bank, shifting the cicle towards better climb
-			IF_GE(PARAM,15)
+			//if climbrate was best 9 samples == 270 deg ago, then shift the circle in that direction
+			IF_GE(AIR_SPEED_Z_VS_START,1)
+				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
+				PARAM_SET(0) //clear;
 				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift, maintain as long as climbrate keeps improving
+				//wait up to 6 sec for the climbrate to decrease
+				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
+		 		REPEAT(6)    //6 sec max
+					IF_GT(PARAM,10) //add some margin, only wait if necessary
+						DO (WAIT_DECREASE_CLIMBRATE)
+						LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
+					END
+				END
 			ELSE
-				DO (THERMALLING_TURN)           
+				DO (THERMALLING_TURN)
 			END
-
-			// reduce response to delta
-			//DO (THERMALLING_TURN)
 		END
 	END
 	END
