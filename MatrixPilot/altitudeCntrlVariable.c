@@ -576,7 +576,7 @@ static void normalAltitudeCntrl(void)
 				if (heightError._.W0 > 0)
 				{
 					//autopilotBrake; assume 0 brake = 0, full brake == 1700
-					autopilotBrake = (__builtin_mulss(80, (heightError._.W0))>>3);
+					autopilotBrake = (__builtin_mulss(100, (heightError._.W0))>>3);
 				}
 				else
 				{
