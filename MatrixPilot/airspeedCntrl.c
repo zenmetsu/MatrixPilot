@@ -85,7 +85,28 @@ int16_t target_airspeed     = 0;
 fractional last_aspd_pitch_adj       = 0;   // Remember last adjustment to limit rate of adjustment.
 union longww airspeed_error_integral = {0}; // Integral of airspeed error. lower word is underflow. upper word is output in degrees.
 
-
+#if (THERMALLING_MISSION == 1 )
+// Calculate the airspeed.
+// Note that this airspeed is a magnitude regardless of direction.
+// It is not a calculation of forward airspeed.
+static int16_t calc_airspeed(void)
+{
+	static int16_t interval = 0;
+	
+	interval++;
+	//7/8 filter, 4Hz
+	if ( interval >= 10 )
+	{
+		interval = 0; 
+		if ( airspeed == 0 )
+		{
+			airspeed = air_speed_3DIMU; 
+		}
+		airspeed = ( airspeed * 7 + air_speed_3DIMU)/8; //7/8 filter, 4Hz
+	}
+	return airspeed;
+}
+#else
 // Calculate the airspeed.
 // Note that this airspeed is a magnitude regardless of direction.
 // It is not a calculation of forward airspeed.
@@ -107,6 +128,7 @@ static int16_t calc_airspeed(void)
 
 	return airspeed;
 }
+#endif //THERMALLING_MISSION
 
 // Calculate the groundspeed in cm/s
 static int16_t calc_groundspeed(void) // computes (1/2gravity)*(actual_speed^2 - desired_speed^2)
@@ -203,9 +225,41 @@ fractional gliding_airspeed_pitch_adjust(void)
 	// Pitch adjust for airspeed on glide only.
 	if (throttle_control >= 100)
 	{
+#if (THERMALLING_MISSION != 1 )
+		aspd_pitch_adj = 0;
+		airspeed_error_integral.WW = 0;
+#else
+#if ( MY_PERSONAL_OPTIONS == 1 )
+	aspd_pitch_adj += MOTOR_ON_PITCH_UP; //with motor on, maintain the same speed, and to climb, use more pitch up
+#endif
+#endif
+	}
+	else
+	{
+#if (THERMALLING_MISSION == 1 )
+#if ( MY_PERSONAL_OPTIONS == 1 )
+	//aspd_pitch_adj -= (fractional)( get_autopilotBrake() / 100 ) ; //with brakes active, maintain the same speed
+	static float expoBrake;
+	expoBrake = 6-(5/(get_autopilotBrake()/150+0.01));
+	if (expoBrake < 0 ) 
+	{
+		expoBrake = 0;
+	}	
+	aspd_pitch_adj -= (fractional)expoBrake; //with brakes active, maintain the same speed, use "expo", -0..-6 deg
+#endif
+#endif
+	}
+
+#if (THERMALLING_MISSION == 1 )
+#if (AIRFRAME_TYPE == AIRFRAME_GLIDER)
+	// Pitch adjust for airspeed on glide only, repeat this for Brakes, which also effects pitch.
+	if (get_autopilotBrake() >= 300)
+	{
 		aspd_pitch_adj = 0;
 		airspeed_error_integral.WW = 0;
 	}
+#endif //AIRFRAME_GLIDER
+#endif //THERMALLING_MISSION
 
 	// limit the rate of the airspeed pitch adjustment
 	if (aspd_pitch_adj > last_aspd_pitch_adj)
@@ -238,6 +292,55 @@ void airspeedCntrl(void)
 	
 	//custom code to control flaps goes here
 	
+#ifndef THERMALLING_MISSION
+#define THERMALLING_MISSION 0
+#endif
+#if (THERMALLING_MISSION == 1 )
+	//if (!flags._.GPS_steering)
+	if (!state_flags._.GPS_steering)
+	{
+		//no desiredSpeed control from LOGO, use FLAPS_INPUT_CHANNEL to set desiredSpeed
+		//this will overrule updates from Mavlink
+		if (  ( ((signed int)udb_pwIn[FLAPS_INPUT_CHANNEL]) - 3115 ) < -330  )
+		{
+			desiredSpeed = DESIRED_SPEED_SLOW_F4;    //dm/s
+		}
+		else if (  ( ((signed int)udb_pwIn[FLAPS_INPUT_CHANNEL]) - 3115 ) > 330  )
+		{
+			desiredSpeed = DESIRED_SPEED_FAST_FMIN4;  //dm/s
+		}
+		else
+		{
+			//Flaps FLAPS_INPUT_CHANNEL centered
+			desiredSpeed = DESIRED_SPEED_NORMAL_F0;   //dm/s
+		}
+		// set flaps to follow slider proportionally, so effect my be measured
+		flapsSelected = ( ((signed int)udb_pwIn[FLAPS_INPUT_CHANNEL]) - 3115 ) ;
+
+	} //if not auto
+	else
+	{
+		//Logo control
+
+		// desiredSpeed set by flightplan-logo.c
+
+		// set flapsSelected using desiredSpeed
+		if ( desiredSpeed == DESIRED_SPEED_SLOW_F4 )
+		{
+			//normal speed = 0, slow = -1000, high speed = 1000
+			flapsSelected = -1000;	 // Flap setting 4 (down) for thermalling
+		}
+		else if ( desiredSpeed == DESIRED_SPEED_FAST_FMIN4 )
+		{
+		  	flapsSelected = 100;// Flap setting -1 (up) for speed
+		}
+		else
+		{
+			flapsSelected = 0;//no camber
+		}
+	}
+#endif //THERMALLING_MISSION
+
 	//Overspeed protection (overrules normal brakes when airspeed too high)
 	//airspeed in cm/s ,  desiredSpeed stored in dm/s (10ths of meters per second)
 	if (state_flags._.altitude_hold_throttle || state_flags._.altitude_hold_pitch)     //stab or auto, not manual

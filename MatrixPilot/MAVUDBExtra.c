@@ -45,6 +45,11 @@
 #include "../libUDB/mcu.h"
 #include "../libUDB/servoOut.h"
 
+#if ( MY_PERSONAL_OPTIONS == 1 )
+#include "airspeedCntrl.h"           //for get_flapsSelected()
+extern int16_t vario;   // in cm/s   used for Logo by  - defined and set in flightplan_logo.c @ 1hz
+#endif  //MY_PERSONAL_OPTIONS
+
 extern uint16_t maxstack;
 
 int16_t mavlink_sue_telemetry_counter = 13; // Countdown counter, for use with SERIAL_UDB_EXTRA compatibility
@@ -66,7 +71,21 @@ void MAVUDBExtraOutput(void)
 	static int16_t pwIn_save[MAVLINK_SUE_CHANNEL_MAX_SIZE + 1];
 	static int16_t pwOut_save[MAVLINK_SUE_CHANNEL_MAX_SIZE + 1];
 	static int16_t pwTrim_save[MAVLINK_SUE_CHANNEL_MAX_SIZE + 1];
+
+#if (THERMALLING_MISSION == 1 )
+	static int16_t airspeed = 0;
+	static int16_t interval = 0;
 	
+	interval++;
+	//7/8 filter, 4Hz   to improve readability
+	if ( interval >= 2 )
+	{
+		interval = 0; 
+		airspeed = (airspeed * 7 + air_speed_3DIMU)/8; //7/8 filter, 4Hz
+	}
+#endif //THERMALLING_MISSION
+
+
 	switch  (mavlink_sue_telemetry_counter)
 	{
 		case 13:
@@ -225,11 +244,21 @@ void MAVUDBExtraOutput(void)
 						rmat[3], rmat[4], rmat[5],
 						rmat[6], rmat[7], rmat[8],
 						(uint16_t) cog_gps.BB, sog_gps.BB, (uint16_t) udb_cpu_load(),
+#if (THERMALLING_MISSION == 1 )
 						air_speed_3DIMU, estimatedWind[0], estimatedWind[1], estimatedWind[2],
+#else
+						airspeed, estimatedWind[0], estimatedWind[1], estimatedWind[2],
+#endif //THERMALLING_MISSION
+
 #if (MAG_YAW_DRIFT == 1)
 						magFieldEarth[0], magFieldEarth[1], magFieldEarth[2],
 #else
+#if ( MY_PERSONAL_OPTIONS == 1 )
+// my flaps output for flan/csv
+						get_flapsSelected() + SERVOCENTER, (int16_t)0, (int16_t)0,
+#else
 						(int16_t)0, (int16_t)0, (int16_t)0,
+#endif
 #endif
 						svs, hdop);
 
@@ -267,6 +296,9 @@ void MAVUDBExtraOutput(void)
 						{
 							pwOut_save[i] = 0;
 						}
+#if ( MY_PERSONAL_OPTIONS == 1 )
+						pwOut_save[9] = get_flapsSelected() + SERVOCENTER;  //Auav3 only supports 8 outputs, need 9, 10 are sent by mavlink
+#endif
 					}	
 				}
 				else
@@ -320,7 +352,12 @@ void MAVUDBExtraOutput(void)
 #else
 						0,
 #endif // (SILSIM != 1)
-						IMUvelocityx._.W1, IMUvelocityy._.W1, IMUvelocityz._.W1,
+#if ( MY_PERSONAL_OPTIONS == 1 )
+// my vario
+						    IMUvelocityx._.W1, IMUvelocityy._.W1, vario,
+#else
+						    IMUvelocityx._.W1, IMUvelocityy._.W1, IMUvelocityz._.W1,
+#endif
 						goal.x, goal.y, goal.z,
 						aero_force[0], aero_force[1], aero_force[2],
 #if (USE_BAROMETER_ALTITUDE == 1)
