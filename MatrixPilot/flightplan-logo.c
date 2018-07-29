@@ -1020,7 +1020,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		}
 
 #if ( THERMALLING_MISSION == 1 )
-		case BATTERY_VOLTAGE: // 
+		case BATTERY_VOLTAGE: //
 		{
 			//return battery_voltage._.W1;
 			return (int16_t)avgBatteryVoltage;
@@ -1029,20 +1029,34 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		case AIR_SPEED_Z_DELTA: //  used for waiting for a decrease in climbrate in a thermal
 		{
 			static int16_t airSpeedZDelta;
-			airSpeedZDelta = vario - vario_old; 
+			airSpeedZDelta = vario - vario_old;
 			vario_old = vario;
 			airSpeedZStart = vario;  //setup for better lift detection
 			return airSpeedZDelta;
 		}
-		
-		case AIR_SPEED_Z_VS_START: //  
+
+		case AIR_SPEED_Z_VS_START: 
 		{
 			//returns 1 if best climbrate exists for 9 samples
-			//call this 9 times to clear history
+
+			//level only if really needed to center best lift
+			//by comparing highest vario value against average
+			//only act if significantly better and still true after 9 sectors == 270 deg
+
+			//init: store current vario as best, overrule average with vario.
+			//call this 9 times to init/clear history; brings average close to vario
+			//need init at new thermal cycle; only respond to real increases , not irt lower old averages
+
+			//every cycle; update average, and best = vario
+			// until best > average + 10
+			// count 9 cycles, if still best, ret 1
+			//
 			static int16_t airSpeedZBest;
+			static int16_t airSpeedZAverage;
 			static int16_t airSpeedZBestUnbeatenCount;
 
-			if (airSpeedZBest > vario) 
+			airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;
+			if ( (airSpeedZBest > vario ) && ( airSpeedZBest > ( airSpeedZAverage + 10 ) ) ) // still highest with 0.1 m/s margin
 			{
 				airSpeedZBestUnbeatenCount++;
 			}
@@ -1054,20 +1068,21 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			if (airSpeedZBestUnbeatenCount >= 9)
 			{
 				airSpeedZBestUnbeatenCount = 0;
-				airSpeedZBest = 0;
+				airSpeedZBest = 0;   //soft init and at best found
+				airSpeedZAverage = vario;
 				return 1;
 			}
 			else
 			{
 				return 0;
-			}		
+			}
 		}
-		
-		case READ_F_LAND: // used for motor climbs 
+
+		case READ_F_LAND: // used for motor climbs
 		{
 			return ((desired_behavior.W & F_LAND) > 0);
 		}
-		
+
 		case READ_DESIRED_SPEED: // used for polar plot 
 		{
 			return (desiredSpeed);
