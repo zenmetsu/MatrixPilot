@@ -1054,6 +1054,8 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			static int16_t airSpeedZBest;
 			static int16_t airSpeedZAverage;
 			static int16_t airSpeedZBestUnbeatenCount;
+			//
+			static int16_t airSpeedZBestUnbeatenHeading;
 
 			airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;
 			if ( (airSpeedZBest > vario ) && ( airSpeedZBest > ( airSpeedZAverage + 10 ) ) ) // still highest with 0.1 m/s margin
@@ -1064,8 +1066,18 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			{
 				airSpeedZBest = vario;
 				airSpeedZBestUnbeatenCount = 1;
+				//
+				airSpeedZBestUnbeatenHeading = get_current_angle();			
 			}
-			if (airSpeedZBestUnbeatenCount >= 9)
+			//if (airSpeedZBestUnbeatenCount >= 9)
+			//
+			// have we rotated 270 deg right or left since best? 
+			if ( airSpeedZBestUnbeatenCount >= 6 &&
+			   ( (  rotateClockwise && ( ( ( get_current_angle() - airSpeedZBestUnbeatenHeading + 270 + 360) % 360 ) < 180 ) ) |
+			     ( !rotateClockwise && ( ( ( get_current_angle() - airSpeedZBestUnbeatenHeading +  90 + 360) % 360 ) > 180 ) ) )
+			   ) 
+			//
+			
 			{
 				airSpeedZBestUnbeatenCount = 0;
 				airSpeedZBest = 0;   //soft init and at best found
