@@ -81,6 +81,8 @@ static int32_t speed_height_old = 0;
 #endif
 static int16_t varioCounter = 0;            // 0..3 to create 1Hz from 4Hz
 extern int16_t vario;                       // in cm/s   used for Logo by  - defined in flightplan_logo.c and set in altitudeCntrlVariable.c
+static int16_t vario12sec;                  // in cm/s   used for limit climbrate in thermals to maintain relative height in the thermal, to improve centering
+
 static boolean motorClimbRunStarted;        // boolean climbing with motor so far this run
 static int16_t avgMotorRunClimbrate;        // average climbrate in cm/s in this run
 static int16_t sinkMotorOffTimer;           // wait period to postpone climbing with motor due to sink  (30 sec)
@@ -292,6 +294,7 @@ static void normalAltitudeCntrl(void)
 #endif
 */
 		vario = ( ( vario * 11 ) + (int16_t)(IMUvelocityz._.W1) )/ 12;    //update @ 4Hz, 3 sec filter, based on GPS, in cm/sec, used in flightplan_logo.c
+		vario12sec = ( ( vario12sec * 47 ) + (int16_t)(IMUvelocityz._.W1) )/ 48;    //update @ 4Hz, 12 sec filter, based on GPS, in cm/sec, used for braking in thermals - rollover @ 6.x m/s
 
 	}
 #endif  //THERMALLING_MISSION
@@ -586,6 +589,16 @@ static void normalAltitudeCntrl(void)
 			else
 			{
 				autopilotBrake = 0;
+				
+				//limit climbrate in thermals to maintain relative height in the thermal, to improve centering
+				if (throttleAccum.WW == 0 )
+				{
+					if (vario > vario12sec )
+					{
+						//autopilotBrake; assume 0 brake = 0, full brake == 1700
+						autopilotBrake = (vario - vario12sec) * 1000;
+					}
+				}		
 			}
 
 #endif  //AIRFRAME_GLIDER
