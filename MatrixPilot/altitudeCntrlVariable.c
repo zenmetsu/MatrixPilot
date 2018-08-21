@@ -591,14 +591,11 @@ static void normalAltitudeCntrl(void)
 				autopilotBrake = 0;
 				
 				//limit climbrate in thermals to maintain relative height in the thermal, to improve centering
-				if (throttleAccum.WW == 0 )
+				if ( ( throttleAccum.WW == 0 ) && ( vario12sec > 50 ) && ( vario > vario12sec ) )
 				{
-					if (vario > vario12sec )
-					{
-						//autopilotBrake; assume 0 brake = 0, full brake == 1700
-						autopilotBrake = (vario - vario12sec) * 1000;
-					}
-				}		
+					//autopilotBrake; vario in cm/s, assume 0 brake = 0, full brake == 1700  ( >= 75 cm/s more )
+					autopilotBrake = (vario - vario12sec) * 20;
+				}				
 			}
 
 #endif  //AIRFRAME_GLIDER
