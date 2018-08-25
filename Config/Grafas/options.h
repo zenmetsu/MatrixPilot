@@ -498,7 +498,6 @@
 
 #define SERIAL3_OUTPUT_FORMAT               SERIAL_UDB
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Serial Output BAUD rate for either standard telemetry streams or MAVLink
 //  19200, 38400, 57600, 115200, 230400, 460800, 921600 // yes, it really will work at this rate
@@ -662,7 +661,7 @@
 #define ROLLKD                              0.00
 #endif
 #if ( MODEL_GRAFAS == 1 )
-#define ROLLKP                              0.18
+#define ROLLKP                              0.16
 #define ROLLKD                              0.00
 #endif
 #if ( MODEL_LINEA == 1 )
@@ -689,7 +688,7 @@
 #define PITCHKD                             0.00
 #endif
 #if ( MODEL_GRAFAS == 1 )
-#define PITCHGAIN                           0.12 // Bill cessna - 0.10 Matt cularius
+#define PITCHGAIN                           0.13 // Bill cessna - 0.10 Matt cularius
 #define PITCHKD                             0.00
 #endif
 #if ( MODEL_LINEA == 1 )
