@@ -584,18 +584,17 @@ static void normalAltitudeCntrl(void)
 				else
 				{
 					autopilotBrake = 0;
+					//limit climbrate in thermals to maintain relative height in the thermal, to improve centering
+					if ( ( throttleAccum.WW == 0 ) && ( vario12sec > 40 ) && ( vario > 50 ) && ( vario > vario12sec ) )
+					{
+						//autopilotBrake; vario in cm/s, assume 0 brake = 0, full brake == 1700  ( >= 75 cm/s more )
+						autopilotBrake = (vario - vario12sec) * 20;
+					}
 				}
 			}
 			else
 			{
 				autopilotBrake = 0;
-				
-				//limit climbrate in thermals to maintain relative height in the thermal, to improve centering
-				if ( ( throttleAccum.WW == 0 ) && ( vario12sec > 50 ) && ( vario > vario12sec ) )
-				{
-					//autopilotBrake; vario in cm/s, assume 0 brake = 0, full brake == 1700  ( >= 75 cm/s more )
-					autopilotBrake = (vario - vario12sec) * 20;
-				}				
 			}
 
 #endif  //AIRFRAME_GLIDER
@@ -662,6 +661,7 @@ static void normalAltitudeCntrl(void)
 	{
 		pitchAltitudeAdjust = 0;
 		manualThrottle(throttleIn);
+		autopilotBrake = 0;
 	}
 }
 

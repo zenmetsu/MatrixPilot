@@ -286,6 +286,7 @@ static int16_t numInstructionsInCurrentSet = NUM_INSTRUCTIONS;
 #if ( THERMALLING_MISSION == 1 )
 int16_t vario = 0;// in cm/s ,used for Logo  - defined in flightplan_logo.c and set in altitudeCntrlVariable.c - running average (3s)
 static int16_t vario_old = 0;// in cm/s ,used for AIR_SPEED_Z_DELTA
+static int16_t airSpeedZAverage;
 int16_t fixedBankTargetAngle = 0; // heading,  used for Logo  - for FIXED_BANK_ROTATE command
 int16_t fixedBankActiveCounter; //  used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
 boolean fixedBankActive = false; // used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
@@ -756,6 +757,7 @@ void flightplan_logo_update(void)
 		
 		//avgBatteryVoltage = (int16_t)( battery_voltage._.W1 );   //heavy filter for voltage
 		avgBatteryVoltage = (avgBatteryVoltage * 14.0 + (float)battery_voltage._.W1 )/15.0;   //heavy filter for voltage
+		airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;
 		
 		geoSetStatus();         //read geofencee status and update status system value
 
@@ -1052,12 +1054,12 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			// count 9 cycles, if still best, ret 1
 			//
 			static int16_t airSpeedZBest;
-			static int16_t airSpeedZAverage;
+			//static int16_t airSpeedZAverage;
 			static int16_t airSpeedZBestUnbeatenCount;
 			//
 			static int16_t airSpeedZBestUnbeatenHeading;
 
-			airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;
+			//airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;  @ 1 Hz
 			if ( (airSpeedZBest > vario ) && ( airSpeedZBest > ( airSpeedZAverage + 10 ) ) ) // still highest with 0.1 m/s margin
 			{
 				airSpeedZBestUnbeatenCount++;
@@ -1069,15 +1071,15 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 				//
 				airSpeedZBestUnbeatenHeading = get_current_angle();			
 			}
-			//if (airSpeedZBestUnbeatenCount >= 9)
-			//
-			// have we rotated 270 deg right or left since best? 
+			// have we rotated 270 deg right or left since best? use +/- 25 deg margin
 			if ( airSpeedZBestUnbeatenCount >= 6 &&
-			   ( (  rotateClockwise && ( ( ( get_current_angle() - airSpeedZBestUnbeatenHeading + 270 + 360) % 360 ) < 180 ) ) |
-			     ( !rotateClockwise && ( ( ( get_current_angle() - airSpeedZBestUnbeatenHeading +  90 + 360) % 360 ) > 180 ) ) )
-			   ) 
-			//
-			
+			     (  rotateClockwise && 
+			   		( ( ( get_current_angle() - airSpeedZBestUnbeatenHeading + 360 ) % 360 ) > 245 ) && 
+					( ( ( get_current_angle() - airSpeedZBestUnbeatenHeading + 360 ) % 360 ) < 295 ) ) |
+			     ( !rotateClockwise && 
+				 	( ( ( airSpeedZBestUnbeatenHeading - get_current_angle() + 360 ) % 360 ) > 245 ) &&
+					( ( ( airSpeedZBestUnbeatenHeading - get_current_angle() + 360 ) % 360 ) < 295 ) ) 
+			   )		
 			{
 				airSpeedZBestUnbeatenCount = 0;
 				airSpeedZBest = 0;   //soft init and at best found
