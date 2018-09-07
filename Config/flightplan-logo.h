@@ -1277,7 +1277,7 @@ const struct logoInstructionDef instructions[] = {
 		DO (THERMALLING_SHIFT_CIRCLE)
 
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
-	 		REPEAT(6)    //6 sec max
+		REPEAT(6)    //6 sec max
 			IF_GT(PARAM,10) //add some margin, only wait if necessary
 				DO (WAIT_DECREASE_CLIMBRATE)
 				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
@@ -1303,15 +1303,17 @@ const struct logoInstructionDef instructions[] = {
 			IF_GE(AIR_SPEED_Z_VS_START,1)
 				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 				PARAM_SET(0) //clear;
-				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift, maintain as long as climbrate keeps improving
+				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift, maintain as long as climbrate keeps improving			
+				/*
 				//wait up to 6 sec for the climbrate to decrease
 				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
-		 		REPEAT(6)    //6 sec max
+				REPEAT(6)    //6 sec max
 					IF_GT(PARAM,10) //add some margin, only wait if necessary
 						DO (WAIT_DECREASE_CLIMBRATE)
 						LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 					END
 				END
+				*/
 				REPEAT(9) //initialize best climbrate record
 					LOAD_TO_PARAM(AIR_SPEED_Z_VS_START)
 				END
