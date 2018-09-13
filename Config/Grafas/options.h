@@ -661,7 +661,7 @@
 #define ROLLKD                              0.00
 #endif
 #if ( MODEL_GRAFAS == 1 )
-#define ROLLKP                              0.16
+#define ROLLKP                              0.20
 #define ROLLKD                              0.00
 #endif
 #if ( MODEL_LINEA == 1 )
