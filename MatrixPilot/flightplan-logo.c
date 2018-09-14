@@ -84,6 +84,7 @@ enum {
 	BATTERY_VOLTAGE,
 	AIR_SPEED_Z_DELTA,
 	AIR_SPEED_Z_VS_START,
+	CLEAR_Z_BEST,
 	READ_F_LAND,
  	GEOFENCE_STATUS,
 	GEOFENCE_TURN,
@@ -303,6 +304,7 @@ static int16_t motorOffTimer = 0;
 static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
 static float avgBatteryVoltage = 110;  //kickstart average filter with nominal value; it only starts when LOGO starts      
 static int16_t flyCommandCounter = 0;  //count up 40 times per sec when in a fly command
+static int16_t airSpeedZBestUnbeatenCount = 0;  //used in AIR_SPEED_Z_VS_START
 #if ( MY_PERSONAL_OPTIONS == 1 )
 boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c 
 boolean forceCrossFinishLine;   //used by interrupt routine to sigmal an event that needs immediate action
@@ -1039,37 +1041,27 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 
 		case AIR_SPEED_Z_VS_START: 
 		{
-			//returns 1 if best climbrate exists for 9 samples
+			//returns 1 if best climbrate exists since last ~270 deg
 
 			//level only if really needed to center best lift
-			//by comparing highest vario value against average
-			//only act if significantly better and still true after 9 sectors == 270 deg
-
-			//init: store current vario as best, overrule average with vario.
-			//call this 9 times to init/clear history; brings average close to vario
-			//need init at new thermal cycle; only respond to real increases , not irt lower old averages
-
-			//every cycle; update average, and best = vario
-			// until best > average + 10
-			// count 9 cycles, if still best, ret 1
-			//
+			//by comparing highest vario value against average over the last 9 seconds
+			//only act if significantly better and still best after ~270 deg
 			static int16_t airSpeedZBest;
-			//static int16_t airSpeedZAverage;
-			static int16_t airSpeedZBestUnbeatenCount;
-			//
 			static int16_t airSpeedZBestUnbeatenHeading;
 
-			//airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;  @ 1 Hz
-			if ( (airSpeedZBest > vario ) && ( airSpeedZBest > ( airSpeedZAverage + 10 ) ) ) // still highest with 0.1 m/s margin
+			if ( airSpeedZBestUnbeatenCount == 0 )   //looking for better lift
 			{
-				airSpeedZBestUnbeatenCount++;
+				//calculated elsewhere: airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;  @ 1 Hz
+				if ( vario > ( airSpeedZAverage + 10 ) ) 
+				{
+					airSpeedZBest = vario;
+					airSpeedZBestUnbeatenCount = 1;   //start
+					airSpeedZBestUnbeatenHeading = get_current_angle();			
+				}
 			}
-			else
+			else  //waiting for the right moment to level/shift the circle
 			{
-				airSpeedZBest = vario;
-				airSpeedZBestUnbeatenCount = 1;
-				//
-				airSpeedZBestUnbeatenHeading = get_current_angle();			
+				airSpeedZBestUnbeatenCount ++;
 			}
 			// have we rotated 270 deg right or left since best? use +/- 25 deg margin
 			if ( airSpeedZBestUnbeatenCount >= 6 &&
@@ -1078,8 +1070,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 					( ( ( get_current_angle() - airSpeedZBestUnbeatenHeading + 360 ) % 360 ) < 295 ) ) |
 			     ( !rotateClockwise && 
 				 	( ( ( airSpeedZBestUnbeatenHeading - get_current_angle() + 360 ) % 360 ) > 245 ) &&
-					( ( ( airSpeedZBestUnbeatenHeading - get_current_angle() + 360 ) % 360 ) < 295 ) ) 
-			   )		
+					( ( ( airSpeedZBestUnbeatenHeading - get_current_angle() + 360 ) % 360 ) < 295 ) )  ) 	
 			{
 				airSpeedZBestUnbeatenCount = 0;
 				airSpeedZBest = 0;   //soft init and at best found
@@ -1090,6 +1081,12 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			{
 				return 0;
 			}
+		}
+
+		case CLEAR_Z_BEST: // clear best climbrate
+		{
+			airSpeedZBestUnbeatenCount = 0;
+			return (0);
 		}
 
 		case READ_F_LAND: // used for motor climbs
