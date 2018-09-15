@@ -304,7 +304,7 @@ static int16_t motorOffTimer = 0;
 static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
 static float avgBatteryVoltage = 110;  //kickstart average filter with nominal value; it only starts when LOGO starts      
 static int16_t flyCommandCounter = 0;  //count up 40 times per sec when in a fly command
-static airSpeedZBest = 0;
+static int16_t airSpeedZBest = 0;
 static int16_t airSpeedZBestCount = 0;  //used in AIR_SPEED_Z_VS_START
 #if ( MY_PERSONAL_OPTIONS == 1 )
 boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c 
