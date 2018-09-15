@@ -258,7 +258,7 @@
 #define AILERON_RIGHT_OUTPUT_OFFSET                       -50          // n  up = +
 #define THROTTLE_OUTPUT_OFFSET                              0
 #define ELEVATOR_OUTPUT_OFFSET                            150          // up = +  nose up
-#define RUDDER_OUTPUT_OFFSET                              -100          // right = +  surface moves right, seen from behind
+#define RUDDER_OUTPUT_OFFSET                              -130          // right = +  surface moves right, seen from behind
 //                                                           
 #define AILERON_LEFT_BRAKE_FACTOR                          0.50 
 #define AILERON_LEFT_FLAPS_POS_FACTOR                      0.08 
