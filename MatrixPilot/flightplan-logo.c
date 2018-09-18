@@ -1339,7 +1339,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 35) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 35) << 2);
 
-					fixedBankActiveCounter = 120; //40Hz = 3 sec
+					fixedBankActiveCounter = 40; //40Hz = 1 sec
 					fixedBankActive = true;     //controls roll and yaw, will be reset when rotation is reached
 					angleTargetActive = true;
 					break;
