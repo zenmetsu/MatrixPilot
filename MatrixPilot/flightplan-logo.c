@@ -557,6 +557,42 @@ static void update_goal_from(struct relative3D old_goal)
 
 void flightplan_logo_update(void)
 {
+
+#if ( THERMALLING_MISSION == 1 )
+	//if ( ( flyCommandCounter > 0 ) && (!forceCrossFinishLine) && (!forceFinishReset) )
+	if ( flyCommandCounter > 0 )
+	{
+		flyCommandCounter++;   //count up @ 40Hz
+	}
+	if ( fixedBankActive )
+	{
+		if ( fixedBankActiveCounter > 0 )
+		{
+			fixedBankActiveCounter--;   //count down @ 40Hz
+		}
+	}
+	letHeartbeat++;
+	if ( letHeartbeat % 40 == 0 )   //1Hz
+	{
+		
+		//avgBatteryVoltage = (int16_t)( battery_voltage._.W1 );   //heavy filter for voltage
+		avgBatteryVoltage = (avgBatteryVoltage * 14.0 + (float)battery_voltage._.W1 )/15.0;   //heavy filter for voltage
+		airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;
+		
+		geoSetStatus();         //read geofencee status and update status system value
+
+		if (motorOffTimer > 0)   //monitor motor run
+		{
+			motorOffTimer--;
+		}
+		//if ((desired_behavior.W & F_LAND) == 0) // set to 4 as long as motor runs, to know time after stopping motor
+		if (udb_pwOut[THROTTLE_OUTPUT_CHANNEL] > 2300 ) // set to 4 as long as motor runs, to know time after stopping motor
+		{
+			motorOffTimer = 4;  // start timer, wait 4 sec before detecting thermals, used by system value MOTOR_OFF_TIMER
+		}
+	}
+#endif //THERMALLING_MISSION
+
 	// first run any injected instruction from the serial port
 	if (logo_inject_pos == LOGO_INJECT_READY)
 	{
@@ -742,38 +778,7 @@ void flightplan_logo_update(void)
 #endif  //THERMALLING_MISSION
 	}
 #if ( THERMALLING_MISSION == 1 )
-	//if ( ( flyCommandCounter > 0 ) && (!forceCrossFinishLine) && (!forceFinishReset) )
-	if ( flyCommandCounter > 0 )
-	{
-		flyCommandCounter++;   //count up @ 40Hz
-	}
-	if ( fixedBankActive )
-	{
-		if ( fixedBankActiveCounter > 0 )
-		{
-			fixedBankActiveCounter--;   //count down @ 40Hz
-		}
-	}
-	letHeartbeat++;
-	if ( letHeartbeat % 40 == 0 )   //1Hz
-	{
-		
-		//avgBatteryVoltage = (int16_t)( battery_voltage._.W1 );   //heavy filter for voltage
-		avgBatteryVoltage = (avgBatteryVoltage * 14.0 + (float)battery_voltage._.W1 )/15.0;   //heavy filter for voltage
-		airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;
-		
-		geoSetStatus();         //read geofencee status and update status system value
 
-		if (motorOffTimer > 0)   //monitor motor run
-		{
-			motorOffTimer--;
-		}
-		//if ((desired_behavior.W & F_LAND) == 0) // set to 4 as long as motor runs, to know time after stopping motor
-		if (udb_pwOut[THROTTLE_OUTPUT_CHANNEL] > 2300 ) // set to 4 as long as motor runs, to know time after stopping motor
-		{
-			motorOffTimer = 4;  // start timer, wait 4 sec before detecting thermals, used by system value MOTOR_OFF_TIMER
-		}
-	}
 	//calculate heading to where there is room to fly 400m, for REL_ANGLE_TO_OPPOSITE... 
 	if ( letHeartbeat % 40 == 10 )   //1Hz
 	{
@@ -1339,7 +1344,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 35) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 35) << 2);
 
-					fixedBankActiveCounter = 40; //40Hz = 1 sec
+					fixedBankActiveCounter = 80; //40Hz = 1 sec
 					fixedBankActive = true;     //controls roll and yaw, will be reset when rotation is reached
 					angleTargetActive = true;
 					break;
