@@ -88,6 +88,15 @@
 #define GPS_TYPE                            GPS_UBX_4HZ
 //#define DEFAULT_GPS_BAUD                    57600   // added for GPS_NMEA support
 
+////////////////////////////////////////////////////////////////////////////////
+// You can specify a level of good GNSS reception before MatrixPilot accepts "GPS ACQUIRED".
+// You can generally leaves these lines at their default values. A value of zero switches off the check.
+// The VDOP parameter is only available for Ublox GNSS devices. It is ignored for other GNSS units.
+// The metrics are not used by HILSIM or SILSIM.
+
+#define GNSS_HDOP_REQUIRED_FOR_STARTUP       20  //  Horizontal Dilution of Precision
+#define GNSS_VDOP_REQUIRED_FOR_STARTUP	     60  //  Vertical Dilution of Precision
+#define GNSS_SVS_REQUIRED_FOR_STARTUP	      6  //  Number of Sattelites in View
 
 ////////////////////////////////////////////////////////////////////////////////
 // Enable/Disable core features of this firmware
@@ -231,11 +240,12 @@
 // If you select this option, you also need to set magnetometer options in
 // the options_magnetometer.h file, including declination and magnetometer type.
 #ifndef MAG_YAW_DRIFT
-#define MAG_YAW_DRIFT                       0
+#define MAG_YAW_DRIFT                       1
 #endif
 
 // Define USE_BAROMETER_ALTITUDE to be 1 to use barometer for altitude correction.
 // Otherwise, if set to 0 only the GPS will be used.
+// Barometers such as the BMP180 must be shaded from sunlight or they will return false readings.
 #ifndef USE_BAROMETER_ALTITUDE
 #define USE_BAROMETER_ALTITUDE              1
 #endif
@@ -382,6 +392,11 @@
 #define FLAPS_OUTPUT_CHANNEL                CHANNEL_UNUSED
 */
 
+// Set to 1 to use Output 1 (udb5mini only) for throttle output and Castle Link
+// Live data reads to get voltage and current readings from a Castle ESC.
+// When set to 1, you should also set THROTTLE_OUTPUT_CHANNEL to 1.
+#define USE_CASTLE_LINK_THROTTLE            0
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Servo Reversing Configuration
@@ -471,6 +486,7 @@
 // SERIAL_CAM_TRACK is used to output location data to a 2nd UDB, which will target its camera at this plane.
 // SERIAL_MAVLINK is a bi-directional binary format for use with QgroundControl, HKGCS or MAVProxy (Ground Control Stations.)
 // SERIAL_MAGNETOMETER outputs the automatically calculated offsets and raw magnetometer data.
+// SERIAL_MAG_CALIBRATE is used to calculate  magnetometer offsets for a static non changing calibration. 
 // Note that SERIAL_MAVLINK defaults to using a baud rate of 57600 baud (other formats default to 19200)
 
 #ifndef SERIAL_OUTPUT_FORMAT
@@ -482,13 +498,12 @@
 
 #define SERIAL3_OUTPUT_FORMAT               SERIAL_UDB
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Serial Output BAUD rate for either standard telemetry streams or MAVLink
 //  19200, 38400, 57600, 115200, 230400, 460800, 921600 // yes, it really will work at this rate
 //#define SERIAL_BAUDRATE                     19200
 //#define SERIAL_BAUDRATE                     9600 //for FrSky
-#define SERIAL_BAUDRATE                     57600 //
+#define SERIAL_BAUDRATE                     57600
 #define SERIAL3_BAUDRATE                     9600 //for FrSky
 
 
@@ -517,10 +532,13 @@
 // you'll also need to set up the RSSI_MIN_SIGNAL_VOLTAGE and RSSI_MAX_SIGNAL_VOLTAGE
 // to match your Receiver's RSSI format.  Note that some receivers use a higher voltage to
 // represent a lower signal strength, so you may need to set MIN higher than MAX.
+//
+// ANALOG_VOLTAGE2_INPUT_CHANNEL lets you measure Video Tx (or other second) battery voltage
 
 #define ANALOG_CURRENT_INPUT_CHANNEL        CHANNEL_UNUSED
 #define ANALOG_VOLTAGE_INPUT_CHANNEL        1     //A15 on Udb5   //A2 on Auav3
 #define ANALOG_RSSI_INPUT_CHANNEL           CHANNEL_UNUSED
+#define ANALOG_VOLTAGE2_INPUT_CHANNEL       CHANNEL_UNUSED
 
 #define MAX_CURRENT                         900 // 90.0 Amps max for the sensor from SparkFun (in tenths of Amps)
 #define CURRENT_SENSOR_OFFSET               10  // Add 1.0 Amp to whatever value we sense
@@ -529,6 +547,8 @@
 #define MAX_VOLTAGE                         1120 // 56.0 Volts max for the sensor from SparkFun (in tenths of Volts)
 #define VOLTAGE_SENSOR_OFFSET               0   // Add 0.0 Volts to whatever value we sense
 
+#define MAX_VOLTAGE2                        33  // 3.3 Volts max for direct Analog Input
+#define VOLTAGE2_SENSOR_OFFSET              0   // Add 0.0 Volts to whatever value we sense
 #define VOLTAGE_SENSOR_ALARM                105  //(in tenths of Volts) - 105 for 3S, 138 for 4S
 
 // RSSI - RC Receiver signal strength
@@ -641,7 +661,7 @@
 #define ROLLKD                              0.00
 #endif
 #if ( MODEL_GRAFAS == 1 )
-#define ROLLKP                              0.18
+#define ROLLKP                              0.20
 #define ROLLKD                              0.00
 #endif
 #if ( MODEL_LINEA == 1 )
@@ -668,7 +688,7 @@
 #define PITCHKD                             0.00
 #endif
 #if ( MODEL_GRAFAS == 1 )
-#define PITCHGAIN                           0.12 // Bill cessna - 0.10 Matt cularius
+#define PITCHGAIN                           0.13 // Bill cessna - 0.10 Matt cularius
 #define PITCHKD                             0.00
 #endif
 #if ( MODEL_LINEA == 1 )
@@ -692,7 +712,21 @@
 // ELEVATOR_TRIM_INVERTED               Elevator trim in fractional servo units (-1.0 to 1.0 ) for inverted straight and level flight at cruise speed.
 // Note: ELEVATOR_TRIM_INVERTED is usually negative, with typical values in the -0.5 to -1.0 range.
 
-#define REFERENCE_SPEED                 (  11.3 )
+//#define REFERENCE_SPEED                 (  11.3 )
+#if ( MODEL_FANTASY == 1 && HILSIM == 0 )
+#define REFERENCE_SPEED                       11.30     // meters/second   41 km/h
+#endif
+#if ( MODEL_FANTASY == 1 && HILSIM == 1 )
+//Hilsim Fantasy
+#define REFERENCE_SPEED                       11.30     // meters/second   41 km/h
+#endif
+#if ( MODEL_GRAFAS == 1 )
+#define REFERENCE_SPEED                       10.83     // meters/second   39 km/h
+#endif
+#if ( MODEL_LINEA == 1 )
+#define REFERENCE_SPEED                       10.83     // meters/second   39 km/h
+#endif
+
 #define ANGLE_OF_ATTACK_NORMAL          (   0.0 )
 #define ANGLE_OF_ATTACK_INVERTED        (   0.0 )
 #define ELEVATOR_TRIM_NORMAL            (   0.0 )
@@ -716,8 +750,9 @@
 #define ZRATE_OFFSET  (  000 ) // not used by the UDB4
 */
 
-#if ( MODEL_LINEA == 1 )
+//#if ( MODEL_LINEA == 1 )
 //Linea Auav3
+/*
 #define CUSTOM_OFFSETS
 #define XACCEL_OFFSET (208)
 #define YACCEL_OFFSET (209)
@@ -726,6 +761,7 @@
 #define YRATE_OFFSET  (-37)
 #define ZRATE_OFFSET  (21)
 #else
+now Linea:*/
 //Fantasy, Fantasy_Hil, Grafas  Auav3
 #define CUSTOM_OFFSETS
 #define XACCEL_OFFSET (410)
@@ -734,7 +770,7 @@
 #define XRATE_OFFSET  (-86)
 #define YRATE_OFFSET  (289)
 #define ZRATE_OFFSET  (88)
-#endif
+//#endif
 
 // Rudder/Yaw Control Gains
 // YAWKP_RUDDER is the proportional feedback gain for rudder control of yaw orientation.
@@ -857,7 +893,7 @@
 // The range of altitude within which to linearly vary the throttle
 // and pitch to maintain altitude.  A bigger value makes altitude hold
 // smoother, and is suggested for very fast planes.
-#define HEIGHT_MARGIN                       10
+#define HEIGHT_MARGIN                       8
 
 // Use ALT_HOLD_THROTTLE_MAX when below HEIGHT_MARGIN of the target height.
 // Interpolate between ALT_HOLD_THROTTLE_MAX and ALT_HOLD_THROTTLE_MIN
@@ -868,13 +904,13 @@
 
 
 #if ( MODEL_FANTASY == 1 && HILSIM == 0 )
- #define ALT_HOLD_THROTTLE_MAX                0.6
+ #define ALT_HOLD_THROTTLE_MAX                0.8
 #endif
 #if ( MODEL_FANTASY == 1 && HILSIM == 1 )
  #define ALT_HOLD_THROTTLE_MAX                1.0
 #endif
 #if ( MODEL_GRAFAS == 1 )
- #define ALT_HOLD_THROTTLE_MAX                0.48
+ #define ALT_HOLD_THROTTLE_MAX                0.80
 #endif
 #if ( MODEL_LINEA == 1 )
  #define ALT_HOLD_THROTTLE_MAX                0.56
@@ -937,7 +973,7 @@
 
 // Move on to the next waypoint when getting within this distance of the current goal (in meters)
 //#define WAYPOINT_PROXIMITY_RADIUS	25
-#define WAYPOINT_PROXIMITY_RADIUS	40
+#define WAYPOINT_PROXIMITY_RADIUS	35
 
 // Origin Location
 // When using relative waypoints, the default is to interpret those waypoints as relative to the
@@ -951,7 +987,7 @@
 // X is Longitude in degrees * 10^7
 // Y is Latitude in degrees * 10^7
 // Z is altitude above sea level, in meters, as a floating point value.
-// 
+//
 // If you are using waypoints for an autonomous landing, it is a good idea to set the altitude value
 // to be the altitude of the landing point, and then express the heights of all of the waypoints with
 // respect to the landing point.
@@ -961,7 +997,9 @@
 
 #define USE_FIXED_ORIGIN	    0
 //#define FIXED_ORIGIN_LOCATION	    { -1219950467, 374124664, 30.0 }	// A point in Baylands Park in Sunnyvale, CA
-#define FIXED_ORIGIN_LOCATION	    { 113480854, 472580108, 578 }	// Innsbruck, useful for X-Plane flight simulator
+//#define FIXED_ORIGIN_LOCATION	    { 113480854, 472580108, 578 }	// Innsbruck, useful for X-Plane flight simulator
+#define FIXED_ORIGIN_LOCATION	    {  42985454, 518264641, -1 }	// My home field   E  N , Lon Lat
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Vehicle and Pilot Identification
