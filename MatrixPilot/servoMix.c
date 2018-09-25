@@ -66,6 +66,7 @@ static int16_t aileronRightRpSpeedFlapsFactor;
 
 static int16_t elevatorBrakeFactor;
 static int16_t elevatorThrottleFactor;
+static int16_t elevatorFactor;
 
 static int16_t rudderFromAileronFactor;
 static int16_t rudderFactor;
@@ -125,6 +126,7 @@ void servoMix_init(void)
 	aileronRightLpSpeedFlapsFactor = (signed int)(AILERON_RIGHT_LP_SPEED_FLAPS_FACTOR * 32.0);
 	aileronRightRpSpeedFlapsFactor = (signed int)(AILERON_RIGHT_RP_SPEED_FLAPS_FACTOR * 32.0);
 	
+	elevatorFactor = (signed int)(ELEVATOR_FACTOR * 32.0);
 	elevatorBrakeFactor = (signed int)(ELEVATOR_BRAKE_FACTOR * 32.0);
 	elevatorThrottleFactor = (signed int)(ELEVATOR_THROTTLE_FACTOR * 32.0);
 	
@@ -456,6 +458,7 @@ void servoMix(void)
 	mixerSteps += (brakeSelectedStep * elevatorBrakeFactor)>>5;
 	mixerSteps += (autopilotThrottleSelected * elevatorThrottleFactor)>>5;
 	mixerSteps += REVERSE_IF_NEEDED(ELEVATOR_OFFSET_REVERSED,ELEVATOR_OUTPUT_OFFSET);
+	mixerSteps += (mixerSteps * elevatorFactor)>>5; 
 	mixerSteps = REVERSE_IF_NEEDED(ELEVATOR_DIR_REVERSED, mixerSteps);
 	mixerSteps += SERVOCENTER;
 	udb_pwOut[ELEVATOR_OUTPUT_CHANNEL] = udb_servo_pulsesat(mixerSteps);
