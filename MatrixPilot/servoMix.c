@@ -448,7 +448,7 @@ void servoMix(void)
 	mixerSteps = temp - SERVOCENTER;
 	mixerSteps += (aileronInput * rudderFromAileronFactor)>>5;
 	mixerSteps += REVERSE_IF_NEEDED(RUDDER_OFFSET_REVERSED,RUDDER_OUTPUT_OFFSET);
-	mixerSteps += (mixerSteps * rudderFactor)>>5;
+	mixerSteps = (mixerSteps * rudderFactor)>>5;
 	mixerSteps = REVERSE_IF_NEEDED(RUDDER_DIR_REVERSED, mixerSteps);
 	mixerSteps += SERVOCENTER;
 	udb_pwOut[RUDDER_OUTPUT_CHANNEL] = udb_servo_pulsesat(mixerSteps);
@@ -458,7 +458,7 @@ void servoMix(void)
 	mixerSteps += (brakeSelectedStep * elevatorBrakeFactor)>>5;
 	mixerSteps += (autopilotThrottleSelected * elevatorThrottleFactor)>>5;
 	mixerSteps += REVERSE_IF_NEEDED(ELEVATOR_OFFSET_REVERSED,ELEVATOR_OUTPUT_OFFSET);
-	mixerSteps += (mixerSteps * elevatorFactor)>>5; 
+	mixerSteps = (mixerSteps * elevatorFactor)>>5; 
 	mixerSteps = REVERSE_IF_NEEDED(ELEVATOR_DIR_REVERSED, mixerSteps);
 	mixerSteps += SERVOCENTER;
 	udb_pwOut[ELEVATOR_OUTPUT_CHANNEL] = udb_servo_pulsesat(mixerSteps);
