@@ -1047,35 +1047,53 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 
 		case AIR_SPEED_Z_VS_START: 
 		{
-			//returns 1 if best climbrate exists since last ~270 deg
+			//returns 1 if best climbrate exists for 9 samples
+
 			//level only if really needed to center best lift
-			//by comparing highest vario value against average over the last 9 seconds
-			//only act if significantly better and still best after ~270 deg
+			//by comparing highest vario value against average
+			//only act if significantly better and still true after 9 sectors == 270 deg
 			static int16_t airSpeedZBestHeading;
 
-			if ( airSpeedZBestCount > 0 )   //waiting for the shift
+			//init: store current vario as best, overrule average with vario.
+			//call this 9 times to init/clear history; brings average close to vario
+			//need init at new thermal cycle; only respond to real increases , not irt lower old averages
+
+			//every cycle; update average, and best = vario
+			// until best > average + 10
+			// count 9 cycles, if still best, ret 1
+			//
+			static int16_t airSpeedZBest;
+			//static int16_t airSpeedZAverage;
+			static int16_t airSpeedZBestUnbeatenCount;
+			//
+			static int16_t airSpeedZBestUnbeatenHeading;
+
+			//airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;  @ 1 Hz
+			if ( (airSpeedZBest > vario ) && ( airSpeedZBest > ( airSpeedZAverage + 10 ) ) ) // still highest with 0.1 m/s margin
 			{
-				airSpeedZBestCount ++;
+				airSpeedZBestUnbeatenCount++;
 			}
-			//calculated elsewhere: airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;  @ 1 Hz
-			if ( ( vario > ( airSpeedZAverage + 10 )) && ( vario > airSpeedZBest ) )
+			else
 			{
 				airSpeedZBest = vario;
-				airSpeedZBestCount = 1;   //start
-				airSpeedZBestHeading = get_current_angle();			
+				airSpeedZBestUnbeatenCount = 1;
+				//
+				airSpeedZBestUnbeatenHeading = get_current_angle();			
 			}
 			// have we rotated 270 deg right or left since best? use +/- 25 deg margin
-			if ( airSpeedZBestCount >= 6 &&
+			if ( airSpeedZBestUnbeatenCount >= 6 &&
 			     (  rotateClockwise && 
-			   		( ( ( get_current_angle() - airSpeedZBestHeading + 360 ) % 360 ) > 245 ) && 
-					( ( ( get_current_angle() - airSpeedZBestHeading + 360 ) % 360 ) < 295 ) ) |
+			   		( ( ( get_current_angle() - airSpeedZBestUnbeatenHeading + 360 ) % 360 ) > 245 ) && 
+					( ( ( get_current_angle() - airSpeedZBestUnbeatenHeading + 360 ) % 360 ) < 295 ) ) |
 			     ( !rotateClockwise && 
-				 	( ( ( airSpeedZBestHeading - get_current_angle() + 360 ) % 360 ) > 245 ) &&
-					( ( ( airSpeedZBestHeading - get_current_angle() + 360 ) % 360 ) < 295 ) )  ) 	
+				 	( ( ( airSpeedZBestUnbeatenHeading - get_current_angle() + 360 ) % 360 ) > 245 ) &&
+					( ( ( airSpeedZBestUnbeatenHeading - get_current_angle() + 360 ) % 360 ) < 295 ) ) 
+			   )		
 			{
-				airSpeedZBestCount = 0;
-				airSpeedZBest = 0;
-				return 1;     //trigger the shift circle
+				airSpeedZBestUnbeatenCount = 0;
+				airSpeedZBest = 0;   //soft init and at best found
+				airSpeedZAverage = vario;
+				return 1;
 			}
 			else
 			{
@@ -1344,7 +1362,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 35) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 35) << 2);
 
-					fixedBankActiveCounter = 80; //40Hz = 1 sec
+					fixedBankActiveCounter = 120; //40Hz = 3 sec
 					fixedBankActive = true;     //controls roll and yaw, will be reset when rotation is reached
 					angleTargetActive = true;
 					break;

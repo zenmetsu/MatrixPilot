@@ -1259,6 +1259,7 @@ const struct logoInstructionDef instructions[] = {
 
 		//do while turn 180 deg, aim for ~4 sec behind the starting point, for a turn around the core. compensate for the widening turn during the time it takes to level of
 		REPEAT(20) //20 sec =~ at least one circle
+		//REPEAT(5) //6 sec =~ 180 deg = 6 * "30 deg per loop"
 			//use motor to compensate sink if turn takes us outside of the thermal
 			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)
 				FLAG_OFF(F_LAND)    //Motor on
@@ -1268,7 +1269,8 @@ const struct logoInstructionDef instructions[] = {
 				FLAG_ON(F_LAND)    //Motor off
 			END
 
-//			DO (THERMALLING_TURN)
+			DO (THERMALLING_TURN)
+/*			DO (THERMALLING_TURN)
 
 			IF_LT(AIR_SPEED_Z_VS_START,1)
 				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
@@ -1297,12 +1299,11 @@ const struct logoInstructionDef instructions[] = {
 					END
 				END			
 			END
-
+*/
 		END  //repeat
 		FLAG_ON(F_LAND)    //Motor off
-//		DO (THERMALLING_TURN)
+		DO (THERMALLING_TURN)
 
-		/*
 		//Shift the circle for 3 sec
 		DO (THERMALLING_SHIFT_CIRCLE)
 		DO (THERMALLING_SHIFT_CIRCLE)
@@ -1315,12 +1316,10 @@ const struct logoInstructionDef instructions[] = {
 				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			END
 		END
-		*/
-		/*
+
 		REPEAT(9) //initialize best climbrate record
 			LOAD_TO_PARAM(AIR_SPEED_Z_VS_START)
 		END
-		*/
 		LOAD_TO_PARAM(CLEAR_Z_BEST)
 		//now continue around the core
 		REPEAT_FOREVER
@@ -1349,11 +1348,9 @@ const struct logoInstructionDef instructions[] = {
 					END
 				END
 				*/
-				/*
 				REPEAT(9) //initialize best climbrate record
 					LOAD_TO_PARAM(AIR_SPEED_Z_VS_START)
 				END
-				*/
 				LOAD_TO_PARAM(CLEAR_Z_BEST)
 			ELSE
 				DO (THERMALLING_TURN)
