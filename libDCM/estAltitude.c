@@ -48,13 +48,15 @@ void altimeter_calibrate(void)
 {
 	int ground_altitude = alt_origin.WW / 100;    // meters
 #ifdef MY_PERSONAL_OPTIONS
+#if (MODEL_GRAFAS == 1)
 	ground_altitude -= 5;
+#endif
 #endif
 	barometer_temperature_gnd = barometer_temperature;
 	barometer_pressure_gnd = barometer_pressure;
 
 	sea_level_pressure = ((float)barometer_pressure / powf((1 - (ground_altitude/44330.0)), 5.255));
-
+	
 	DPRINT("altimeter_calibrate: ground temp & pres set %i, %li\r\n", barometer_temperature_gnd, barometer_pressure_gnd);
 }
 
