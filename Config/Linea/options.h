@@ -655,23 +655,26 @@
 #if ( MODEL_FANTASY == 1 && HILSIM == 0 )
 #define ROLLKP                              0.18
 #define ROLLKD                              0.00
+#define AILERON_BOOST                       1.00
 #endif
 #if ( MODEL_FANTASY == 1 && HILSIM == 1 )
 #define ROLLKP                              0.2
 #define ROLLKD                              0.00
+#define AILERON_BOOST                       1.00
 #endif
 #if ( MODEL_GRAFAS == 1 )
 #define ROLLKP                              0.20
 #define ROLLKD                              0.00
+#define AILERON_BOOST                       1.00
 #endif
 #if ( MODEL_LINEA == 1 )
 #define ROLLKP                              0.16
 #define ROLLKD                              0.00
+#define AILERON_BOOST                       1.50
 #endif
 
 #define YAWKP_AILERON                       0.10
 #define YAWKD_AILERON                       0.00
-#define AILERON_BOOST                       1.00
 
 // Elevator/Pitch Control Gains
 // PITCHGAIN is the pitch stabilization gain, typically around 0.125
