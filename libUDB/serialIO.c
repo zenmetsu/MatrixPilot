@@ -268,6 +268,7 @@ void __attribute__((__interrupt__, __no_auto_psv__)) _U2RXInterrupt(void)
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Serial3
+#if (BOARD_TYPE == AUAV3_BOARD)
 
 static int16_callback_fptr_t serial3_callback_get_byte_to_send = NULL;
 static callback_uint8_fptr_t serial3_callback_received_byte = NULL;
@@ -374,3 +375,4 @@ void __attribute__((__interrupt__, __no_auto_psv__)) _U3RXInterrupt(void)
 	U3STAbits.OERR = 0;
 	interrupt_restore_corcon;
 }
+#endif

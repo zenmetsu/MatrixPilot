@@ -1252,13 +1252,13 @@ const struct logoInstructionDef instructions[] = {
 			END
 		END
 
-		//lock turn direction here
+		//lock turn direction
 		LOAD_TO_PARAM(SET_DIRECTION)
 
 		LOAD_TO_PARAM(CLEAR_Z_BEST)
 
 		//do while turn 180 deg, aim for ~4 sec behind the starting point, for a turn around the core. compensate for the widening turn during the time it takes to level of
-		REPEAT(20) //20 sec =~ at least one circle
+		REPEAT(10) //20 sec =~ at least one circle
 		//REPEAT(5) //6 sec =~ 180 deg = 6 * "30 deg per loop"
 			//use motor to compensate sink if turn takes us outside of the thermal
 			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)
@@ -1269,14 +1269,10 @@ const struct logoInstructionDef instructions[] = {
 				FLAG_ON(F_LAND)    //Motor off
 			END
 
-			DO (THERMALLING_TURN)
-/*			DO (THERMALLING_TURN)
+//			DO (THERMALLING_TURN)
 
 			IF_LT(AIR_SPEED_Z_VS_START,1)
 				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
-					EXEC (LOGO_MAIN)
-				END
-				IF_GT( MOTOR_OFF_TIMER,0 )   //only with motor off
 					EXEC (LOGO_MAIN)
 				END
 				IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
@@ -1284,12 +1280,12 @@ const struct logoInstructionDef instructions[] = {
 				END
 
 				DO (THERMALLING_TURN)
-				
+
 			ELSE
 				LOAD_TO_PARAM(CLEAR_Z_BEST)
 				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 
-				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift	
+				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift
 
 				//alse use wait decrease to align with core at first
 				REPEAT(6)    //6 sec max
@@ -1297,29 +1293,76 @@ const struct logoInstructionDef instructions[] = {
 						DO (WAIT_DECREASE_CLIMBRATE)
 						LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 					END
-				END			
+				END
+			END
+		END  //repeat
+		
+		// 10 more but no motor
+		//do while turn 180 deg, aim for ~4 sec behind the starting point, for a turn around the core. compensate for the widening turn during the time it takes to level of
+		REPEAT(10) //20 sec =~ at least one circle
+		//REPEAT(5) //6 sec =~ 180 deg = 6 * "30 deg per loop"
+/*
+			//use motor to compensate sink if turn takes us outside of the thermal
+			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)
+				FLAG_OFF(F_LAND)    //Motor on
+			END
+			//and off when no longer needed
+ 			IF_GT(AIR_SPEED_Z,MOTOR_CLIMB_MAX)
+				FLAG_ON(F_LAND)    //Motor off
 			END
 */
-		END  //repeat
-		FLAG_ON(F_LAND)    //Motor off
-		DO (THERMALLING_TURN)
+//			DO (THERMALLING_TURN)
 
+			IF_LT(AIR_SPEED_Z_VS_START,1)
+				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
+					EXEC (LOGO_MAIN)
+				END
+				IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
+					EXEC (LOGO_MAIN)
+				END
+
+				DO (THERMALLING_TURN)
+
+			ELSE
+				LOAD_TO_PARAM(CLEAR_Z_BEST)
+				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
+
+				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift
+
+				//alse use wait decrease to align with core at first
+				REPEAT(6)    //6 sec max
+					IF_GT(PARAM,10) //add some margin, only wait if necessary
+						DO (WAIT_DECREASE_CLIMBRATE)
+						LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
+					END
+				END
+			END
+		END  //repeat
+
+
+		FLAG_ON(F_LAND)    //Motor off
+//		DO (THERMALLING_TURN)
+/*
 		//Shift the circle for 3 sec
 		DO (THERMALLING_SHIFT_CIRCLE)
 		DO (THERMALLING_SHIFT_CIRCLE)
 		DO (THERMALLING_SHIFT_CIRCLE)
+*/
 
 		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
+/*
 		REPEAT(6)    //6 sec max
 			IF_GT(PARAM,10) //add some margin, only wait if necessary
 				DO (WAIT_DECREASE_CLIMBRATE)
 				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
 			END
 		END
-
+*/
+/*
 		REPEAT(9) //initialize best climbrate record
 			LOAD_TO_PARAM(AIR_SPEED_Z_VS_START)
 		END
+*/
 		LOAD_TO_PARAM(CLEAR_Z_BEST)
 		//now continue around the core
 		REPEAT_FOREVER
@@ -1337,7 +1380,7 @@ const struct logoInstructionDef instructions[] = {
 			IF_GE(AIR_SPEED_Z_VS_START,1)
 				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 				//PARAM_SET(0) //clear;
-				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift, maintain as long as climbrate keeps improving			
+				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift, maintain as long as climbrate keeps improving
 				/*
 				//wait up to 6 sec for the climbrate to decrease
 				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
@@ -1348,9 +1391,11 @@ const struct logoInstructionDef instructions[] = {
 					END
 				END
 				*/
+				/*
 				REPEAT(9) //initialize best climbrate record
 					LOAD_TO_PARAM(AIR_SPEED_Z_VS_START)
 				END
+				*/
 				LOAD_TO_PARAM(CLEAR_Z_BEST)
 			ELSE
 				DO (THERMALLING_TURN)
@@ -1544,7 +1589,7 @@ const struct logoInstructionDef instructions[] = {
 		PEN_UP
 			USE_CURRENT_ANGLE
 			USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
-			FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
+			FD(WAYPOINT_PROXIMITY_RADIUS-1)	//back to edge of radius,	target is now directly in front again (on arrival point)
 		PEN_DOWN
 	END
 	END

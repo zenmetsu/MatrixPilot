@@ -303,7 +303,7 @@ static int16_t get_current_angle(void);
 static int16_t motorOffTimer = 0;
 static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
 static float avgBatteryVoltage = 110;  //kickstart average filter with nominal value; it only starts when LOGO starts      
-static int16_t flyCommandCounter = 0;  //count up 40 times per sec when in a fly command
+//static int16_t flyCommandCounter = 0;  //count up 40 times per sec when in a fly command
 static int16_t airSpeedZBest = 0;
 static int16_t airSpeedZBestCount = 0;  //used in AIR_SPEED_Z_VS_START
 #if ( MY_PERSONAL_OPTIONS == 1 )
@@ -489,7 +489,7 @@ void flightplan_logo_begin(int16_t flightplanNum)
 	turtleLocations[CAMERA].y._.W1 = IMUlocationy._.W1;
 	turtleLocations[CAMERA].z = IMUlocationz._.W1;
 
-	// Calculate heading from Direction Cosine Matrix (rather than GPS), 
+	// Calculate heading from Direction Cosine Matrix (rather than GPS),
 	// So that this code works when the plane is static. e.g. at takeoff
 	curHeading.x = -rmat[1];
 	curHeading.y = rmat[4];
@@ -528,7 +528,7 @@ static void update_goal_from(struct relative3D old_goal)
 	lastGoal.x = new_goal.x = (turtleLocations[PLANE].x._.W1);
 	lastGoal.y = new_goal.y = (turtleLocations[PLANE].y._.W1);
 	lastGoal.z = new_goal.z = turtleLocations[PLANE].z;
-	
+
 	if (old_goal.x == new_goal.x && old_goal.y == new_goal.y)
 	{
 		old_goal.x = IMUlocationx._.W1;
@@ -560,10 +560,11 @@ void flightplan_logo_update(void)
 
 #if ( THERMALLING_MISSION == 1 )
 	//if ( ( flyCommandCounter > 0 ) && (!forceCrossFinishLine) && (!forceFinishReset) )
-	if ( flyCommandCounter > 0 )
+	/*if ( flyCommandCounter > 0 )
 	{
 		flyCommandCounter++;   //count up @ 40Hz
 	}
+	*/
 	if ( fixedBankActive )
 	{
 		if ( fixedBankActiveCounter > 0 )
@@ -670,13 +671,15 @@ void flightplan_logo_update(void)
 		// inhibit navigation for x loops, to allow drifting downwind
 		if ( fixedBankActive )
 		{
-			if (!angleTargetActive) // BANK_1S()
+			if (!angleTargetActive) // Bank_1s
 			{
 				if (fixedBankActiveCounter <= 0)
 				{
 					fixedBankActive = false;
 
 					//a second has passed, so force this fly command to end
+					//USE_CURRENT_ANGLE
+					turtleAngles[currentTurtle] = get_current_angle();
 
 					// Use current position (for x and y)
 					turtleLocations[currentTurtle].x._.W0 = 0;
@@ -689,8 +692,8 @@ void flightplan_logo_update(void)
 					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
 					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
 
-					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);  //
-					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), ((int16_t)WAYPOINT_PROXIMITY_RADIUS)-4) << 2);  //
+					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), ((int16_t)WAYPOINT_PROXIMITY_RADIUS)-4) << 2);
 
 					if (interruptStackBase)   //if in-progress
 					{
@@ -705,11 +708,12 @@ void flightplan_logo_update(void)
 			else    // FIXED_BANK_ROTATE
 			{
 				//check if target of 15 deg right has been reached  or timer times out
-				if ( (fixedBankActiveCounter <= 0) |
+				if ( (fixedBankActiveCounter <= 0)  )
+				  /*|
 					 ( rotateClockwise && ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) < 180 ) |
 					 ( !rotateClockwise && ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) > 180 ) ) )
 					 )// closest direction is right of target
-
+				   */
 				//use Gps heading
 				//if ( ( ( cog_gpsBB - fixedBankTargetAngle + 360) % 360 ) < 180 ) // closest direction is right of target
 				{
@@ -717,6 +721,8 @@ void flightplan_logo_update(void)
 
 					//force this fly command to end
 
+					//USE_CURRENT_ANGLE
+					turtleAngles[currentTurtle] = get_current_angle();
 					// Use current position (for x and y)
 					turtleLocations[currentTurtle].x._.W0 = 0;
 					turtleLocations[currentTurtle].x._.W1 = IMUlocationx._.W1;
@@ -728,8 +734,8 @@ void flightplan_logo_update(void)
 					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
 					b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
 
-					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);  //
-					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), ((int16_t)WAYPOINT_PROXIMITY_RADIUS)-4) << 2);  //
+					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), ((int16_t)WAYPOINT_PROXIMITY_RADIUS)-4) << 2);
 
 					if (interruptStackBase)   //if not in-progress
 					{
@@ -1052,7 +1058,6 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			//level only if really needed to center best lift
 			//by comparing highest vario value against average
 			//only act if significantly better and still true after 9 sectors == 270 deg
-			static int16_t airSpeedZBestHeading;
 
 			//init: store current vario as best, overrule average with vario.
 			//call this 9 times to init/clear history; brings average close to vario
@@ -1064,33 +1069,33 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			//
 			static int16_t airSpeedZBest;
 			//static int16_t airSpeedZAverage;
-			static int16_t airSpeedZBestUnbeatenCount;
+			static int16_t airSpeedZBestCount;
 			//
-			static int16_t airSpeedZBestUnbeatenHeading;
+			static int16_t airSpeedZBestHeading;
 
 			//airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;  @ 1 Hz
 			if ( (airSpeedZBest > vario ) && ( airSpeedZBest > ( airSpeedZAverage + 10 ) ) ) // still highest with 0.1 m/s margin
 			{
-				airSpeedZBestUnbeatenCount++;
+				airSpeedZBestCount++;
 			}
 			else
 			{
 				airSpeedZBest = vario;
-				airSpeedZBestUnbeatenCount = 1;
+				airSpeedZBestCount = 1;
 				//
-				airSpeedZBestUnbeatenHeading = get_current_angle();			
+				airSpeedZBestHeading = get_current_angle();			
 			}
 			// have we rotated 270 deg right or left since best? use +/- 25 deg margin
-			if ( airSpeedZBestUnbeatenCount >= 6 &&
+			if ( airSpeedZBestCount >= 6 &&
 			     (  rotateClockwise && 
-			   		( ( ( get_current_angle() - airSpeedZBestUnbeatenHeading + 360 ) % 360 ) > 245 ) && 
-					( ( ( get_current_angle() - airSpeedZBestUnbeatenHeading + 360 ) % 360 ) < 295 ) ) |
+			   		( ( ( get_current_angle() - airSpeedZBestHeading + 360 ) % 360 ) > 245 ) && 
+					( ( ( get_current_angle() - airSpeedZBestHeading + 360 ) % 360 ) < 295 ) ) |
 			     ( !rotateClockwise && 
-				 	( ( ( airSpeedZBestUnbeatenHeading - get_current_angle() + 360 ) % 360 ) > 245 ) &&
-					( ( ( airSpeedZBestUnbeatenHeading - get_current_angle() + 360 ) % 360 ) < 295 ) ) 
+				 	( ( ( airSpeedZBestHeading - get_current_angle() + 360 ) % 360 ) > 245 ) &&
+					( ( ( airSpeedZBestHeading - get_current_angle() + 360 ) % 360 ) < 295 ) ) 
 			   )		
 			{
-				airSpeedZBestUnbeatenCount = 0;
+				airSpeedZBestCount = 0;
 				airSpeedZBest = 0;   //soft init and at best found
 				airSpeedZAverage = vario;
 				return 1;
@@ -1144,17 +1149,18 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			forceCrossFinishLine = true;
 			return 0;
 		}
-		case READ_FLY_COMMAND_COUNTER: // used by interrupt routines to sigmal fly commands that take too long
+		/*case READ_FLY_COMMAND_COUNTER: // used by interrupt routines to sigmal fly commands that take too long
 		{
 			return flyCommandCounter;
 		}
+		*/
 		case FORCE_FINISH_BAD_NAV: // used by interrupt routine to sigmal an event that needs immediate action
 		{
 			turtleLocations[currentTurtle].x._.W0 = 0;
 			turtleLocations[currentTurtle].x._.W1 = IMUlocationx._.W1;
 			turtleLocations[currentTurtle].y._.W0 = 0;
 			turtleLocations[currentTurtle].y._.W1 = IMUlocationy._.W1;
-			flyCommandCounter = 0;
+			//flyCommandCounter = 0;
 			forceCrossFinishLine = true;
 			return 0;
 		}
@@ -1164,7 +1170,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			turtleLocations[0].x._.W1 = IMUlocationx._.W1;
 			turtleLocations[0].y._.W0 = 0;
 			turtleLocations[0].y._.W1 = IMUlocationy._.W1;
-			flyCommandCounter = 0;
+			//flyCommandCounter = 0;
 			forceCrossFinishLine = true;
 			forceFinishReset = true;
 			/*
@@ -1323,35 +1329,38 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), instr.arg) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), instr.arg) << 2);
+/*
 #if ( THERMALLING_MISSION == 1 )
 					flyCommandCounter = 1;    //start counter, count up at 40Hz
 #endif  //THERMALLING_MISSION
+*/
 				}
 				break;
 
 #if ( THERMALLING_MISSION == 1 )
 				case 1: // FIXED_BANK_ROTATE
 				{
-					//rotate 30 deg right with a fixed bank or timeout after 2 sec
+					//rotate with a fixed bank for 1 sec
 
 					//USE_CURRENT_ANGLE
-					turtleAngles[currentTurtle] = get_current_angle();
+					//turtleAngles[currentTurtle] = get_current_angle();
 
 					//rotate turtle too, like RT(). Set the rotation target 30 deg to the right or left
 					if ( rotateClockwise )  //topview
 					{
-						fixedBankTargetAngle = turtleAngles[currentTurtle] + 30; // ~0.5 - 1 sec == 30 deg headingchange
+						//fixedBankTargetAngle = turtleAngles[currentTurtle] + 30; // ~0.5 - 1 sec == 30 deg headingchange
 						fixedBankDeg = instr.arg;  //controls roll and yaw,
 					}
 					else
 					{
-						fixedBankTargetAngle = turtleAngles[currentTurtle] - 30; // ~0.5 - 1 sec == 30 deg headingchange
+						//fixedBankTargetAngle = turtleAngles[currentTurtle] - 30; // ~0.5 - 1 sec == 30 deg headingchange
 						fixedBankDeg = -instr.arg;  //controls roll and yaw,
 					}
 					//fixedBankTargetAngle = get_current_angle() + 30; // ~0.5 - 1 sec == 30 deg headingchange
-					while (fixedBankTargetAngle < 0) fixedBankTargetAngle += 360;
-					fixedBankTargetAngle = fixedBankTargetAngle % 360;
+					//while (fixedBankTargetAngle < 0) fixedBankTargetAngle += 360;
+					//fixedBankTargetAngle = fixedBankTargetAngle % 360;
 
+					/*
 					//this is a fly command, do the same as FD()
 					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
 					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
@@ -1361,8 +1370,8 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					// selected a fixed number I used before, combined with servo calculation
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 35) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 35) << 2);
-
-					fixedBankActiveCounter = 120; //40Hz = 3 sec
+					*/
+					fixedBankActiveCounter = 40; //40Hz = 1 sec
 					fixedBankActive = true;     //controls roll and yaw, will be reset when rotation is reached
 					angleTargetActive = true;
 					break;
