@@ -293,6 +293,7 @@ int16_t fixedBankActiveCounter; //  used for Logo  - for FIXED_BANK_ROTATE and B
 boolean fixedBankActive = false; // used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
 boolean angleTargetActive = false; // used for Logo  - for FIXED_BANK_ROTATE command
 int16_t fixedBankDeg;  // deg bank, used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
+static int16_t currentAngle;      // for SET_DIRECTION and FIXED_BANK_ROTATE   set every 1 sec
 static int16_t oldAngle;      // for SET_DIRECTION and FIXED_BANK_ROTATE   set by BANK_1S
 static boolean rotateClockwise;  //topview   for SET_DIRECTION and FIXED_BANK_ROTATE
 
@@ -579,7 +580,9 @@ void flightplan_logo_update(void)
 		//avgBatteryVoltage = (int16_t)( battery_voltage._.W1 );   //heavy filter for voltage
 		avgBatteryVoltage = (avgBatteryVoltage * 14.0 + (float)battery_voltage._.W1 )/15.0;   //heavy filter for voltage
 		airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;
-		
+		oldAngle = currentAngle;
+        currentAngle = get_current_angle();
+
 		geoSetStatus();         //read geofencee status and update status system value
 
 		if (motorOffTimer > 0)   //monitor motor run
@@ -671,7 +674,7 @@ void flightplan_logo_update(void)
 		// inhibit navigation for x loops, to allow drifting downwind
 		if ( fixedBankActive )
 		{
-			if (!angleTargetActive) // Bank_1s
+			if (!angleTargetActive) // BANK_1S()
 			{
 				if (fixedBankActiveCounter <= 0)
 				{
@@ -681,7 +684,7 @@ void flightplan_logo_update(void)
 					//USE_CURRENT_ANGLE
 					turtleAngles[currentTurtle] = get_current_angle();
 
-					// Use current position (for x and y)
+					// Use current position (for x and y)  
 					turtleLocations[currentTurtle].x._.W0 = 0;
 					turtleLocations[currentTurtle].x._.W1 = IMUlocationx._.W1;
 					turtleLocations[currentTurtle].y._.W0 = 0;
@@ -694,7 +697,7 @@ void flightplan_logo_update(void)
 
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), ((int16_t)WAYPOINT_PROXIMITY_RADIUS)-4) << 2);  //
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), ((int16_t)WAYPOINT_PROXIMITY_RADIUS)-4) << 2);
-
+					
 					if (interruptStackBase)   //if in-progress
 					{
 						//cleanup uncompleted interrupt
@@ -784,7 +787,38 @@ void flightplan_logo_update(void)
 #endif  //THERMALLING_MISSION
 	}
 #if ( THERMALLING_MISSION == 1 )
+	//if ( ( flyCommandCounter > 0 ) && (!forceCrossFinishLine) && (!forceFinishReset) )
+	if ( flyCommandCounter > 0 )
+	{
+		flyCommandCounter++;   //count up @ 40Hz
+	}
+	if ( fixedBankActive )
+	{
+		if ( fixedBankActiveCounter > 0 )
+		{
+			fixedBankActiveCounter--;   //count down @ 40Hz
+		}
+	}
+	letHeartbeat++;
+	if ( letHeartbeat % 40 == 0 )   //1Hz
+	{
+		
+		//avgBatteryVoltage = (int16_t)( battery_voltage._.W1 );   //heavy filter for voltage
+		avgBatteryVoltage = (avgBatteryVoltage * 14.0 + (float)battery_voltage._.W1 )/15.0;   //heavy filter for voltage
+		airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;
+		
+		geoSetStatus();         //read geofencee status and update status system value
 
+		if (motorOffTimer > 0)   //monitor motor run
+		{
+			motorOffTimer--;
+		}
+		//if ((desired_behavior.W & F_LAND) == 0) // set to 4 as long as motor runs, to know time after stopping motor
+		if (udb_pwOut[THROTTLE_OUTPUT_CHANNEL] > 2300 ) // set to 4 as long as motor runs, to know time after stopping motor
+		{
+			motorOffTimer = 4;  // start timer, wait 4 sec before detecting thermals, used by system value MOTOR_OFF_TIMER
+		}
+	}
 	//calculate heading to where there is room to fly 400m, for REL_ANGLE_TO_OPPOSITE... 
 	if ( letHeartbeat % 40 == 10 )   //1Hz
 	{
@@ -1058,31 +1092,17 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			//level only if really needed to center best lift
 			//by comparing highest vario value against average
 			//only act if significantly better and still true after 9 sectors == 270 deg
-
-			//init: store current vario as best, overrule average with vario.
-			//call this 9 times to init/clear history; brings average close to vario
-			//need init at new thermal cycle; only respond to real increases , not irt lower old averages
-
-			//every cycle; update average, and best = vario
-			// until best > average + 10
-			// count 9 cycles, if still best, ret 1
-			//
-			static int16_t airSpeedZBest;
-			//static int16_t airSpeedZAverage;
-			static int16_t airSpeedZBestCount;
-			//
 			static int16_t airSpeedZBestHeading;
 
-			//airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;  @ 1 Hz
-			if ( (airSpeedZBest > vario ) && ( airSpeedZBest > ( airSpeedZAverage + 10 ) ) ) // still highest with 0.1 m/s margin
+			if ( airSpeedZBestCount > 0 )   //waiting for the shift
 			{
-				airSpeedZBestCount++;
+				airSpeedZBestCount ++;
 			}
-			else
+			//calculated elsewhere: airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;  @ 1 Hz
+			if ( ( vario > ( airSpeedZAverage + 10 )) && ( vario > airSpeedZBest ) )
 			{
 				airSpeedZBest = vario;
-				airSpeedZBestCount = 1;
-				//
+				airSpeedZBestCount = 1;   //start
 				airSpeedZBestHeading = get_current_angle();			
 			}
 			// have we rotated 270 deg right or left since best? use +/- 25 deg margin
@@ -1092,13 +1112,11 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 					( ( ( get_current_angle() - airSpeedZBestHeading + 360 ) % 360 ) < 295 ) ) |
 			     ( !rotateClockwise && 
 				 	( ( ( airSpeedZBestHeading - get_current_angle() + 360 ) % 360 ) > 245 ) &&
-					( ( ( airSpeedZBestHeading - get_current_angle() + 360 ) % 360 ) < 295 ) ) 
-			   )		
+					( ( ( airSpeedZBestHeading - get_current_angle() + 360 ) % 360 ) < 295 ) )  ) 	
 			{
 				airSpeedZBestCount = 0;
-				airSpeedZBest = 0;   //soft init and at best found
-				airSpeedZAverage = vario;
-				return 1;
+				airSpeedZBest = 0;
+				return 1;     //trigger the shift circle
 			}
 			else
 			{
@@ -1392,11 +1410,11 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 25) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);
 
-                    oldAngle = get_current_angle();  //for SET_DIRECTION
+                    //oldAngle = get_current_angle();  //for SET_DIRECTION
 					fixedBankDeg = instr.arg;  //controls roll
 					fixedBankActiveCounter = 40; //40Hz = 1 sec
-					fixedBankActive = true; 
-					angleTargetActive = false;   
+					fixedBankActive = true;
+					angleTargetActive = false;
 					break;
 				}
 #endif  //THERMALLING_MISSION
