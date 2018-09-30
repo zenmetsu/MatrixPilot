@@ -232,13 +232,13 @@
 // 	GEOFENCE_TURN
 // 	MOTOR_OFF_TIMER
 // 	READ_DESIRED_SPEED
-// 	FORCE_CROSS_FINISH_LINE
-// 	READ_FLY_COMMAND_COUNTER
-// 	FORCE_FINISH_BAD_NAV
+// 	--FORCE_CROSS_FINISH_LINE
+// 	--READ_FLY_COMMAND_COUNTER
+// 	--FORCE_FINISH_BAD_NAV
 //  BATTERY_VOLTAGE     - in tens of volts  
 //  READ_F_LAND         - read the LAND flag, 0 if off, 1 if on 
 //  READ_THROTTLE_OUTPUT_CHANNEL - read the LAND flag, 0 if off, 1 if on  
-//  FORCE_RESET    reset program from within interrupt programs
+//  --FORCE_RESET    reset program from within interrupt programs
 //THERMALLING_MISSION //custom system values
 
 // PARAM                - current param value
@@ -1096,8 +1096,8 @@ const struct logoInstructionDef instructions[] = {
 #define CHECK_SINK                           40
 #define CHECK_THERMAL                        42
 #define CHECK_HIGH                           44
-#define CHECK_LATE                           46
-#define CHECK_OVERSHOOT                      48
+//#define CHECK_LATE                           46
+//#define CHECK_OVERSHOOT                      48
 #define CHECK_MOTOR                          50
 #define CHECK_TAKEOFF                        64
 #define CHECK_TEST_MODE                      82
@@ -1296,7 +1296,7 @@ const struct logoInstructionDef instructions[] = {
 				END
 			END
 		END  //repeat
-		
+
 		// 10 more but no motor
 		//do while turn 180 deg, aim for ~4 sec behind the starting point, for a turn around the core. compensate for the widening turn during the time it takes to level of
 		REPEAT(10) //20 sec =~ at least one circle
@@ -1713,7 +1713,7 @@ const struct logoInstructionDef instructions[] = {
 	END
 
 
-
+/*
 	TO (CHECK_LATE)
 		IF_GT(READ_FLY_COMMAND_COUNTER,80 )             //fly command takes too long
 			IF_GT(FORCE_RESET,0) //test is not relevant, this sets the value
@@ -1735,7 +1735,7 @@ const struct logoInstructionDef instructions[] = {
 		END
 	END
 	END
-
+*/
 
 
 	TO (CHECK_MOTOR)

@@ -91,10 +91,10 @@ enum {
 	MOTOR_OFF_TIMER,
 	READ_DESIRED_SPEED,
 	READ_THROTTLE_OUTPUT_CHANNEL,
-	FORCE_CROSS_FINISH_LINE,
-	READ_FLY_COMMAND_COUNTER,
-	FORCE_FINISH_BAD_NAV,
-	FORCE_RESET,
+	//FORCE_CROSS_FINISH_LINE,
+	//READ_FLY_COMMAND_COUNTER,
+	//FORCE_FINISH_BAD_NAV,
+	//FORCE_RESET,
 	SET_DIRECTION,
 #endif
 	PARAM
@@ -288,6 +288,7 @@ static int16_t numInstructionsInCurrentSet = NUM_INSTRUCTIONS;
 int16_t vario = 0;// in cm/s ,used for Logo  - defined in flightplan_logo.c and set in altitudeCntrlVariable.c - running average (3s)
 static int16_t vario_old = 0;// in cm/s ,used for AIR_SPEED_Z_DELTA
 static int16_t airSpeedZAverage;
+static int16_t airSpeedZBestHeading;
 int16_t fixedBankTargetAngle = 0; // heading,  used for Logo  - for FIXED_BANK_ROTATE command
 int16_t fixedBankActiveCounter; //  used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
 boolean fixedBankActive = false; // used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
@@ -302,7 +303,6 @@ static boolean rotateClockwise;  //topview   for SET_DIRECTION and FIXED_BANK_RO
 #endif
 static int16_t get_current_angle(void);
 static int16_t motorOffTimer = 0;
-static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
 static float avgBatteryVoltage = 110;  //kickstart average filter with nominal value; it only starts when LOGO starts      
 //static int16_t flyCommandCounter = 0;  //count up 40 times per sec when in a fly command
 static int16_t airSpeedZBest = 0;
@@ -788,11 +788,12 @@ void flightplan_logo_update(void)
 	}
 #if ( THERMALLING_MISSION == 1 )
 	//if ( ( flyCommandCounter > 0 ) && (!forceCrossFinishLine) && (!forceFinishReset) )
+/*
 	if ( flyCommandCounter > 0 )
 	{
 		flyCommandCounter++;   //count up @ 40Hz
 	}
-	if ( fixedBankActive )
+*/	if ( fixedBankActive )
 	{
 		if ( fixedBankActiveCounter > 0 )
 		{
@@ -1081,38 +1082,38 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			static int16_t airSpeedZDelta;
 			airSpeedZDelta = vario - vario_old;
 			vario_old = vario;
-			airSpeedZStart = vario;  //setup for better lift detection
+			//airSpeedZStart = vario;  //setup for better lift detection
 			return airSpeedZDelta;
 		}
 
-		case AIR_SPEED_Z_VS_START: 
+		case AIR_SPEED_Z_VS_START:
 		{
 			//returns 1 if best climbrate exists for 9 samples
 
 			//level only if really needed to center best lift
 			//by comparing highest vario value against average
 			//only act if significantly better and still true after 9 sectors == 270 deg
-			static int16_t airSpeedZBestHeading;
+			//static int16_t airSpeedZBestHeading;
 
 			if ( airSpeedZBestCount > 0 )   //waiting for the shift
 			{
 				airSpeedZBestCount ++;
 			}
 			//calculated elsewhere: airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;  @ 1 Hz
-			if ( ( vario > ( airSpeedZAverage + 10 )) && ( vario > airSpeedZBest ) )
+			if ( ( vario > ( airSpeedZAverage + 10 )) && ( vario > airSpeedZBest ) && (motorOffTimer == 0) )
 			{
 				airSpeedZBest = vario;
 				airSpeedZBestCount = 1;   //start
-				airSpeedZBestHeading = get_current_angle();			
+				airSpeedZBestHeading = get_current_angle();
 			}
 			// have we rotated 270 deg right or left since best? use +/- 25 deg margin
 			if ( airSpeedZBestCount >= 6 &&
-			     (  rotateClockwise && 
-			   		( ( ( get_current_angle() - airSpeedZBestHeading + 360 ) % 360 ) > 245 ) && 
+			     (  rotateClockwise &&
+			   		( ( ( get_current_angle() - airSpeedZBestHeading + 360 ) % 360 ) > 245 ) &&
 					( ( ( get_current_angle() - airSpeedZBestHeading + 360 ) % 360 ) < 295 ) ) |
-			     ( !rotateClockwise && 
+			     ( !rotateClockwise &&
 				 	( ( ( airSpeedZBestHeading - get_current_angle() + 360 ) % 360 ) > 245 ) &&
-					( ( ( airSpeedZBestHeading - get_current_angle() + 360 ) % 360 ) < 295 ) )  ) 	
+					( ( ( airSpeedZBestHeading - get_current_angle() + 360 ) % 360 ) < 295 ) )  )
 			{
 				airSpeedZBestCount = 0;
 				airSpeedZBest = 0;
@@ -1128,6 +1129,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		{
 			airSpeedZBestCount = 0;
 			airSpeedZBest = 0;
+            airSpeedZAverage = vario;  // no new best if not needed
 			return (0);
 		}
 
@@ -1151,7 +1153,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		{
 			return geoStatus;
 		}
-		
+
 		case GEOFENCE_TURN: //  used for Geofence
 		{
 			return geoTurn;
@@ -1162,16 +1164,16 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			return motorOffTimer;
 		}
 
+		/*
 		case FORCE_CROSS_FINISH_LINE: // used by interrupt routine to sigmal an event that needs immediate action
 		{
 			forceCrossFinishLine = true;
 			return 0;
 		}
-		/*case READ_FLY_COMMAND_COUNTER: // used by interrupt routines to sigmal fly commands that take too long
+		case READ_FLY_COMMAND_COUNTER: // used by interrupt routines to sigmal fly commands that take too long
 		{
 			return flyCommandCounter;
 		}
-		*/
 		case FORCE_FINISH_BAD_NAV: // used by interrupt routine to sigmal an event that needs immediate action
 		{
 			turtleLocations[currentTurtle].x._.W0 = 0;
@@ -1191,16 +1193,17 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			//flyCommandCounter = 0;
 			forceCrossFinishLine = true;
 			forceFinishReset = true;
-			/*
+			/
 			interruptIndex = 0;       // clear interrupt; instruction index of the beginning of the interrupt function
 			instructionsProcessed = 0;
 			interruptStackBase = 0;  // stack depth when entering interrupt (clear interrupt when dropping below this depth)
 			logoStackIndex = 0;
 			currentTurtle = 0;
 			//flightplan_logo_begin(0); //clear interrupt and restart main
-			*/
+			/
 			return 0;
 		}
+		*/
 		case SET_DIRECTION: // used by FIXED_BANK_ROTATE routine to sigmal left or right rotation
 		{
 			// if angle decreased: right turn
@@ -1397,7 +1400,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 				case 2: //BANK_1S
 				{
 					//maintain a fixed bank or level for one sec
-
+					/*
 					//USE_CURRENT_ANGLE
 					turtleAngles[currentTurtle] = get_current_angle();
 					//this is a fly command, do the same as FD()
@@ -1409,7 +1412,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					// selected a fixed number I used before, combined with servo calculation
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 25) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);
-
+					*/
                     //oldAngle = get_current_angle();  //for SET_DIRECTION
 					fixedBankDeg = instr.arg;  //controls roll
 					fixedBankActiveCounter = 40; //40Hz = 1 sec
