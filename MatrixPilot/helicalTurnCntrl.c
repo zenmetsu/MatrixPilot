@@ -319,7 +319,11 @@ void helicalTurnCntrl(void)
 			//overrule other deflections
 			//rollAccum._.W1 = FIXED_BANK_ROLL_FACTOR * fixedBankDeg;	//~x deg bank
 			desiredTilt.WW = FIXED_BANK_ROLL_FACTOR * fixedBankDeg * -8;	//~x deg bank
-			desiredTurnRateRadians = FIXED_BANK_ROLL_FACTOR * fixedBankDeg;  //scaling? aircraft dependent?
+		
+			//desiredTurnRateRadians = FIXED_BANK_ROLL_FACTOR * fixedBankDeg;  //scaling? aircraft dependent?
+			accum.WW = __builtin_mulsu(desiredTilt._.W0, GRAVITYCMSECSEC);
+			accum.WW /= airSpeed;
+			desiredTurnRateRadians = accum._.W0;
 		}
 	}
 #endif
