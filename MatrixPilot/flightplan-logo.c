@@ -579,7 +579,7 @@ void flightplan_logo_update(void)
 		
 		//avgBatteryVoltage = (int16_t)( battery_voltage._.W1 );   //heavy filter for voltage
 		avgBatteryVoltage = (avgBatteryVoltage * 14.0 + (float)battery_voltage._.W1 )/15.0;   //heavy filter for voltage
-		airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;
+		airSpeedZAverage = ( (airSpeedZAverage * 6) + vario) / 7;
 		oldAngle = currentAngle;
         currentAngle = get_current_angle();
 
@@ -793,33 +793,7 @@ void flightplan_logo_update(void)
 	{
 		flyCommandCounter++;   //count up @ 40Hz
 	}
-*/	if ( fixedBankActive )
-	{
-		if ( fixedBankActiveCounter > 0 )
-		{
-			fixedBankActiveCounter--;   //count down @ 40Hz
-		}
-	}
-	letHeartbeat++;
-	if ( letHeartbeat % 40 == 0 )   //1Hz
-	{
-		
-		//avgBatteryVoltage = (int16_t)( battery_voltage._.W1 );   //heavy filter for voltage
-		avgBatteryVoltage = (avgBatteryVoltage * 14.0 + (float)battery_voltage._.W1 )/15.0;   //heavy filter for voltage
-		airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;
-		
-		geoSetStatus();         //read geofencee status and update status system value
-
-		if (motorOffTimer > 0)   //monitor motor run
-		{
-			motorOffTimer--;
-		}
-		//if ((desired_behavior.W & F_LAND) == 0) // set to 4 as long as motor runs, to know time after stopping motor
-		if (udb_pwOut[THROTTLE_OUTPUT_CHANNEL] > 2300 ) // set to 4 as long as motor runs, to know time after stopping motor
-		{
-			motorOffTimer = 4;  // start timer, wait 4 sec before detecting thermals, used by system value MOTOR_OFF_TIMER
-		}
-	}
+*/
 	//calculate heading to where there is room to fly 400m, for REL_ANGLE_TO_OPPOSITE... 
 	if ( letHeartbeat % 40 == 10 )   //1Hz
 	{
@@ -1129,7 +1103,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 		{
 			airSpeedZBestCount = 0;
 			airSpeedZBest = 0;
-            airSpeedZAverage = vario;  // no new best if not needed
+            airSpeedZAverage = vario - 10;  // no new best if not needed
 			return (0);
 		}
 
@@ -1392,7 +1366,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 35) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 35) << 2);
 					*/
-					fixedBankActiveCounter = 40; //40Hz = 1 sec
+					fixedBankActiveCounter = 40; //40Hz = 2 sec
 					fixedBankActive = true;     //controls roll and yaw, will be reset when rotation is reached
 					angleTargetActive = true;
 					break;
@@ -1415,7 +1389,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					*/
                     //oldAngle = get_current_angle();  //for SET_DIRECTION
 					fixedBankDeg = instr.arg;  //controls roll
-					fixedBankActiveCounter = 40; //40Hz = 1 sec
+					fixedBankActiveCounter = 50; //40Hz = 1 sec
 					fixedBankActive = true;
 					angleTargetActive = false;
 					break;

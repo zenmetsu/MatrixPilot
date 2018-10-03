@@ -1296,6 +1296,8 @@ const struct logoInstructionDef instructions[] = {
 				END
 			END
 		END  //repeat
+		
+		FLAG_ON(F_LAND)    //Motor off
 
 		// 10 more but no motor
 		//do while turn 180 deg, aim for ~4 sec behind the starting point, for a turn around the core. compensate for the widening turn during the time it takes to level of
@@ -1339,8 +1341,6 @@ const struct logoInstructionDef instructions[] = {
 			END
 		END  //repeat
 
-
-		FLAG_ON(F_LAND)    //Motor off
 //		DO (THERMALLING_TURN)
 /*
 		//Shift the circle for 3 sec
@@ -1424,6 +1424,7 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (THERMALLING_SHIFT_CIRCLE)
 		//Level off/Shift the circle for 1 sec, log the action as a "waypoint"
+		BANK_1S(0)
 		BANK_1S(0)
 	END
 	END
