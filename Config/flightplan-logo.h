@@ -1104,7 +1104,7 @@ const struct logoInstructionDef instructions[] = {
 #define PILOT_INPUT                          47
 #define TOO_HIGH                             53
 #define INT_TOO_HIGH                         56
-//#define BETTER_LIFT                          55
+#define BETTER_LIFT                          55
 #define RESET_NAVIGATION                     58
 
 //Land
@@ -1280,20 +1280,21 @@ const struct logoInstructionDef instructions[] = {
 				END
 
 				DO (THERMALLING_TURN)
+			END
+			IF_EQ(AIR_SPEED_Z_VS_START,1)
+				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
+					EXEC (LOGO_MAIN)
+				END
+				IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
+					EXEC (LOGO_MAIN)
+				END
 
+				DO (BETTER_LIFT)
 			ELSE
 				LOAD_TO_PARAM(CLEAR_Z_BEST)
-				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
+				//LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 
 				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift
-
-				//alse use wait decrease to align with core at first
-				REPEAT(6)    //6 sec max
-					IF_GT(PARAM,10) //add some margin, only wait if necessary
-						DO (WAIT_DECREASE_CLIMBRATE)
-						LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
-					END
-				END
 			END
 		END  //repeat
 		
@@ -1324,20 +1325,22 @@ const struct logoInstructionDef instructions[] = {
 				END
 
 				DO (THERMALLING_TURN)
+			END
+			IF_EQ(AIR_SPEED_Z_VS_START,1)
+				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
+					EXEC (LOGO_MAIN)
+				END
+				IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
+					EXEC (LOGO_MAIN)
+				END
 
+				DO (BETTER_LIFT)
 			ELSE
 				LOAD_TO_PARAM(CLEAR_Z_BEST)
-				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
+				//LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 
 				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift
 
-				//alse use wait decrease to align with core at first
-				REPEAT(6)    //6 sec max
-					IF_GT(PARAM,10) //add some margin, only wait if necessary
-						DO (WAIT_DECREASE_CLIMBRATE)
-						LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
-					END
-				END
 			END
 		END  //repeat
 
@@ -1349,7 +1352,7 @@ const struct logoInstructionDef instructions[] = {
 		DO (THERMALLING_SHIFT_CIRCLE)
 */
 
-		LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
+		//LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 /*
 		REPEAT(6)    //6 sec max
 			IF_GT(PARAM,10) //add some margin, only wait if necessary
@@ -1376,30 +1379,32 @@ const struct logoInstructionDef instructions[] = {
 				EXEC (LOGO_MAIN)
 			END
 
-			//if climbrate was best 9 samples == 270 deg ago, then shift the circle in that direction
-			IF_GE(AIR_SPEED_Z_VS_START,1)
-				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
-				//PARAM_SET(0) //clear;
-				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift, maintain as long as climbrate keeps improving
-				/*
-				//wait up to 6 sec for the climbrate to decrease
-				LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
-				REPEAT(6)    //6 sec max
-					IF_GT(PARAM,10) //add some margin, only wait if necessary
-						DO (WAIT_DECREASE_CLIMBRATE)
-						LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
-					END
+			IF_LT(AIR_SPEED_Z_VS_START,1)
+				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
+					EXEC (LOGO_MAIN)
 				END
-				*/
-				/*
-				REPEAT(9) //initialize best climbrate record
-					LOAD_TO_PARAM(AIR_SPEED_Z_VS_START)
+				IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
+					EXEC (LOGO_MAIN)
 				END
-				*/
-				LOAD_TO_PARAM(CLEAR_Z_BEST)
-			ELSE
+
 				DO (THERMALLING_TURN)
 			END
+			IF_EQ(AIR_SPEED_Z_VS_START,1)
+				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
+					EXEC (LOGO_MAIN)
+				END
+				IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
+					EXEC (LOGO_MAIN)
+				END
+
+				DO (BETTER_LIFT)
+			ELSE
+				LOAD_TO_PARAM(CLEAR_Z_BEST)
+				//LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
+
+				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift
+			END
+
 		END
 	END
 	END
@@ -1416,29 +1421,30 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (THERMALLING_TURN)
 		//Custom solution using new command FIXED_BANK_ROTATE()
-		FIXED_BANK_ROTATE(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
+		FIXED_BANK_ROTATE(30)   // perform roll to a fixed bank x deg for ~1 sec, position/navigation will be ignored
 	END
 	END
 
 
 
 	TO (THERMALLING_SHIFT_CIRCLE)
-		//Level off/Shift the circle for 1 sec, log the action as a "waypoint"
+		//Level off/Shift the circle for 2 sec, log the action as a "waypoint"
 		BANK_1S(0)
 		BANK_1S(0)
 	END
 	END
 
 
-/*
+
 	TO (BETTER_LIFT)
 		//indicates lift is better then it was at the beginnning of the thermalling turn
 		//try to core the thermal in small steps
 
-		BANK_1S(0)     // reduce bank for one sec, shifting the circle slightly
+		//BANK_1S(0)     // reduce bank for one sec, shifting the circle slightly
+		FIXED_BANK_ROTATE(30)  //log this now and shift 270 deg later
 	END
 	END
-*/
+
 
 	TO (SINK)
 		SET_INTERRUPT(INT_SINK)

@@ -1079,6 +1079,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 				airSpeedZBest = vario;
 				airSpeedZBestCount = 1;   //start
 				airSpeedZBestHeading = get_current_angle();
+				return 1;     //log better lift
 			}
 			// have we rotated 270 deg right or left since best? use +/- 25 deg margin
 			if ( airSpeedZBestCount >= 6 &&
@@ -1091,7 +1092,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			{
 				airSpeedZBestCount = 0;
 				airSpeedZBest = 0;
-				return 1;     //trigger the shift circle
+				return 2;     //trigger the shift circle
 			}
 			else
 			{
@@ -1366,7 +1367,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 35) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 35) << 2);
 					*/
-					fixedBankActiveCounter = 40; //40Hz = 2 sec
+					fixedBankActiveCounter = 40; //40Hz = 1 sec
 					fixedBankActive = true;     //controls roll and yaw, will be reset when rotation is reached
 					angleTargetActive = true;
 					break;
