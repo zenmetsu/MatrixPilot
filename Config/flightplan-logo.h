@@ -1271,7 +1271,7 @@ const struct logoInstructionDef instructions[] = {
 
 //			DO (THERMALLING_TURN)
 
-			IF_LT(AIR_SPEED_Z_VS_START,1)
+			IF_LE(AIR_SPEED_Z_VS_START,0)
 				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
 					EXEC (LOGO_MAIN)
 				END
@@ -1290,7 +1290,8 @@ const struct logoInstructionDef instructions[] = {
 				END
 
 				DO (BETTER_LIFT)
-			ELSE
+			END
+			IF_GE(AIR_SPEED_Z_VS_START,2)
 				LOAD_TO_PARAM(CLEAR_Z_BEST)
 				//LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 
@@ -1335,7 +1336,8 @@ const struct logoInstructionDef instructions[] = {
 				END
 
 				DO (BETTER_LIFT)
-			ELSE
+			END
+			IF_GE(AIR_SPEED_Z_VS_START,2)
 				LOAD_TO_PARAM(CLEAR_Z_BEST)
 				//LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 
@@ -1398,7 +1400,8 @@ const struct logoInstructionDef instructions[] = {
 				END
 
 				DO (BETTER_LIFT)
-			ELSE
+			END
+			IF_GE(AIR_SPEED_Z_VS_START,2)
 				LOAD_TO_PARAM(CLEAR_Z_BEST)
 				//LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)    //prime the delta; store current vario value
 
