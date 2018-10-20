@@ -672,13 +672,13 @@ void flightplan_logo_update(void)
 		}
 #else
 		// inhibit navigation for x loops, to allow drifting downwind
-		if ( fixedBankActive )
+		if  ( fixedBankActive && (fixedBankActiveCounter <= 0 )
 		{
+			fixedBankActive = false;
 			if (!angleTargetActive) // BANK_1S()
 			{
-				if (fixedBankActiveCounter <= 0)
+				//if 
 				{
-					fixedBankActive = false;
 
 					//a second has passed, so force this fly command to end
 					//USE_CURRENT_ANGLE
@@ -711,7 +711,7 @@ void flightplan_logo_update(void)
 			else    // FIXED_BANK_ROTATE
 			{
 				//check if target of 15 deg right has been reached  or timer times out
-				if ( (fixedBankActiveCounter <= 0)  )
+				//if ( (fixedBankActiveCounter <= 0)  )
 				  /*|
 					 ( rotateClockwise && ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) < 180 ) |
 					 ( !rotateClockwise && ( ( ( get_current_angle() - fixedBankTargetAngle + 360) % 360 ) > 180 ) ) )
@@ -720,7 +720,7 @@ void flightplan_logo_update(void)
 				//use Gps heading
 				//if ( ( ( cog_gpsBB - fixedBankTargetAngle + 360) % 360 ) < 180 ) // closest direction is right of target
 				{
-					fixedBankActive = false;
+					//fixedBankActive = false;
 
 					//force this fly command to end
 
@@ -1082,7 +1082,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 				return 1;     //log better lift
 			}
 			// have we rotated 270 deg right or left since best? use +/- 25 deg margin
-			if ( airSpeedZBestCount >= 6 &&
+			if ( ( airSpeedZBestCount >= 6 ) &&
 			     (  rotateClockwise &&
 			   		( ( ( get_current_angle() - airSpeedZBestHeading + 360 ) % 360 ) > 245 ) &&
 					( ( ( get_current_angle() - airSpeedZBestHeading + 360 ) % 360 ) < 295 ) ) |

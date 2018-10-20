@@ -322,9 +322,9 @@
 #if ( MODEL_LINEA == 1 && HILSIM == 0 )
 //Linea
 #define RUDDER_OUTPUT_OFFSET                             -140          // right = +  surface moves right, seen from behind
-#define ELEVATOR_OUTPUT_OFFSET                            200          // up = +  nose up
-#define AILERON_RIGHT_OUTPUT_OFFSET                        70          // n  up = +
-#define AILERON_LEFT_OUTPUT_OFFSET                        -70          // y  up = +
+#define ELEVATOR_OUTPUT_OFFSET                            160          // up = +  nose up
+#define AILERON_RIGHT_OUTPUT_OFFSET                        40          // n  up = +
+#define AILERON_LEFT_OUTPUT_OFFSET                        -40          // y  up = +
 #define FLAP_LEFT_OUTPUT_OFFSET                           780          // n  up = +
 #define FLAP_RIGHT_OUTPUT_OFFSET                          290          // y  up = +
 #define THROTTLE_OUTPUT_OFFSET                           -150

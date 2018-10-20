@@ -214,7 +214,7 @@
 #if ( MODEL_LINEA == 1 )
 #define DESIRED_SPEED_FAST_FMIN4            127     // decimeters/second  Flaps up    				45 km/h
 #define DESIRED_SPEED_NORMAL_F0             108     // decimeters/second  no Flaps    				39 km/h   - should be same as DESIRED_SPEED - also check CRUISE_AIRSPEED in airspeed_options.h
-#define DESIRED_SPEED_SLOW_F4                90     // decimeters/second  Flaps down, thermalling   33 km/h
+#define DESIRED_SPEED_SLOW_F4               100     // decimeters/second  Flaps down, thermalling   33 km/h
 #endif
 
 // Inverted flight
