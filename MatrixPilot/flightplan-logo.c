@@ -672,14 +672,14 @@ void flightplan_logo_update(void)
 		}
 #else
 		// inhibit navigation for x loops, to allow drifting downwind
-		if  ( fixedBankActive && (fixedBankActiveCounter <= 0 )
+		if  ( fixedBankActive && (fixedBankActiveCounter <= 20 ) )
 		{
-			fixedBankActive = false;
 			if (!angleTargetActive) // BANK_1S()
 			{
-				//if 
+				if (fixedBankActiveCounter <= 0) 
 				{
 
+					fixedBankActive = false;
 					//a second has passed, so force this fly command to end
 					//USE_CURRENT_ANGLE
 					turtleAngles[currentTurtle] = get_current_angle();
@@ -718,9 +718,9 @@ void flightplan_logo_update(void)
 					 )// closest direction is right of target
 				   */
 				//use Gps heading
-				//if ( ( ( cog_gpsBB - fixedBankTargetAngle + 360) % 360 ) < 180 ) // closest direction is right of target
+				if (fixedBankActiveCounter <= 0) 
 				{
-					//fixedBankActive = false;
+					fixedBankActive = false;
 
 					//force this fly command to end
 
