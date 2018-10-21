@@ -329,7 +329,7 @@
 #define FLAP_RIGHT_OUTPUT_OFFSET                          290          // y  up = +
 #define THROTTLE_OUTPUT_OFFSET                           -150
 //                                                           
-#define AILERON_RIGHT_BRAKE_FACTOR                          -0.60
+#define AILERON_RIGHT_BRAKE_FACTOR                          -0.40
 #define AILERON_RIGHT_FLAPS_POS_FACTOR                       0.10
 #define AILERON_RIGHT_FLAPS_NEG_FACTOR                       0.10
 #define AILERON_RIGHT_LP_FLAPS_FACTOR                        1.00       //left part factor of aileron with normal flaps setting
@@ -359,7 +359,7 @@
 #define FLAP_RIGHT_OFFSET_REVERSED                          0          //0 or 1 Make postive offset move surface up
 #define FLAP_RIGHT_DIR_REVERSED                             0          //0 or 1 don't or do reverse
 //                                                           
-#define AILERON_LEFT_BRAKE_FACTOR                         -0.50
+#define AILERON_LEFT_BRAKE_FACTOR                         -0.40
 #define AILERON_LEFT_FLAPS_POS_FACTOR                      0.12
 #define AILERON_LEFT_FLAPS_NEG_FACTOR                      0.12
 #define AILERON_LEFT_LP_FLAPS_FACTOR                      -0.80       //left part factor of aileron with normal flaps setting
@@ -370,7 +370,7 @@
 #define AILERON_LEFT_DIR_REVERSED                          0          //0 or 1 don't or do reverse
 //                                                           
 #define ELEVATOR_FACTOR                                     0.60       //Reduce throw
-#define ELEVATOR_BRAKE_FACTOR                              -0.50       //mix brakes (brake) to elevator, usually negative for brake
+#define ELEVATOR_BRAKE_FACTOR                              -0.40       //mix brakes (brake) to elevator, usually negative for brake
 #define ELEVATOR_THROTTLE_FACTOR                           -0.00       //apply elevator mix from throttle
 #define ELEVATOR_OFFSET_REVERSED                            0          //0 or 1 Make postive offset move nose up
 #define ELEVATOR_DIR_REVERSED                               0          //0 or 1 don't or do reverse
