@@ -239,13 +239,16 @@ fractional gliding_airspeed_pitch_adjust(void)
 #if (THERMALLING_MISSION == 1 )
 #if ( MY_PERSONAL_OPTIONS == 1 )
 	//aspd_pitch_adj -= (fractional)( get_autopilotBrake() / 100 ) ; //with brakes active, maintain the same speed
-	static float expoBrake;
-	expoBrake = 6-(5/(get_autopilotBrake()/150+0.01));
-	if (expoBrake < 0 ) 
+	if (get_autopilotBrake() >= 50)
 	{
-		expoBrake = 0;
-	}	
-	aspd_pitch_adj -= (fractional)expoBrake; //with brakes active, maintain the same speed, use "expo", -0..-6 deg
+		static fractional expoBrake;
+		expoBrake = 6-(5/(get_autopilotBrake()/150+0.01));
+		if (expoBrake < 0 ) 
+		{
+			expoBrake = 0;
+		}	
+		aspd_pitch_adj -= expoBrake; //with brakes active, maintain the same speed, use "expo", -0..-6 deg
+	}
 #endif
 #endif
 	}
@@ -351,7 +354,14 @@ void airspeedCntrl(void)
 		}
 		else
 		{
-			overspeedBrake = 0;	
+			if ( (IMUvelocityz._.W1 < -500) || (IMUvelocityz._.W1 > 500) )  // cm/s 
+			{
+				overspeedBrake = 900 ; // apply half brakes to recover for extreme climbrates
+			}
+			else
+			{
+				overspeedBrake = 0;	
+			}
 		}	
 	}
 	else

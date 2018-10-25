@@ -23,6 +23,11 @@
 #include "states.h"
 #include "mode_switch.h"
 
+
+#if ( MY_PERSONAL_OPTIONS == 1 )
+#include "../libDCM/deadReckoning.h"
+#endif
+
 #define  MAX_PAUSE_TOGGLE  20  // 20 frames at 40Hz is 1/2 second.
 
 enum AUTOPILOT_MODE
@@ -255,6 +260,15 @@ void flight_mode_switch_check_set(void)
 			state_flags._.home_req = 0;
 			#endif
 		}
+#if ( MY_PERSONAL_OPTIONS == 1 )	
+			if ( (IMUvelocityz._.W1 < -500) || (IMUvelocityz._.W1 > 500) )  // cm/s 
+			{
+				state_flags._.man_req = 1;
+				state_flags._.auto_req = 0;
+				state_flags._.home_req = 0;
+			}
+#endif	
+		
 #endif // MODE_SWITCH_TWO_POSITION
 		// With Failsafe Hold enabled: After losing RC signal, and then regaining it, you must manually
 		// change the mode switch position in order to exit RTL mode.
