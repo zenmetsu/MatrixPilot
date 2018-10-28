@@ -108,7 +108,7 @@ void servoMix_init(void)
 	flapLeftRpFlapsFactor = (signed int)(FLAP_LEFT_RP_FLAPS_FACTOR * 32.0);
 	flapLeftLpFlapsFactor = (signed int)(FLAP_LEFT_LP_FLAPS_FACTOR * 32.0);
 	flapLeftRpSpeedFlapsFactor = (signed int)(FLAP_LEFT_RP_SPEED_FLAPS_FACTOR * 32.0);
-	flapLeftLpSpeedFlapsFactor = (signed int)(FLAP_LEFT_RP_SPEED_FLAPS_FACTOR * 32.0);
+	flapLeftLpSpeedFlapsFactor = (signed int)(FLAP_LEFT_LP_SPEED_FLAPS_FACTOR * 32.0);
 	
 	flapRightBrakeFactor = (signed int)(FLAP_RIGHT_BRAKE_FACTOR * 32.0);
 	flapRightFlapsPosFactor = (signed int)(FLAP_RIGHT_FLAPS_POS_FACTOR * 32.0);
@@ -116,7 +116,7 @@ void servoMix_init(void)
 	flapRightRpFlapsFactor = (signed int)(FLAP_RIGHT_RP_FLAPS_FACTOR * 32.0);
 	flapRightLpFlapsFactor = (signed int)(FLAP_RIGHT_LP_FLAPS_FACTOR * 32.0);
 	flapRightRpSpeedFlapsFactor = (signed int)(FLAP_RIGHT_RP_SPEED_FLAPS_FACTOR * 32.0);
-	flapRightLpSpeedFlapsFactor = (signed int)(FLAP_RIGHT_RP_SPEED_FLAPS_FACTOR * 32.0);
+	flapRightLpSpeedFlapsFactor = (signed int)(FLAP_RIGHT_LP_SPEED_FLAPS_FACTOR * 32.0);
 	
 	aileronRightBrakeFactor = (signed int)(AILERON_RIGHT_BRAKE_FACTOR * 32.0);
 	aileronRightFlapsPosFactor = (signed int)(AILERON_RIGHT_FLAPS_POS_FACTOR * 32.0);
