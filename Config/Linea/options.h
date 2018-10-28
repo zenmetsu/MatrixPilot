@@ -197,7 +197,7 @@
 
 
 #if ( MODEL_FANTASY == 1 && HILSIM == 0 )
-#define DESIRED_SPEED_FAST_FMIN4            135     // decimeters/second  Flaps up                  48 km/h
+#define DESIRED_SPEED_FAST_FMIN4            122     // decimeters/second  Flaps up                  43 km/h
 #define DESIRED_SPEED_NORMAL_F0             110     // decimeters/second  no Flaps or manual F4     40 km/h
 #define DESIRED_SPEED_SLOW_F4               100     // decimeters/second  Flaps down, thermalling   36 km/h
 #endif
@@ -363,9 +363,9 @@
 // connect THROTTLE_OUTPUT_CHANNEL to one of the built-in Outputs (1, 2, or 3) to make
 // sure your board gets power.
 //
-#define AILERON_RIGHT_OUTPUT_CHANNEL        CHANNEL_1
+#define AILERON_LEFT_OUTPUT_CHANNEL         CHANNEL_1
 #define FLAP_RIGHT_OUTPUT_CHANNEL           CHANNEL_2
-#define AILERON_LEFT_OUTPUT_CHANNEL         CHANNEL_3
+#define AILERON_RIGHT_OUTPUT_CHANNEL        CHANNEL_3
 #define FLAP_LEFT_OUTPUT_CHANNEL            CHANNEL_4
 #define ELEVATOR_OUTPUT_CHANNEL             CHANNEL_5  // fuselage
 #define RUDDER_OUTPUT_CHANNEL               CHANNEL_6  // fuselage
@@ -772,7 +772,6 @@
 #define ZRATE_OFFSET  (21)
 #else
 now Linea:*/
-//Fantasy, Fantasy_Hil, Grafas  Auav3
 #define CUSTOM_OFFSETS
 #define XACCEL_OFFSET (410)
 #define YACCEL_OFFSET (-244)

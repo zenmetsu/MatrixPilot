@@ -446,8 +446,13 @@ void servoMix(void)
 
 	temp = pwManual[RUDDER_INPUT_CHANNEL] + REVERSE_IF_NEEDED(RUDDER_CHANNEL_REVERSED, yaw_control - waggle);
 	mixerSteps = temp - SERVOCENTER;
+
 	mixerSteps += (aileronInput * rudderFromAileronFactor)>>5;
 	mixerSteps += REVERSE_IF_NEEDED(RUDDER_OFFSET_REVERSED,RUDDER_OUTPUT_OFFSET);
+#if ( MY_PERSONAL_OPTIONS == 1 )	//test to see if values are extreme here if input changes quickly
+	if (mixerSteps > (SERVOMAX-SERVOCENTER)) mixerSteps = SERVOMAX-SERVOCENTER;
+	if (mixerSteps < (SERVOMIN-SERVOCENTER)) mixerSteps = SERVOMIN-SERVOCENTER;    
+#endif
 	mixerSteps = (mixerSteps * rudderFactor)>>5;
 	mixerSteps = REVERSE_IF_NEEDED(RUDDER_DIR_REVERSED, mixerSteps);
 	mixerSteps += SERVOCENTER;
