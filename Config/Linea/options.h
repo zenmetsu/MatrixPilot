@@ -80,7 +80,7 @@
 //personal options: which model?
 #define MODEL_LINEA 	1
 #define MODEL_FANTASY 	0
-#define MODEL_GRAFAS 	0
+#define MODEL_CIRRUS 	0
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set this value to your GPS type.  (Set to GPS_STD, GPS_UBX_2HZ, GPS_UBX_4HZ, GPS_MTEK, GPS_NMEA, or GPS_NONE)
@@ -159,7 +159,7 @@
 //Hilsim Fantasy
 #define DESIRED_SPEED                       11.30     // meters/second   41 km/h
 #endif
-#if ( MODEL_GRAFAS == 1 )
+#if ( MODEL_CIRRUS == 1 )
 #define DESIRED_SPEED                       10.83     // meters/second   39 km/h
 #endif
 #if ( MODEL_LINEA == 1 )
@@ -184,7 +184,7 @@
 #define FIXED_BANK_ROLL_FACTOR         6  // factor to calculate servo output from x deg bank. Depends on servos and aircraft design, for a 2.5m glider I used 8, for 3.2m 6
 #define FIXED_BANK_PITCH_FACTOR       14  // factor to calculate servo output from up in x deg bank. Depends on servo and aircraft design, for a 2.5m glider I used 8, for 3.2m 14
 #endif
-#if ( MODEL_GRAFAS == 1 )
+#if ( MODEL_CIRRUS == 1 )
 #define FIXED_BANK_ROLL_FACTOR         9  // factor to calculate servo output from x deg bank. Depends on servos and aircraft design, for a 2.5m glider I used 8, for 3.2m 6
 #define FIXED_BANK_PITCH_FACTOR       14  // factor to calculate servo output from up in x deg bank. Depends on servo and aircraft design, for a 2.5m glider I used 8, for 3.2m 14
 #endif
@@ -206,7 +206,7 @@
 #define DESIRED_SPEED_NORMAL_F0             113     // decimeters/second  no Flaps or manual F0     41 km/h   - should be same as DESIRED_SPEED - also check CRUISE_AIRSPEED in airspeed_options.h 
 #define DESIRED_SPEED_SLOW_F4           	100     // decimeters/second  Flaps down, thermalling   36 km/h
 #endif
-#if ( MODEL_GRAFAS == 1 )
+#if ( MODEL_CIRRUS == 1 )
 #define DESIRED_SPEED_FAST_FMIN4            120     // decimeters/second  Flaps up                   km/h
 #define DESIRED_SPEED_NORMAL_F0             108     // decimeters/second  no Flaps or manual F4     39 km/h
 #define DESIRED_SPEED_SLOW_F4               100     // decimeters/second  Flaps down, thermalling   36 km/h
@@ -669,7 +669,7 @@
 #define ROLLKD                              0.00
 #define AILERON_BOOST                       1.00
 #endif
-#if ( MODEL_GRAFAS == 1 )
+#if ( MODEL_CIRRUS == 1 )
 #define ROLLKP                              0.20
 #define ROLLKD                              0.00
 #define AILERON_BOOST                       1.00
@@ -697,7 +697,7 @@
 #define PITCHGAIN                           0.10 // Bill cessna - 0.10 Matt cularius
 #define PITCHKD                             0.00
 #endif
-#if ( MODEL_GRAFAS == 1 )
+#if ( MODEL_CIRRUS == 1 )
 #define PITCHGAIN                           0.13 // Bill cessna - 0.10 Matt cularius
 #define PITCHKD                             0.00
 #endif
@@ -730,7 +730,7 @@
 //Hilsim Fantasy
 #define REFERENCE_SPEED                       11.30     // meters/second   41 km/h
 #endif
-#if ( MODEL_GRAFAS == 1 )
+#if ( MODEL_CIRRUS == 1 )
 #define REFERENCE_SPEED                       10.83     // meters/second   39 km/h
 #endif
 #if ( MODEL_LINEA == 1 )
@@ -918,7 +918,7 @@ now Linea:*/
 #if ( MODEL_FANTASY == 1 && HILSIM == 1 )
  #define ALT_HOLD_THROTTLE_MAX                1.0
 #endif
-#if ( MODEL_GRAFAS == 1 )
+#if ( MODEL_CIRRUS == 1 )
  #define ALT_HOLD_THROTTLE_MAX                0.80
 #endif
 #if ( MODEL_LINEA == 1 )
