@@ -80,7 +80,7 @@
 //personal options: which model?
 #define MODEL_LINEA 	0
 #define MODEL_FANTASY 	0
-#define MODEL_GRAFAS 	1
+#define MODEL_CIRRUS	1
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set this value to your GPS type.  (Set to GPS_STD, GPS_UBX_2HZ, GPS_UBX_4HZ, GPS_MTEK, GPS_NMEA, or GPS_NONE)
@@ -321,7 +321,7 @@
 #define ELEVATOR_INPUT_CHANNEL              CHANNEL_3
 #define THROTTLE_INPUT_CHANNEL              CHANNEL_4
 #define RUDDER_INPUT_CHANNEL                CHANNEL_5
-#define BRAKE_THR_SEL_INPUT_CHANNEL         CHANNEL_UNUSED //CHANNEL_6
+#define BRAKE_THR_SEL_INPUT_CHANNEL         CHANNEL_6
 #define BRAKE_INPUT_CHANNEL                 CHANNEL_UNUSED
 #define MODE_SWITCH_INPUT_CHANNEL           CHANNEL_7
 #define FLAPS_INPUT_CHANNEL                 CHANNEL_8
@@ -363,9 +363,10 @@
 // connect THROTTLE_OUTPUT_CHANNEL to one of the built-in Outputs (1, 2, or 3) to make
 // sure your board gets power.
 //
-#define AILERON_RIGHT_OUTPUT_CHANNEL        CHANNEL_UNUSED  //CHANNEL_1
-#define FLAP_RIGHT_OUTPUT_CHANNEL           CHANNEL_UNUSED  //CHANNEL_2
-#define AILERON_LEFT_OUTPUT_CHANNEL         CHANNEL_3
+//#define THROTTLE_OUTPUT_CHANNEL             CHANNEL_3
+#define AILERON_LEFT_OUTPUT_CHANNEL         CHANNEL_1
+#define FLAP_RIGHT_OUTPUT_CHANNEL           CHANNEL_2
+#define AILERON_RIGHT_OUTPUT_CHANNEL        CHANNEL_3
 #define FLAP_LEFT_OUTPUT_CHANNEL            CHANNEL_4
 #define ELEVATOR_OUTPUT_CHANNEL             CHANNEL_5  // fuselage
 #define RUDDER_OUTPUT_CHANNEL               CHANNEL_6  // fuselage
@@ -497,7 +498,6 @@
 #endif
 
 #define SERIAL3_OUTPUT_FORMAT               SERIAL_UDB
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serial Output BAUD rate for either standard telemetry streams or MAVLink
@@ -662,7 +662,7 @@
 #define ROLLKD                              0.00
 #endif
 #if ( MODEL_GRAFAS == 1 )
-#define ROLLKP                              0.18
+#define ROLLKP                              0.20
 #define ROLLKD                              0.00
 #endif
 #if ( MODEL_LINEA == 1 )
@@ -689,7 +689,7 @@
 #define PITCHKD                             0.00
 #endif
 #if ( MODEL_GRAFAS == 1 )
-#define PITCHGAIN                           0.12 // Bill cessna - 0.10 Matt cularius
+#define PITCHGAIN                           0.13 // Bill cessna - 0.10 Matt cularius
 #define PITCHKD                             0.00
 #endif
 #if ( MODEL_LINEA == 1 )
@@ -1002,7 +1002,7 @@
 #define USE_FIXED_ORIGIN	    0
 //#define FIXED_ORIGIN_LOCATION	    { -1219950467, 374124664, 30.0 }	// A point in Baylands Park in Sunnyvale, CA
 //#define FIXED_ORIGIN_LOCATION	    { 113480854, 472580108, 578 }	// Innsbruck, useful for X-Plane flight simulator
-#define FIXED_ORIGIN_LOCATION	    { 518264641,  42985454, -6 }	// My home field   -1, -6 to maybe compensate for weird altitude on ground with current Auav3
+#define FIXED_ORIGIN_LOCATION	    {  42985454, 518264641, -1 }	// My home field   E  N , Lon Lat
 
 
 ///////////////////////////////////////////////////////////////////////////////////

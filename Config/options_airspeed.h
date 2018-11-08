@@ -95,8 +95,8 @@
 
 
 
-#if ( MODEL_GRAFAS == 1 )
-//Grafas
+#if ( MODEL_CIRRUS == 1 )
+//CIRRUS
 
 // Airspeeds in m/s
 #define MINIMUM_GROUNDSPEED          1.0
@@ -128,7 +128,7 @@
 
 #define MOTOR_ON_PITCH_UP           -3.0     // added feed forward pitch if motor on
 
-#endif //Grafas
+#endif //CIRRUS
 
 
 

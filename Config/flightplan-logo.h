@@ -565,7 +565,7 @@ END
 // Landing circuit Flight Plan
 //
 
-#if ( MODEL_GRAFAS == 1 )
+#if ( MODEL_CIRRUS == 1 )
 #define FINAL_ALT                      20  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
 #else
 #define FINAL_ALT                      22  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
@@ -1042,7 +1042,7 @@ const struct logoInstructionDef instructions[] = {
 //#define MOTOR_CLIMB_MIN                 0  // cm/sec minimal climbrate that is expected   else abort the Motor climb
 #define MOTOR_CLIMB_MAX               100  // cm/sec maximal climbrate that is expected   else start thermalling
 
-#if ( MODEL_GRAFAS == 1 )
+#if ( MODEL_CIRRUS == 1 )
 #define FINAL_ALT                      16  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
 #define SPEED_MIN			           97  // in dm/h     35 km/h
 #define SPEED_MAX				      113  // in dm/h     41 km/h

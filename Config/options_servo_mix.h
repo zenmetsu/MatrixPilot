@@ -251,16 +251,16 @@
 #endif
 
 
-#if ( MODEL_GRAFAS == 1 && HILSIM == 0 )
-//Grafas
+#if ( MODEL_CIRRUS == 1 && HILSIM == 0 )
+//CIRRUS
 
-#define AILERON_LEFT_OUTPUT_OFFSET                         50          // y  up = +
-#define FLAP_LEFT_OUTPUT_OFFSET                           850          // n  up = +
+#define AILERON_LEFT_OUTPUT_OFFSET                          0          // y  up = +
+#define FLAP_LEFT_OUTPUT_OFFSET                           800          // n  up = +
 #define FLAP_RIGHT_OUTPUT_OFFSET                          800          // y  up = +
-#define AILERON_RIGHT_OUTPUT_OFFSET                       -50          // n  up = +
+#define AILERON_RIGHT_OUTPUT_OFFSET                         0          // n  up = +
 #define THROTTLE_OUTPUT_OFFSET                              0
-#define ELEVATOR_OUTPUT_OFFSET                            150          // up = +  nose up
-#define RUDDER_OUTPUT_OFFSET                              -130          // right = +  surface moves right, seen from behind
+#define ELEVATOR_OUTPUT_OFFSET                              0          // up = +  nose up
+#define RUDDER_OUTPUT_OFFSET                                0          // right = +  surface moves right, seen from behind
 //                                                           
 #define AILERON_LEFT_BRAKE_FACTOR                          0.50 
 #define AILERON_LEFT_FLAPS_POS_FACTOR                      0.08 

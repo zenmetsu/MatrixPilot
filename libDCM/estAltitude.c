@@ -48,7 +48,7 @@ void altimeter_calibrate(void)
 {
 	int ground_altitude = alt_origin.WW / 100;    // meters
 #ifdef MY_PERSONAL_OPTIONS
-#if (MODEL_GRAFAS == 1)
+#if (MODEL_CIRRUS == 1)
 	ground_altitude -= 5;
 #endif
 #endif
