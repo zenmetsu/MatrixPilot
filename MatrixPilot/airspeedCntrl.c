@@ -344,30 +344,24 @@ void airspeedCntrl(void)
 	}
 #endif //THERMALLING_MISSION
 
+	// add protecteion against extreme vertical speeds in all modes
+	if ( (IMUvelocityz._.W1 < -500) || (IMUvelocityz._.W1 > 500) )  // cm/s 
+	{
+		overspeedBrake = 900 ; // apply half brakes to recover for extreme climbrates
+	}
+	else
+	{
+		overspeedBrake = 0;	
+	}
 	//Overspeed protection (overrules normal brakes when airspeed too high)
 	//airspeed in cm/s ,  desiredSpeed stored in dm/s (10ths of meters per second)
-	if (state_flags._.altitude_hold_throttle || state_flags._.altitude_hold_pitch)     //stab or auto, not manual
+	if ( (state_flags._.altitude_hold_throttle || state_flags._.altitude_hold_pitch) && (overspeedBrake == 0) )   //stab or auto, not manual
 	{
 		if ( ( air_speed_3DIMU / 10 ) > ( desiredSpeed * 1.5 ) )  // dm/s .. dm/s
 		{
 			overspeedBrake = ( ( air_speed_3DIMU / 10 ) - ( desiredSpeed * 1.5 ) ) * 30; // dm/s in excess of 150% => servo output (5.x => max)
 		}
-		else
-		{
-			if ( (IMUvelocityz._.W1 < -500) || (IMUvelocityz._.W1 > 500) )  // cm/s 
-			{
-				overspeedBrake = 900 ; // apply half brakes to recover for extreme climbrates
-			}
-			else
-			{
-				overspeedBrake = 0;	
-			}
-		}	
 	}
-	else
-	{
-		overspeedBrake = 0;	
-	}	
 #endif //AIRFRAME_GLIDER
 
 	airspeed                   = calc_airspeed();
