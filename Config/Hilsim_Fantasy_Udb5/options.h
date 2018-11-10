@@ -364,9 +364,10 @@
 // connect THROTTLE_OUTPUT_CHANNEL to one of the built-in Outputs (1, 2, or 3) to make
 // sure your board gets power.
 //
-#define AILERON_RIGHT_OUTPUT_CHANNEL        CHANNEL_1
+//#define THROTTLE_OUTPUT_CHANNEL             CHANNEL_3
+#define AILERON_LEFT_OUTPUT_CHANNEL         CHANNEL_1
 #define FLAP_RIGHT_OUTPUT_CHANNEL           CHANNEL_2
-#define AILERON_LEFT_OUTPUT_CHANNEL         CHANNEL_3
+#define AILERON_RIGHT_OUTPUT_CHANNEL        CHANNEL_3
 #define FLAP_LEFT_OUTPUT_CHANNEL            CHANNEL_4
 #define ELEVATOR_OUTPUT_CHANNEL             CHANNEL_5  // fuselage
 #define RUDDER_OUTPUT_CHANNEL               CHANNEL_6  // fuselage
