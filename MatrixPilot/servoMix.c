@@ -191,10 +191,10 @@ void servoMix(void)
 
 #if (AIRFRAME_TYPE == AIRFRAME_GLIDER)
 	{
-	static int16_t mixerSteps = 0;
+	static int32_t mixerSteps = 0;
 	static int16_t aileronInput = 0;
-	static int16_t ailInLeftPartFlapsNotSpeed=0;
-	static int16_t ailInRightPartFlapsNotSpeed=0;
+	static int32_t ailInLeftPartFlapsNotSpeed=0;
+	static int32_t ailInRightPartFlapsNotSpeed=0;
 	static int16_t ailInLeftPartFlapsSpeed=0;
 	static int16_t ailInRightPartFlapsSpeed=0;
 	static int16_t brakeSelectedTarget;   //resulting brake selection after checking switch/slider, throttle and flight modes, no brake == 0, full brake trottle == 1700
@@ -247,7 +247,7 @@ void servoMix(void)
 			brakeSelectedTarget = get_overspeedBrake() ;
 		}
 	
-	if ( brakeSelectedTarget < 150 )  //remove offset from throttle channel
+	if ( brakeSelectedTarget < 250 )  //remove offset from throttle channel
 	{
 		brakeSelectedTarget = 0;
 	}
@@ -298,7 +298,7 @@ void servoMix(void)
 	ailInRightPartFlapsNotSpeed=0;
 	ailInLeftPartFlapsSpeed=0;
 	ailInRightPartFlapsSpeed=0;
-	if ( flapsSelectedStep < 500 ) //normal speed slected
+	if ( flapsSelectedStep < 500 ) //normal speed selected
 	{
 		if ( aileronInput > 0 )
 		{
@@ -322,7 +322,7 @@ void servoMix(void)
 	}
 	mixerSteps = 0;
 	mixerSteps += (brakeSelectedStep * aileronLeftBrakeFactor)>>5;
-	if ( flapsSelectedStep > 0 ) //speed slected
+	if ( flapsSelectedStep > 0 ) //speed selected
 	{
 		mixerSteps += (flapsSelectedStep * aileronLeftFlapsPosFactor)>>5;
 	}
@@ -342,7 +342,7 @@ void servoMix(void)
 #if (FLAP_LEFT_OUTPUT_CHANNEL != 0 )
 	mixerSteps = 0;
 	mixerSteps += (brakeSelectedStep * flapLeftBrakeFactor)>>5;
-	if ( flapsSelectedStep > 0 ) //speed slected
+	if ( flapsSelectedStep > 0 ) //speed selected
 	{
 		mixerSteps += (flapsSelectedStep * flapLeftFlapsPosFactor)>>5;
 	}
@@ -355,6 +355,10 @@ void servoMix(void)
 	mixerSteps += (ailInRightPartFlapsSpeed * flapLeftRpSpeedFlapsFactor)>>5;
 	mixerSteps += (ailInLeftPartFlapsSpeed * flapLeftLpSpeedFlapsFactor)>>5;
 	mixerSteps += REVERSE_IF_NEEDED(FLAP_LEFT_OFFSET_REVERSED,FLAP_LEFT_OUTPUT_OFFSET);//boolean and integer, add offset in correct direction
+	if ( mixerSteps > FLAP_LEFT_MAX ) //speed selected
+	{
+		mixerSteps = FLAP_LEFT_MAX;
+	}
 	mixerSteps = REVERSE_IF_NEEDED(FLAP_LEFT_DIR_REVERSED, mixerSteps);
 	mixerSteps += SERVOCENTER;
 	udb_pwOut[FLAP_LEFT_OUTPUT_CHANNEL] = udb_servo_pulsesat(mixerSteps);
@@ -362,7 +366,7 @@ void servoMix(void)
 #if (FLAP_RIGHT_OUTPUT_CHANNEL != 0 )
 	mixerSteps = 0;
 	mixerSteps += (brakeSelectedStep * flapRightBrakeFactor)>>5;
-	if ( flapsSelectedStep > 0 ) //speed slected
+	if ( flapsSelectedStep > 0 ) //speed selected
 	{
 		mixerSteps += (flapsSelectedStep * flapLeftFlapsPosFactor)>>5;
 	}
@@ -375,6 +379,10 @@ void servoMix(void)
 	mixerSteps += (ailInRightPartFlapsSpeed * flapRightRpSpeedFlapsFactor)>>5;	
 	mixerSteps += (ailInLeftPartFlapsSpeed * flapRightLpSpeedFlapsFactor)>>5;
 	mixerSteps += REVERSE_IF_NEEDED(FLAP_RIGHT_OFFSET_REVERSED,FLAP_RIGHT_OUTPUT_OFFSET);//boolean and integer, add offset in correct direction
+	if ( mixerSteps > FLAP_RIGHT_MAX ) 
+	{
+		mixerSteps = FLAP_RIGHT_MAX;
+	}
 	mixerSteps = REVERSE_IF_NEEDED(FLAP_RIGHT_DIR_REVERSED, mixerSteps);
 	mixerSteps += SERVOCENTER;
 	udb_pwOut[FLAP_RIGHT_OUTPUT_CHANNEL] = udb_servo_pulsesat(mixerSteps);
@@ -382,7 +390,7 @@ void servoMix(void)
 
 	mixerSteps = 0;
 	mixerSteps += (brakeSelectedStep * aileronRightBrakeFactor)>>5;
-	if ( flapsSelectedStep > 0 ) //speed slected
+	if ( flapsSelectedStep > 0 ) //speed selected
 	{
 		mixerSteps += (flapsSelectedStep * aileronRightFlapsPosFactor)>>5;
 	}
@@ -446,8 +454,10 @@ void servoMix(void)
 
 	temp = pwManual[RUDDER_INPUT_CHANNEL] + REVERSE_IF_NEEDED(RUDDER_CHANNEL_REVERSED, yaw_control - waggle);
 	mixerSteps = temp - SERVOCENTER;
-
-	mixerSteps += (aileronInput * rudderFromAileronFactor)>>5;
+	if ( flapsSelectedStep == 0 ) //speed not selected
+	{
+		mixerSteps += (aileronInput * rudderFromAileronFactor)>>5;
+	}	
 	mixerSteps += REVERSE_IF_NEEDED(RUDDER_OFFSET_REVERSED,RUDDER_OUTPUT_OFFSET);
 #if ( MY_PERSONAL_OPTIONS == 1 )	//test to see if values are extreme here if input changes quickly
 	if (mixerSteps > (SERVOMAX-SERVOCENTER)) mixerSteps = SERVOMAX-SERVOCENTER;

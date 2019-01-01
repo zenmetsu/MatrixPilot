@@ -52,7 +52,7 @@
 // ORIENTATION_ROLLCW180: board rolled 90 degrees clockwise,
 //        from point of view of the pilot, then rotate the board 180 around the Z axis of the plane,
 //        so that the GPS connector points toward the tail of the plane
-#define BOARD_ORIENTATION                   ORIENTATION_BACKWARDS
+#define BOARD_ORIENTATION                   ORIENTATION_ROLLCW
 
 ////////////////////////////////////////////////////////////////////////////////
 // Hardware In the Loop Simulation
@@ -527,7 +527,7 @@
 // instantaneous current, voltage, and mAh used will become available for use with the
 // OSD layout.
 //
-// ANALOG_RSSI_INPUT_CHANNEL lets you connect your RC Receiver's RSSI output to your
+// ANALOG_RSSI_INPUT_CHANNEL lets you connect your RC Receiver's RSSI output to your            
 // UDB, in order to see the RC signal strength on your OSD.  Just plug RSSI and ground
 // from your Receiver to Input2's signal and ground on your UDB.  If you use this feature,
 // you'll also need to set up the RSSI_MIN_SIGNAL_VOLTAGE and RSSI_MAX_SIGNAL_VOLTAGE
@@ -545,12 +545,22 @@
 #define CURRENT_SENSOR_OFFSET               10  // Add 1.0 Amp to whatever value we sense
 
 //#define MAX_VOLTAGE                         525 // 56.0 Volts max for the sensor from SparkFun (in tenths of Volts)
+//#define MAX_VOLTAGE                         1120 // 56.0 Volts max for the sensor from SparkFun (in tenths of Volts)
+#define VOLTAGE_SENSOR_OFFSET               0   // Add 0.0 Volts to whatever value we sense
+
+#if ( MODEL_CIRRUS == 1 )
+//#define MAX_VOLTAGE                         525 // 56.0 Volts max for the sensor from SparkFun (in tenths of Volts)
+#define MAX_VOLTAGE                         1295 // 56.0 Volts max for the sensor from SparkFun (in tenths of Volts)
+#define VOLTAGE_SENSOR_OFFSET               10   // Add 0.0 Volts to whatever value we sense
+#else
 #define MAX_VOLTAGE                         1120 // 56.0 Volts max for the sensor from SparkFun (in tenths of Volts)
 #define VOLTAGE_SENSOR_OFFSET               0   // Add 0.0 Volts to whatever value we sense
+#endif
+#define VOLTAGE_SENSOR_ALARM                105  //(in tenths of Volts) - 105 for 3S, 138 for 4S
 
 #define MAX_VOLTAGE2                        33  // 3.3 Volts max for direct Analog Input
 #define VOLTAGE2_SENSOR_OFFSET              0   // Add 0.0 Volts to whatever value we sense
-#define VOLTAGE_SENSOR_ALARM                105  //(in tenths of Volts) - 105 for 3S, 138 for 4S
+//#define VOLTAGE_SENSOR_ALARM                105  //(in tenths of Volts) - 105 for 3S, 138 for 4S
 
 // RSSI - RC Receiver signal strength
 #define RSSI_MIN_SIGNAL_VOLTAGE             0.5     // Voltage when RSSI should show 0%
