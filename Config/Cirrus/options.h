@@ -546,7 +546,6 @@
 
 //#define MAX_VOLTAGE                         525 // 56.0 Volts max for the sensor from SparkFun (in tenths of Volts)
 //#define MAX_VOLTAGE                         1120 // 56.0 Volts max for the sensor from SparkFun (in tenths of Volts)
-#define VOLTAGE_SENSOR_OFFSET               0   // Add 0.0 Volts to whatever value we sense
 
 #if ( MODEL_CIRRUS == 1 )
 //#define MAX_VOLTAGE                         525 // 56.0 Volts max for the sensor from SparkFun (in tenths of Volts)
