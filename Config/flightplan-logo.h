@@ -1001,7 +1001,7 @@ const struct logoInstructionDef instructions[] = {
 //
 // see https://groups.google.com/forum/#!topic/uavdevboard/yn5PnR6pk7Q
 //
-// GEOFENCE_STATUS : 0,1,2  0= soft/wind gf, 1=wind gf, 2 geofence (alarm)   
+// GEOFENCE_STATUS : 0,1,2,3  0 ok, 1= soft/wind gf, 2=Soft/wind gf, 3 geofence (alarm)
 // GEOFENCE_TURN : geofence angle to return
 
 
@@ -1091,6 +1091,7 @@ const struct logoInstructionDef instructions[] = {
 #define CHECK_PILOT                          34
 #define CHECK_GF                             36
 #define CHECK_SOFT_GF                        18
+#define CHECK_SOFT_WIND_GF                   46
 #define CHECK_LAND                           38
 #define CHECK_SINK                           40
 #define CHECK_THERMAL                        42
@@ -1130,6 +1131,11 @@ const struct logoInstructionDef instructions[] = {
 #define PP_CRUISE                            87
 #define PP_MOTOR_CLIMB_FORWARD               89
 
+#define GF_STAT_GEOFENCE                        3
+#define GF_STAT_SOFT_GEOFENCE                   2
+#define GF_STAT_SOFT_WIND_GEOFENCE              1
+#define GF_STAT_OK		                        0
+
 const struct logoInstructionDef instructions[] = {
 
 	//Main  -  main program when motor is off
@@ -1142,7 +1148,7 @@ const struct logoInstructionDef instructions[] = {
 		PEN_DOWN
 		SET_INTERRUPT(INT_CRUISE)
 		DO (PLAN_RETURN_GEOFENCE)   //geofence
-		DO (PLAN_SOFT_GEOFENCE)   //soft geofence
+		DO (CHECK_SOFT_WIND_GF)   //soft geofence
 		IF_EQ( MOTOR_OFF_TIMER,0 )  //motor stopped more than 4 seconds ago
 			DO (CRUISE)   // prevent overshoots
 		ELSE
@@ -1164,10 +1170,10 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (PLAN_RETURN_GEOFENCE)
-		IF_EQ(GEOFENCE_STATUS, 2)
+		IF_EQ(GEOFENCE_STATUS, GF_STAT_GEOFENCE)
 			SET_INTERRUPT(INT_RETURN_GEOFENCE)
 			REPEAT(5)
-				IF_EQ(GEOFENCE_STATUS, 2)
+				IF_EQ(GEOFENCE_STATUS, GF_STAT_GEOFENCE)
 					IF_NE(GEOFENCE_TURN, 0)
 						IF_LT(GEOFENCE_TURN, 0)
 							LT(10)
@@ -1205,7 +1211,7 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (PLAN_SOFT_GEOFENCE)
 		//assume not strict
-		IF_EQ(GEOFENCE_STATUS, 1)
+		//IF_EQ(GEOFENCE_STATUS, GF_STAT_SOFT_GEOFENCE)
 			SET_INTERRUPT(INT_RETURN_SOFT_GEOFENCE)
 			REPEAT(5)
 				IF_NE(GEOFENCE_TURN, 0)
@@ -1222,7 +1228,8 @@ const struct logoInstructionDef instructions[] = {
 				END
 			END
 			EXEC (LOGO_MAIN)
-		END
+		//END
+	END
 	END
 	END
 
@@ -1271,8 +1278,6 @@ const struct logoInstructionDef instructions[] = {
 		DO (THERMALLING_TURN)
 
 		//Shift the circle for 3 sec
-		DO (THERMALLING_SHIFT_CIRCLE)
-		DO (THERMALLING_SHIFT_CIRCLE)
 		DO (THERMALLING_SHIFT_CIRCLE)
 
 		//now continue around the core
@@ -1332,7 +1337,8 @@ const struct logoInstructionDef instructions[] = {
 		//indicates lift is better then it was at the beginnning of the thermalling turn
 		//try to core the thermal in small steps
 
-		BANK_1S(0)     // reduce bank for one sec, shifting the circle slightly
+		//Custom solution using new command FIXED_BANK_ROTATE()
+		FIXED_BANK_ROTATE(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
 	END
 	END
 */
@@ -1527,7 +1533,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (CHECK_GF)
-		IF_EQ(GEOFENCE_STATUS,2 )              //outside geofence
+		IF_EQ(GEOFENCE_STATUS,GF_STAT_GEOFENCE )              //outside geofence
 			EXEC (PLAN_RETURN_GEOFENCE)
 		END
 	END
@@ -1536,7 +1542,16 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (CHECK_SOFT_GF)
-		IF_EQ(GEOFENCE_STATUS,1 )              //inside geofence
+		IF_EQ(GEOFENCE_STATUS,GF_STAT_SOFT_GEOFENCE )              //inside soft geofence
+			EXEC (PLAN_SOFT_GEOFENCE)
+		END
+	END
+	END
+
+
+
+	TO (CHECK_SOFT_WIND_GF)
+		IF_GT(GEOFENCE_STATUS,GF_STAT_OK )        //if not inside geofence, upwind side
 			EXEC (PLAN_SOFT_GEOFENCE)
 		END
 	END
@@ -1779,7 +1794,7 @@ const struct logoInstructionDef instructions[] = {
 		//DO (CHECK_LATE)
 //		DO (CHECK_OVERSHOOT)
 		DO (CHECK_MOTOR)
-		//DO (CHECK_SOFT_GF)
+		DO (CHECK_SOFT_GF)
 		//DO (CHECK_TAKEOFF)
 //		DO (CHECK_TEST_MODE)
 	END
