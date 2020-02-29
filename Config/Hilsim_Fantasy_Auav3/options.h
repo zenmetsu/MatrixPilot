@@ -311,10 +311,10 @@
 #define ELEVATOR_INPUT_CHANNEL              CHANNEL_3
 #define THROTTLE_INPUT_CHANNEL              CHANNEL_4
 #define RUDDER_INPUT_CHANNEL                CHANNEL_5
-#define BRAKE_THR_SEL_INPUT_CHANNEL         CHANNEL_6
+#define BRAKE_THR_SEL_INPUT_CHANNEL         CHANNEL_8
 #define BRAKE_INPUT_CHANNEL                 CHANNEL_UNUSED
 #define MODE_SWITCH_INPUT_CHANNEL           CHANNEL_7
-#define FLAPS_INPUT_CHANNEL                 CHANNEL_8
+#define FLAPS_INPUT_CHANNEL                 CHANNEL_6
 #define SPOILER_INPUT_CHANNEL               CHANNEL_UNUSED
 #define TEST_MODE_INPUT_CHANNEL             CHANNEL_2
 
@@ -353,9 +353,10 @@
 // connect THROTTLE_OUTPUT_CHANNEL to one of the built-in Outputs (1, 2, or 3) to make
 // sure your board gets power.
 //
-#define AILERON_RIGHT_OUTPUT_CHANNEL        CHANNEL_1
+//#define THROTTLE_OUTPUT_CHANNEL             CHANNEL_3
+#define AILERON_LEFT_OUTPUT_CHANNEL         CHANNEL_1
 #define FLAP_RIGHT_OUTPUT_CHANNEL           CHANNEL_2
-#define AILERON_LEFT_OUTPUT_CHANNEL         CHANNEL_3
+#define AILERON_RIGHT_OUTPUT_CHANNEL        CHANNEL_3
 #define FLAP_LEFT_OUTPUT_CHANNEL            CHANNEL_4
 #define ELEVATOR_OUTPUT_CHANNEL             CHANNEL_5  // fuselage
 #define RUDDER_OUTPUT_CHANNEL               CHANNEL_6  // fuselage
