@@ -337,13 +337,19 @@ typedef struct tag_geofenceShape {
 //Above you have already completed the same for ellips_diameter_x and ellips_diameter_y. No further news.
 //And guess the fuzzy_factor. Start at 0, i have no idea what effect it has.
 
-#define NUMB_OF_GEO_SHAPES      2  //per set
-geofenceShape geofenceShapes[NUMB_OF_GEO_SHAPES * 2]=
+#define NUMB_OF_GEO_SETS        2  //with x shapes
+#define NUMB_OF_GEO_SHAPES      1  //per set
+geofenceShape geofenceShapes[NUMB_OF_GEO_SHAPES * NUMB_OF_GEO_SETS]=
 {
-	{0.0000013,0.0000013,0,0,0,0.78,1},   //circle, Lageweg, 400m radius
-	{0,0,0,0.0015,0.00285,0.96,1},        //line, Lageweg, through Home, powerlines,  angle > 296 || angle < 116 
-	{0.0000013,0.0000013,0,0,0,0.854,1},  //circle, Lageweg, ~350m radius
-	{0,0,0,0.0015,0.00285,1.159,1}        //line, Lageweg, below Home, powerlines,  angle > 296 || angle < 116 
+// two sets, two shapes
+//	{0.0000013,0.0000013,0,0,0,0.78,1},   //circle, Lageweg, 400m radius
+//	{0,0,0,0.0015,0.00285,0.96,1},        //line, Lageweg, through Home, powerlines,  angle > 296 || angle < 116
+//	{0.0000013,0.0000013,0,0,0,0.854,1},  //circle, Lageweg, ~350m radius
+//	{0,0,0,0.0015,0.00285,1.159,1}        //line, Lageweg, below Home, powerlines,  angle > 296 || angle < 116
+
+// two sets, 1 shape      index =  x*sets   loops = shapes
+	{0.0000013,0.0000013,0,0,0,0.78,1},   //circle, 400m radius
+	{0.0000013,0.0000013,0,0,0,0.854,1},  //circle, ~350m radius
 };
 
 //define a set for outcomes of the geofence check, for left, ahead and right
@@ -353,11 +359,13 @@ typedef struct tag_geoScores {
 	float geoScoreRight;
 } geoScores;
 
-geoScores geofenceScore;
-geoScores geofenceScore_old;
+static geoScores geofenceScore;
 
-int16_t geoTurn;       //turn -40, 0, or 40 deg in 4 sec    scope: flightplan_logo.c
-int16_t geoStatus;     //0,1,2  0= soft/wind gf, 1=wind gf, 2 geofence (alarm)   scope: flightplan_logo.c  
+static float windOffsetX;     //offset plane's position downwind to get wind geofence
+static float windOffsetY; 
+
+static int16_t geoTurn;       //turn -40, 0, or 40 deg in 4 sec    scope: flightplan_logo.c
+static int16_t geoStatus;     //0,1,2  0= soft/wind gf, 1=wind gf, 2 geofence (alarm)   scope: flightplan_logo.c  
 static int16_t letHeartbeat;  //to get 1Hz timebase
 int16_t bestFarScore = 0;          //of four directions, find the angle to the farthest point possible
 int16_t bestFarScoreAngle = -1;
@@ -1777,6 +1785,7 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 	static int8_t b_angle = 0;
 	//static geoScores geoScore;
 
+	/*
 	if ( windSeconds == 0 )
 	{
 		strictGeofence = true;
@@ -1785,7 +1794,9 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 	{
 		strictGeofence = false;
 	}
-
+	*/
+	strictGeofence = true;
+	
 	if (numbOfDirections == 1 || numbOfDirections == 3);
 	{
 		geofenceScore.geoScoreAhead = 1;
@@ -1816,21 +1827,21 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 		}
 		if ( strictGeofence )
 		{
-			//for ( i=0; i<numbOfGeoshapes; i++)
+			// two sets, 1 shape      index =  x*sets   loops = shapes
+			// two sets, 2 shape      index =  x*sets   loops = shapes
 			result = 1;
 			for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
 			{
-				result *= geoPreference(x,y,shapeIndex);
+				result *= geoPreference(x,y,shapeIndex * NUMB_OF_GEO_SETS);
 			}
 			geofenceScore.geoScoreAhead = result;
 		}
 		else
 		{
-			//for ( i=0; i<numbOfGeoshapes; i++)
 			result = 1;
 			for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
 			{
-				result *= geoPreference(x,y,shapeIndex+2);  //use the smaller shapes
+				result *= geoPreference(x,y,shapeIndex * NUMB_OF_GEO_SETS + 1);
 			}
 			geofenceScore.geoScoreAhead = result;
 		}
@@ -1859,21 +1870,19 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 
 		if ( strictGeofence )
 		{
-			//for ( i=0; i<numbOfGeoshapes; i++)
 			result = 1;
 			for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
 			{
-				result *= geoPreference(x,y,shapeIndex);
+				result *= geoPreference(x,y,shapeIndex * NUMB_OF_GEO_SETS);
 			}
 			geofenceScore.geoScoreLeft = result * 1.000;
 		}
 		else
 		{
-			//for ( i=0; i<numbOfGeoshapes; i++)
 			result = 1;
 			for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
 			{
-				result *= geoPreference(x,y,shapeIndex+2);  //use the smaller shapes
+				result *= geoPreference(x,y,shapeIndex * NUMB_OF_GEO_SETS + 1);
 			}
 			geofenceScore.geoScoreLeft = result * AHEAD_PREFERENCE;
 		}
@@ -1894,26 +1903,24 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 		//do the check for a point xm in front of plane
 		x += (float)((__builtin_mulss(-cosine(b_angle), metersAhead) << 2)>>16);  //from 16.16 to float
 		y += (float)((__builtin_mulss(-sine(b_angle), metersAhead) << 2)>>16);
-	}
-	if ( strictGeofence )
-	{
-		//for ( i=0; i<numbOfGeoshapes; i++)
-		result = 1;
-		for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+		if ( strictGeofence )
 		{
-			result *= geoPreference(x,y,shapeIndex);
+			result = 1;
+			for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+			{
+				result *= geoPreference(x,y,shapeIndex * NUMB_OF_GEO_SETS);
+			}
+			geofenceScore.geoScoreRight = result * 1.000;
 		}
-		geofenceScore.geoScoreRight = result * 1.000;
-	}
-	else
-	{
-		//for ( i=0; i<numbOfGeoshapes; i++)
-		result = 1;
-		for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+		else
 		{
-			result *= geoPreference(x,y,shapeIndex+2);  //use the smaller shapes
+			result = 1;
+			for ( shapeIndex=0; shapeIndex<NUMB_OF_GEO_SHAPES; shapeIndex++)
+			{
+				result *= geoPreference(x,y,shapeIndex * NUMB_OF_GEO_SETS + 1);
+			}
+			geofenceScore.geoScoreRight = result * AHEAD_PREFERENCE;  //small preference for ahead
 		}
-		geofenceScore.geoScoreRight = result * AHEAD_PREFERENCE;  //small preference for ahead
 	}
 }
 
