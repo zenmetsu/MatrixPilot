@@ -1012,26 +1012,25 @@ const struct logoInstructionDef instructions[] = {
 
 
 #if( HILSIM == 1)
-/*
-#define MOTOR_ON_TRIGGER_ALT          200  // in meters
-#define MOTOR_ON_IN_SINK_ALT          180  // in meters, set low. Altitude where ground objects must be avoided using motor despite sink
-#define MOTOR_OFF_TRIGGER_ALT         230  // in meters
+#define MOTOR_ON_TRIGGER_ALT          100  // in meters
+#define MOTOR_ON_IN_SINK_ALT          100  // in meters, set low. Altitude where ground objects must be avoided using motor despite sink
+#define MOTOR_OFF_TRIGGER_ALT         150  // in meters
 #define MAX_THERMALLING_ALT           300  // in meters
-*/
+/*
 #define MOTOR_ON_TRIGGER_ALT           50  // in meters
 #define MOTOR_ON_IN_SINK_ALT           50  // in meters, set low. Altitude where ground objects must be avoided using motor despite sink
 #define MOTOR_OFF_TRIGGER_ALT          90  // in meters
 #define MAX_THERMALLING_ALT           120  // in meters
-
+*/
 #define CLIMBR_THERMAL_TRIGGER         40  // cm/sec >= 0.2 m/s climb is the trigger to start thermalling
-#define CLIMBR_THERMAL_CLIMB_MIN     -140  // cm/sec > -1.0 maximum sink allowed, else abort thermalling
-//#define MOTOR_CLIMB_MIN               -50  // cm/sec minimal climbrate that is expected   else abort the Motor climb
+#define CLIMBR_THERMAL_CLIMB_MIN     -100  // cm/sec > -1.0 maximum sink allowed, else abort thermalling
 #define MOTOR_CLIMB_MAX               120  // cm/sec maximal climbrate that is expected   else start thermalling
-
 #define FINAL_ALT                      22  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
 #define SPEED_MIN			          105  // in dm/h     38 km/h	10,56
 #define SPEED_MAX				      116  // in dm/h     42 km/h	11,67
+
 #else
+
 //Dutch rules outside of Knvvl fields...
 #define MOTOR_ON_TRIGGER_ALT           70  // in meters
 #define MOTOR_ON_IN_SINK_ALT           50  // in meters, set low. Altitude where ground objects must be avoided using motor despite sink
