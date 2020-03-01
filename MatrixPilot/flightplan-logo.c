@@ -84,6 +84,7 @@ enum {
 	BATTERY_VOLTAGE,
 	AIR_SPEED_Z_DELTA,
 	AIR_SPEED_Z_VS_START,
+	CLEAR_Z_BEST,
 	READ_F_LAND,
  	GEOFENCE_STATUS,
 	GEOFENCE_TURN,
@@ -291,6 +292,7 @@ int16_t fixedBankActiveCounter; //  used for Logo  - for FIXED_BANK_ROTATE and B
 boolean fixedBankActive = false; // used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
 boolean angleTargetActive = false; // used for Logo  - for FIXED_BANK_ROTATE command
 int16_t fixedBankDeg;  // deg bank, used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
+static int16_t currentAngle;      // for SET_DIRECTION and FIXED_BANK_ROTATE   set every 1 sec
 static int16_t oldAngle;      // for SET_DIRECTION and FIXED_BANK_ROTATE   set by BANK_1S
 static boolean rotateClockwise;  //topview   for SET_DIRECTION and FIXED_BANK_ROTATE
 
@@ -299,9 +301,13 @@ static boolean rotateClockwise;  //topview   for SET_DIRECTION and FIXED_BANK_RO
 #endif
 static int16_t get_current_angle(void);
 static int16_t motorOffTimer = 0;
-static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
 static float avgBatteryVoltage = 110;  //kickstart average filter with nominal value; it only starts when LOGO starts      
 static int16_t flyCommandCounter = 0;  //count up 40 times per sec when in a fly command
+static int16_t airSpeedZStart = 0;   //climbrate at the start of a thermal turn
+static int16_t airSpeedZAverage;
+static int16_t airSpeedZBestHeading;
+static int16_t airSpeedZBest = 0;
+static int16_t airSpeedZBestCount = 0;  //used in AIR_SPEED_Z_VS_START
 #if ( MY_PERSONAL_OPTIONS == 1 )
 boolean regularFlyingField; // declared and used by flightplan-logo.c and set by telemetry.c 
 boolean forceCrossFinishLine;   //used by interrupt routine to sigmal an event that needs immediate action
@@ -568,6 +574,7 @@ void flightplan_logo_update(void)
 		geoSetStatus();         //read geofencee status and update status system value and REL_ANGLE_TO_OPPOSITE in x steps
 	}
 #endif //THERMALLING_MISSION
+
 	// first run any injected instruction from the serial port
 	if (logo_inject_pos == LOGO_INJECT_READY)
 	{
@@ -768,12 +775,12 @@ void flightplan_logo_update(void)
 	letHeartbeat++;
 	if ( letHeartbeat % 40 == 0 )   //1Hz
 	{
-		
+
 		//avgBatteryVoltage = (int16_t)( battery_voltage._.W1 );   //heavy filter for voltage
 		avgBatteryVoltage = (avgBatteryVoltage * 14.0 + (float)battery_voltage._.W1 )/15.0;   //heavy filter for voltage
-		
-		geoSetStatus();         //read geofencee status and update status system value
-
+		airSpeedZAverage = ( (airSpeedZAverage * 6) + vario) / 7;
+		oldAngle = currentAngle;
+		currentAngle = get_current_angle();	
 		if (motorOffTimer > 0)   //monitor motor run
 		{
 			motorOffTimer--;
@@ -1051,14 +1058,62 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			airSpeedZStart = vario;  //setup for better lift detection
 			return airSpeedZDelta;
 		}
-		
-		case AIR_SPEED_Z_VS_START: //  
+
+		case AIR_SPEED_Z_VS_START:
 		{
-			//set in AIR_SPEED_Z_DELTA for WAIT_DECREASE
-			return vario - airSpeedZStart;
+			//returns 0 if best climbrate exists for <9 samples
+			//returns 1 if better lift was found
+			//returns 2 if best climbrate exists for 9 samples
+
+			//level only if really needed to center best lift
+			//by comparing highest vario value against average
+			//only act if significantly better and still true after 9 sectors == 270 deg
+			//static int16_t airSpeedZBestHeading;
+
+			if ( airSpeedZBestCount > 0 )   //waiting for the shift
+			{
+				airSpeedZBestCount ++;
+			}
+			//calculated elsewhere: airSpeedZAverage = ( (airSpeedZAverage * 8) + vario) / 9;  @ 1 Hz
+			if ( ( vario > ( airSpeedZAverage + 10 )) && ( vario > (airSpeedZBest + 10)) && (motorOffTimer == 0) ) // 10 means 0.1 m/s
+			{
+				airSpeedZBest = vario;
+				airSpeedZBestCount = 1;   //start
+				airSpeedZBestHeading = get_current_angle();
+				return 1;     //log better lift
+			}
+			else
+			{
+				// have we rotated 270 deg right or left since best? use +/- 25 deg margin
+				if ( ( airSpeedZBestCount >= 6 ) &&
+					(  rotateClockwise &&
+					( ( ( get_current_angle() - airSpeedZBestHeading + 360 ) % 360 ) > 245 ) &&
+						( ( ( get_current_angle() - airSpeedZBestHeading + 360 ) % 360 ) < 295 ) ) |
+					( !rotateClockwise &&
+					 	( ( ( airSpeedZBestHeading - get_current_angle() + 360 ) % 360 ) > 245 ) &&
+						( ( ( airSpeedZBestHeading - get_current_angle() + 360 ) % 360 ) < 295 ) )  )
+				{
+					// clear best climbrate
+					airSpeedZBestCount = 0;
+					airSpeedZBest = airSpeedZAverage;  // next best may be lower than current best, do not detect 'better' too soon
+					return 2;     //trigger the shift circle
+				}
+				else
+				{
+					return 0;
+				}
+			}
 		}
-		
-		case READ_F_LAND: // used for motor climbs 
+
+		case CLEAR_Z_BEST: // clear best climbrate
+		{
+			airSpeedZBestCount = 0;
+			airSpeedZBest = 0;
+			airSpeedZAverage = vario;  // no new best if not needed
+			return (0);
+		}
+
+		case READ_F_LAND: // used for motor climbs
 		{
 			return ((desired_behavior.W & F_LAND) > 0);
 		}
@@ -1089,44 +1144,6 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			return motorOffTimer;
 		}
 
-		case FORCE_CROSS_FINISH_LINE: // used by interrupt routine to sigmal an event that needs immediate action
-		{
-			forceCrossFinishLine = true;
-			return 0;
-		}
-		case READ_FLY_COMMAND_COUNTER: // used by interrupt routines to sigmal fly commands that take too long
-		{
-			return flyCommandCounter;
-		}
-		case FORCE_FINISH_BAD_NAV: // used by interrupt routine to sigmal an event that needs immediate action
-		{
-			turtleLocations[currentTurtle].x._.W0 = 0;
-			turtleLocations[currentTurtle].x._.W1 = IMUlocationx._.W1;
-			turtleLocations[currentTurtle].y._.W0 = 0;
-			turtleLocations[currentTurtle].y._.W1 = IMUlocationy._.W1;
-			flyCommandCounter = 0;
-			forceCrossFinishLine = true;
-			return 0;
-		}
-		case FORCE_RESET: // used by interrupt routine to sigmal an event that needs immediate action
-		{
-			turtleLocations[0].x._.W0 = 0;
-			turtleLocations[0].x._.W1 = IMUlocationx._.W1;
-			turtleLocations[0].y._.W0 = 0;
-			turtleLocations[0].y._.W1 = IMUlocationy._.W1;
-			flyCommandCounter = 0;
-			forceCrossFinishLine = true;
-			forceFinishReset = true;
-			/*
-			interruptIndex = 0;       // clear interrupt; instruction index of the beginning of the interrupt function
-			instructionsProcessed = 0;
-			interruptStackBase = 0;  // stack depth when entering interrupt (clear interrupt when dropping below this depth)
-			logoStackIndex = 0;
-			currentTurtle = 0;
-			//flightplan_logo_begin(0); //clear interrupt and restart main
-			*/
-			return 0;
-		}
 		case SET_DIRECTION: // used by FIXED_BANK_ROTATE routine to sigmal left or right rotation
 		{
 			// if angle decreased: right turn, turn against the current trend
@@ -1337,7 +1354,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					fixedBankDeg = instr.arg;  //controls roll
 					fixedBankActiveCounter = 40; //40Hz = 1 sec
 					fixedBankActive = true; 
-					angleTargetActive = false;   
+					angleTargetActive = false;
 					break;
 				}
 #endif  //THERMALLING_MISSION

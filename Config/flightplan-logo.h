@@ -232,13 +232,13 @@
 // 	GEOFENCE_TURN
 // 	MOTOR_OFF_TIMER
 // 	READ_DESIRED_SPEED
-// 	FORCE_CROSS_FINISH_LINE
-// 	READ_FLY_COMMAND_COUNTER
-// 	FORCE_FINISH_BAD_NAV
+// 	--FORCE_CROSS_FINISH_LINE
+// 	--READ_FLY_COMMAND_COUNTER
+// 	--FORCE_FINISH_BAD_NAV
 //  BATTERY_VOLTAGE     - in tens of volts  
 //  READ_F_LAND         - read the LAND flag, 0 if off, 1 if on 
 //  READ_THROTTLE_OUTPUT_CHANNEL - read the LAND flag, 0 if off, 1 if on  
-//  FORCE_RESET    reset program from within interrupt programs
+//  --FORCE_RESET    reset program from within interrupt programs
 //THERMALLING_MISSION //custom system values
 
 // PARAM                - current param value
@@ -1036,10 +1036,9 @@ const struct logoInstructionDef instructions[] = {
 #define MOTOR_ON_IN_SINK_ALT           50  // in meters, set low. Altitude where ground objects must be avoided using motor despite sink
 #define MOTOR_OFF_TRIGGER_ALT          90  // in meters
 #define MAX_THERMALLING_ALT           120  // in meters
-#define CLIMBR_THERMAL_TRIGGER         20  // cm/sec >= 0.2 m/s climb is the trigger to start thermalling
+#define CLIMBR_THERMAL_TRIGGER          0  // cm/sec >= 0 m/s climb is the trigger to start thermalling
 #define CLIMBR_THERMAL_CLIMB_MIN     -100  // cm/sec > -1.0 maximum sink allowed, else abort thermalling
-//#define MOTOR_CLIMB_MIN                 0  // cm/sec minimal climbrate that is expected   else abort the Motor climb
-#define MOTOR_CLIMB_MAX               120  // cm/sec maximal climbrate that is expected   else start thermalling
+#define MOTOR_CLIMB_MAX               100  // cm/sec maximal climbrate that is expected   else start thermalling
 
 #if ( MODEL_GRAFAS == 1 )
 #define FINAL_ALT                      16  // in meters. Landing circuit: start of Final, used for 3 points in the landing circuit
@@ -1096,16 +1095,16 @@ const struct logoInstructionDef instructions[] = {
 #define CHECK_SINK                           40
 #define CHECK_THERMAL                        42
 #define CHECK_HIGH                           44
-#define CHECK_LATE                           46
-#define CHECK_OVERSHOOT                      48
+//#define CHECK_LATE                           46*
+//#define CHECK_OVERSHOOT                      48
 #define CHECK_MOTOR                          50
 #define CHECK_TAKEOFF                        64
 #define CHECK_TEST_MODE                      82
 #define PILOT_INPUT                          47
 #define TOO_HIGH                             53
 #define INT_TOO_HIGH                         56
-//#define BETTER_LIFT                          55
-#define RESET_NAVIGATION                     58
+#define BETTER_LIFT                          55
+//#define RESET_NAVIGATION                     58
 
 //Land
 #define SET_ALT_ALT                          60
@@ -1258,11 +1257,14 @@ const struct logoInstructionDef instructions[] = {
 			END
 		END
 
+
 		//lock turn direction here
 		LOAD_TO_PARAM(SET_DIRECTION)
 
+		LOAD_TO_PARAM(CLEAR_Z_BEST)
+
 		//do while turn 180 deg, aim for ~4 sec behind the starting point, for a turn around the core. compensate for the widening turn during the time it takes to level of
-		REPEAT(5) //6 sec =~ 180 deg = 6 * "30 deg per loop"
+		REPEAT(7) //6 sec =~ 180 deg = 6 * "30 deg per loop"
 			//use motor to compensate sink if turn takes us outside of the thermal
 			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)
 				FLAG_OFF(F_LAND)    //Motor on
@@ -1275,9 +1277,8 @@ const struct logoInstructionDef instructions[] = {
 			DO (THERMALLING_TURN)
 		END  //repeat
 		FLAG_ON(F_LAND)    //Motor off
-		DO (THERMALLING_TURN)
 
-		//Shift the circle for 3 sec
+		//Shift the circle for 4 sec
 		DO (THERMALLING_SHIFT_CIRCLE)
 
 		//now continue around the core
@@ -1292,13 +1293,48 @@ const struct logoInstructionDef instructions[] = {
 				EXEC (LOGO_MAIN)
 			END
 
+			/*
 			//read delta
-			LOAD_TO_PARAM(AIR_SPEED_Z_DELTA)   // cm/s
+			LOAD_TO_PARAM(AIR_SPEED_Z_VS_START)   // cm/s
 			//if climb improved 0.xx m/s irt last value, shortly reduce bank, shifting the cicle towards better climb
-			IF_GE(PARAM,15)
-				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift
+			IF_GE(PARAM,10)
+				DO (BETTER_LIFT)  // small circle shift
 			ELSE
 				DO (THERMALLING_TURN)
+			END
+			*/
+
+			LOAD_TO_PARAM(AIR_SPEED_Z_VS_START)
+			IF_EQ(PARAM,0)
+				/*
+				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
+					EXEC (LOGO_MAIN)
+				END
+				IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
+					EXEC (LOGO_MAIN)
+				END
+				// to map out a thermal bubble, the pilot can change turn direction on the fly
+				IF_LT(THROTTLE_INPUT_CHANNEL ,3500)     // automode only, only 25% down from fully up, normal position
+					//change turn direction
+					LOAD_TO_PARAM(SET_DIRECTION)
+				END
+				*/
+				DO (THERMALLING_TURN) 
+			END
+			IF_EQ(PARAM,1)
+				/*
+				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
+					EXEC (LOGO_MAIN)
+				END
+				IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
+					EXEC (LOGO_MAIN)
+				END
+				*/
+				DO (BETTER_LIFT)    
+			END
+			IF_EQ(PARAM,2)
+				//LOAD_TO_PARAM(CLEAR_Z_BEST)
+				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift
 			END
 
 			// reduce response to delta
@@ -1332,7 +1368,6 @@ const struct logoInstructionDef instructions[] = {
 	END
 
 
-/*
 	TO (BETTER_LIFT)
 		//indicates lift is better then it was at the beginnning of the thermalling turn
 		//try to core the thermal in small steps
@@ -1341,7 +1376,6 @@ const struct logoInstructionDef instructions[] = {
 		FIXED_BANK_ROTATE(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
 	END
 	END
-*/
 
 	TO (SINK)
 		SET_INTERRUPT(INT_SINK)
@@ -1487,19 +1521,6 @@ const struct logoInstructionDef instructions[] = {
 	END
 
 
-
-	TO (RESET_NAVIGATION)
-		//the pilot has changed the angle of the aircraft, now use that as the new heading
-		PEN_UP
-			USE_CURRENT_ANGLE
-			USE_CURRENT_POS		//centre on waypoint 'here', removing the drift error
-			FD(WAYPOINT_PROXIMITY_RADIUS)	//back to edge of radius,	target is now directly in front again (on arrival point)
-		PEN_DOWN
-	END
-	END
-
-
-
 	TO (PILOT_INPUT)
 		SET_INTERRUPT(INT_PILOT_INPUT)
 		REPEAT(10)			//keep pilot control as long stick is off-centre,max 10 loops
@@ -1621,30 +1642,6 @@ const struct logoInstructionDef instructions[] = {
 	TO (CHECK_HIGH)
 		IF_GT(ALT,MAX_THERMALLING_ALT )     // not too high
 			EXEC (TOO_HIGH)
-		END
-	END
-	END
-
-
-
-	TO (CHECK_LATE)
-		IF_GT(READ_FLY_COMMAND_COUNTER,80 )             //fly command takes too long
-			IF_GT(FORCE_RESET,0) //test is not relevant, this sets the value
-			END
-		END
-	END
-	END
-
-
-
-	TO (CHECK_OVERSHOOT)
-		IF_LT(REL_ANGLE_TO_GOAL,-60)
-			IF_GT(FORCE_RESET,0) //test is not relevant, this sets the value
-			END
-		END
-		IF_GT(REL_ANGLE_TO_GOAL,60)
-			IF_GT(FORCE_RESET,0) //test is not relevant, this sets the value
-			END
 		END
 	END
 	END
