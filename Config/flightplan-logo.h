@@ -1146,7 +1146,7 @@ const struct logoInstructionDef instructions[] = {
 		SET_SPEED(DESIRED_SPEED_NORMAL_F0) //dm/s
 		PEN_DOWN
 		SET_INTERRUPT(INT_CRUISE)
-		DO (PLAN_RETURN_GEOFENCE)   //geofence
+		//DO (PLAN_RETURN_GEOFENCE)   //check and act
 		DO (CHECK_SOFT_WIND_GF)   //soft geofence
 		IF_EQ( MOTOR_OFF_TIMER,0 )  //motor stopped more than 4 seconds ago
 			DO (CRUISE)   // prevent overshoots
@@ -1605,33 +1605,35 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (CHECK_THERMAL)
 		//check for thermals
-		IF_GE( ALT,MOTOR_ON_IN_SINK_ALT+15)
-			IF_EQ( MOTOR_OFF_TIMER,0 )  //motor has stopped more than 4 secons ago
-				//glided into a thermal
-				IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)  //>= 0.2 m/s climb is the trigger, also check GEOFENCE
-					//lift found
-					//keep flying straight until decreasing lift
-					//wait for decrease of lift
-					EXEC (THERMALLING)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
-					//current is less
-					//now beyond the best climbrate..
-					//turn up to 270 deg + 3sec straight if not better
-					//abort the turn if better climbrate is found
-					//every check: if positive, take action, then restart program
-				END // 0.4 m/s trigger
-			ELSE
-				//termalling could still be justified if detected just after or during motorclimb
-				IF_GE(AIR_SPEED_Z,MOTOR_CLIMB_MAX)  //>= 1.2 m/s climb is the trigger, also check GEOFENCE
-					//lift found
-					//keep flying straight until decreasing lift
-					//wait for decrease of lift
-					EXEC (THERMALLING)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
-					//current is less
-					//now beyond the best climbrate..
-					//turn up to 270 deg + 3sec straight if not better
-					//abort the turn if better climbrate is found
-					//every check: if positive, take action, then restart program
-				END // 1.2 m/s trigger
+		IF_EQ(GEOFENCE_STATUS,GF_STAT_OK )              //inside soft and wind geofence
+			IF_GE( ALT,MOTOR_ON_IN_SINK_ALT+15)
+				IF_EQ( MOTOR_OFF_TIMER,0 )  //motor has stopped more than 4 secons ago
+					//glided into a thermal
+					IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)  //>= 0.2 m/s climb is the trigger, also check GEOFENCE
+						//lift found
+						//keep flying straight until decreasing lift
+						//wait for decrease of lift
+						EXEC (THERMALLING)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
+						//current is less
+						//now beyond the best climbrate..
+						//turn up to 270 deg + 3sec straight if not better
+						//abort the turn if better climbrate is found
+						//every check: if positive, take action, then restart program
+					END // 0.4 m/s trigger
+				ELSE
+					//termalling could still be justified if detected just after or during motorclimb
+					IF_GE(AIR_SPEED_Z,MOTOR_CLIMB_MAX)  //>= 1.2 m/s climb is the trigger, also check GEOFENCE
+						//lift found
+						//keep flying straight until decreasing lift
+						//wait for decrease of lift
+						EXEC (THERMALLING)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
+						//current is less
+						//now beyond the best climbrate..
+						//turn up to 270 deg + 3sec straight if not better
+						//abort the turn if better climbrate is found
+						//every check: if positive, take action, then restart program
+					END // 1.2 m/s trigger
+				END
 			END
 		END
 	END
