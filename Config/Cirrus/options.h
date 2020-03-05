@@ -247,7 +247,7 @@
 // Otherwise, if set to 0 only the GPS will be used.
 // Barometers such as the BMP180 must be shaded from sunlight or they will return false readings.
 #ifndef USE_BAROMETER_ALTITUDE
-#define USE_BAROMETER_ALTITUDE              1
+#define USE_BAROMETER_ALTITUDE              0
 #endif
 
 // Racing Mode
@@ -321,10 +321,10 @@
 #define ELEVATOR_INPUT_CHANNEL              CHANNEL_3
 #define THROTTLE_INPUT_CHANNEL              CHANNEL_4
 #define RUDDER_INPUT_CHANNEL                CHANNEL_5
-#define BRAKE_THR_SEL_INPUT_CHANNEL         CHANNEL_6
+#define BRAKE_THR_SEL_INPUT_CHANNEL         CHANNEL_8
 #define BRAKE_INPUT_CHANNEL                 CHANNEL_UNUSED
 #define MODE_SWITCH_INPUT_CHANNEL           CHANNEL_7
-#define FLAPS_INPUT_CHANNEL                 CHANNEL_8
+#define FLAPS_INPUT_CHANNEL                 CHANNEL_6
 #define SPOILER_INPUT_CHANNEL               CHANNEL_UNUSED
 #define TEST_MODE_INPUT_CHANNEL             CHANNEL_2
 
