@@ -191,10 +191,10 @@ void servoMix(void)
 
 #if (AIRFRAME_TYPE == AIRFRAME_GLIDER)
 	{
-	static int32_t mixerSteps = 0;
+	static int16_t mixerSteps = 0;
 	static int16_t aileronInput = 0;
-	static int32_t ailInLeftPartFlapsNotSpeed=0;
-	static int32_t ailInRightPartFlapsNotSpeed=0;
+	static int16_t ailInLeftPartFlapsNotSpeed=0;
+	static int16_t ailInRightPartFlapsNotSpeed=0;
 	static int16_t ailInLeftPartFlapsSpeed=0;
 	static int16_t ailInRightPartFlapsSpeed=0;
 	static int16_t brakeSelectedTarget;   //resulting brake selection after checking switch/slider, throttle and flight modes, no brake == 0, full brake trottle == 1700

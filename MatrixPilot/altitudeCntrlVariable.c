@@ -77,7 +77,7 @@ int16_t rtl_pitch_down;
 
 #if ( THERMALLING_MISSION == 1 )
 #if ( HILSIM == 1 )
-static int32_t speed_height_old = 0;
+//static int32_t speed_height_old = 0;
 #endif
 static int16_t varioCounter = 0;            // 0..3 to create 1Hz from 4Hz
 extern int16_t vario;                       // in cm/s   used for Logo by  - defined in flightplan_logo.c and set in altitudeCntrlVariable.c

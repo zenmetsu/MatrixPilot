@@ -136,6 +136,7 @@
 #define FLAP_LEFT_RP_FLAPS_FACTOR                          -0.10       //right part factor of aileron with normal flaps setting
 #define FLAP_LEFT_LP_SPEED_FLAPS_FACTOR                     0.10       //left part factor of aileron with speed flaps setting
 #define FLAP_LEFT_RP_SPEED_FLAPS_FACTOR                    -0.10       //right part factor of aileron with speed flaps setting
+#define FLAP_LEFT_MAX                                     900         //prevent hitting physical limit
 #define FLAP_LEFT_OFFSET_REVERSED                           0          //0 or 1 Make positive offset move surface up
 #define FLAP_LEFT_DIR_REVERSED                              1          //0 or 1 don't or do reverse
 //                                                           
@@ -146,6 +147,7 @@
 #define FLAP_RIGHT_RP_FLAPS_FACTOR                          0.20       //right part factor of aileron with normal flaps setting
 #define FLAP_RIGHT_LP_SPEED_FLAPS_FACTOR                   -0.10       //left part factor of aileron with speed flaps setting
 #define FLAP_RIGHT_RP_SPEED_FLAPS_FACTOR                    0.10       //right part factor of aileron with speed flaps setting
+#define FLAP_RIGHT_MAX                                     900         //prevent hitting physical limit
 #define FLAP_RIGHT_OFFSET_REVERSED                          0          //0 or 1 Make positive offset move surface up
 #define FLAP_RIGHT_DIR_REVERSED                             0          //0 or 1 don't or do reverse
 //                                                           
