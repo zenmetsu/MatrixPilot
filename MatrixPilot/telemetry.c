@@ -817,6 +817,7 @@ void telemetry_output_8hz(void)
 				serial3_output("bma%i:",
 				    (int16_t)(get_barometer_altitude()/10) ); // height in centimeters
 */
+				serial3_output("imx%i:imy%i:",IMUlocationx._.W1,IMUlocationy._.W1);
 				//serial3_output("p2i%i:",udb_pwIn[2]);    //test channel
 				serial3_output("p9o%i:",get_flapsSelected() + SERVOCENTER);
 //				serial3_output("\r\n");
