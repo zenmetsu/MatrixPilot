@@ -91,8 +91,8 @@ enum {
 	MOTOR_OFF_TIMER,
 	READ_DESIRED_SPEED,
 	READ_THROTTLE_OUTPUT_CHANNEL,
-
 	SET_DIRECTION,
+	SWITCH_DIRECTION,
 #endif
 	PARAM
 };
@@ -787,58 +787,6 @@ void flightplan_logo_update(void)
 			motorOffTimer = 4;  // start timer, wait 4 sec before detecting thermals, used by system value MOTOR_OFF_TIMER
 		}
 	}
-	/*
-	//calculate heading to where there is room to fly 400m, for REL_ANGLE_TO_OPPOSITE... 
-	if ( letHeartbeat % 40 == 10 )   //1Hz
-	{
-		bestFarScore = 2;   //start bad
-		bestFarScoreAngle = -1;
-		areaGeoScore(-150,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
-		// score 
-		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
-		{
-			bestFarScore = geofenceScore.geoScoreAhead;
-			bestFarScoreAngle = -150;
-		}
-	}
-	if ( letHeartbeat % 40 == 20 )   //1Hz
-	{
-		areaGeoScore(150,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
-		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
-		{
-			bestFarScore = geofenceScore.geoScoreAhead;
-			bestFarScoreAngle = 150;
-		}
-	}
-	if ( letHeartbeat % 40 == 25 )   //1Hz
-	{
-		areaGeoScore(-90,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
-		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
-		{
-			bestFarScore = geofenceScore.geoScoreAhead;
-			bestFarScoreAngle = -90;
-		}
-	}
-	if ( letHeartbeat % 40 == 30 )   //1Hz
-	{
-		areaGeoScore(90,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
-		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
-		{
-			bestFarScore = geofenceScore.geoScoreAhead;
-			bestFarScoreAngle = 90;
-		}
-				
-		if ( bestFarScore > 1 )      //is bestFarScore inside gf?
-		{
-			bestFarScoreAngle = 0;   //no, just fly ahead
-		} 
-		else
-		{
-			relAngleToOpposite = bestFarScoreAngle; //yes
-		} 
-		//used by REL_ANGLE_TO_OPPOSITE;    
-	}
-	*/
 #endif
 }
 
@@ -1142,8 +1090,15 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 
 		case SET_DIRECTION: // used by FIXED_BANK_ROTATE routine to sigmal left or right rotation
 		{
-			// if angle decreased: right turn, turn against the current trend
-			rotateClockwise = ( ( ( get_current_angle() - oldAngle + 360) % 360 ) > 180 );
+			// if angle increases: right turn, turn with the current trend
+			rotateClockwise = ( ( ( get_current_angle() - oldAngle + 360) % 360 ) < 180 );
+			return 0;
+		}
+
+		case SWITCH_DIRECTION: // used by FIXED_BANK_ROTATE routine to sigmal left or right rotation
+		{
+			// if THROTTLE 0  change turn 
+			rotateClockwise = !rotateClockwise;
 			return 0;
 		}
 
@@ -1422,19 +1377,10 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					if ( regularFlyingField )
 					//if ( lat_origin.WW > 518260000 & lat_origin.WW < 518270000 & lon_origin.WW > 42980000 & lon_origin.WW < 42990000 )
 					{
-/*
-#if ( HILSIM == 1 )
-						turtleLocations[currentTurtle].x._.W0 = 0;
-						turtleLocations[currentTurtle].x._.W1 = -425;
-						turtleLocations[currentTurtle].y._.W0 = 0;
-						turtleLocations[currentTurtle].y._.W1 = -300;
-#else
-*/
 						turtleLocations[currentTurtle].x._.W0 = 0;
 						turtleLocations[currentTurtle].x._.W1 = 45;
 						turtleLocations[currentTurtle].y._.W0 = 0;
 						turtleLocations[currentTurtle].y._.W1 = -39;
-//#endif
 					}
 #endif
 					break;
@@ -1786,18 +1732,7 @@ void areaGeoScore(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, 
 	static boolean strictGeofence = false;
 	static int16_t cangle = 0;
 	static int8_t b_angle = 0;
-	//static geoScores geoScore;
 
-	/*
-	if ( windSeconds == 0 )
-	{
-		strictGeofence = true;
-	}
-	else
-	{
-		strictGeofence = false;
-	}
-	*/
 	strictGeofence = true;
 	
 	if (numbOfDirections == 1 || numbOfDirections == 3);
@@ -1947,32 +1882,6 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 
 	if (steps == 1)
 	{
-		static int16_t cangle = 0;
-		static int8_t b_angle = 0;
-		
-		//code WIND_FROM_ANGLE: 
-		cangle = get_angle_to_point(estimatedWind[0], estimatedWind[1]);   // 0-359 (clockwise, 0=North)
-		
-		while (cangle < 0) cangle += 360;
-		while (cangle >= 360) cangle -= 360;
-
-		//code from FD()
-		b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
-		b_angle = -b_angle - 64;                        // 0-255 (ccw, 0=East)
-		/*
-		windOffsetX = ( windOffsetX * 19 + (-20.0 *(float)((__builtin_mulss(-cosine(b_angle), 20) << 2)>>16)) ) / 20;  //from 16.16 to float
-		windOffsetY = ( windOffsetY * 19 + (-20.0 *(float)((__builtin_mulss(-sine(b_angle), 20) << 2)>>16)) ) / 20;
-
-		windOffsetX = -282.0;  // + moves gf W
-		windOffsetY = -282.0;
-		*/
-		//offset to add to test for wind geofence, place centre of circle 400m upwind
-		//estimatedWind in cm/s, scale to 400m radius  usually ~500 cm/s
-		//windOffsetX = -(float)(estimatedWind[0]) * 0.80;
-		//windOffsetY = -(float)(estimatedWind[1]) * 0.80;
-		//windOffsetX = (float)(estimatedWind[0]) * 2.0;
-		//windOffsetY = (float)(estimatedWind[1]) * 2.0;
-
 		// case WIND_SPEED: // in cm/s
 		static int32_t windspeed =  0;
 		windspeed = sqrt_long(estimatedWind[0] * (int32_t)estimatedWind[0] + estimatedWind[1] * (int32_t)estimatedWind[1]);
@@ -1992,7 +1901,6 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 		if ( geofenceScore.geoScoreAhead > 1 )
 		{
 			//out
-			//geofenceScore.geoScoreAhead = 1;  //not measured
 			//ahead must be avoided, will in some cases cause flying far, brake the balance
 			geoStatus = 3;                             // geofence crossed, not good...
 			//now check what to do,
@@ -2004,24 +1912,7 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 		else                                          //inside gf
 		{
 			//in, now check soft geofence
-			//212
-			//geoStatus = 2;                             // geofence crossed, not good...
-			//steps=5;
-
-			//geofenceScore.geoScoreAhead = 1;  //not measured
 			areaGeoScore(60,2,70,0);   // normal  gf  = sides ok  ?
-			/*
-			if ( (geofenceScore.geoScoreAhead > 1) )
-			{
-				//out
-				nextAction = 311;
-			}
-			else   //ok
-			{
-				//in soft gf
-				nextAction = 312;
-			}
-			*/
 		}
 		steps++;
 	}
@@ -2033,9 +1924,7 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 		{
 			//sgf out
 			geoStatus = 2;
-			//areaGeoScore(60,2,40,0);     // what action? // l/r
 			geoSetTurn();
-			//steps=5;
 		}
 		else
 		{
@@ -2043,49 +1932,16 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 			if ( geofenceScore.geoScoreRight > 1 || geofenceScore.geoScoreLeft > 1 )
 			{
 				//outside wind line, thermalling only
-				//areaGeoScore(30,2,40,50);  //- look ahead, what action?
 				geoStatus = 1;                        // assume no room for a new thermal turn
 				geoSetTurn();
 			}
 			else
 			{
-				//steps=3;
-				geoStatus = 0;                        // ok, do nothing, no advice  
+				geoStatus = 0;                        // ok, do nothing, no advice
 			}
-			//geoStatus = 0;
-
-			//not shure if in sgf
-
-			//geoSetTurn();
   		}
-
-		/*
-		if ( nextAction == 312 )
-		{
-			// check wind gf
-			areaGeoScore(0,1,0,50);
-		}
-		*/
 		steps++;
 	}
-	/*
-	if ( steps == 4) //wind results
-	{
-		areaGeoScore(30,2,40,50);  //- look ahead, what action?
-		if ( geofenceScore.geoScoreAhead > 1 )
-		{
-			//outside wind line, thermalling only
-			geoStatus = 1;                        // assume no room for a new thermal turn
-			geoSetTurn();
-		}
-		else
-		{
-			geoStatus = 0;                        // ok, do nothing, no advice
-		}
-		steps++;
-	}
-	*/
-	
 	//calculate heading to where there is room to fly 400m, for REL_ANGLE_TO_OPPOSITE...
 	if ( steps == 7 )
 	{

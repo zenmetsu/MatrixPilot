@@ -89,7 +89,7 @@
 
 // RT(x)                - Rotate the turtle to the right by x degrees.
 // LT(x)                - Rotate the turtle to the left by x degrees.
-// FIXED_BANK_ROTATE              - Perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored (THERMALLING_MISSION)
+// FIXED_BANK_ROTATE              - Perform roll to a fixed bank x deg for 30 deg heading change to the right or left and fly on for ~2 sec, position/navigation will be ignored (THERMALLING_MISSION)
 // BANK_1S              - Perform level flight for 1 second, position/navigation will be ignored. This is used for centering in thermals (THERMALLING_MISSION)
 // SET_ANGLE(x)         - Set the turtle to point x degrees clockwise from N.
 // USE_CURRENT_ANGLE    - Aim the turtle in the direction that the plane is currently headed.
@@ -964,7 +964,7 @@ const struct logoInstructionDef instructions[] = {
 #ifdef THERMALLING_MISSION
 
 // ****************************************************************
-//    LET e-glider mission - 2016
+//    LET e-glider mission - 2020
 // ****************************************************************
 
 // This script performs a LET (Local Endurance Thermalling) mission
@@ -1012,9 +1012,9 @@ const struct logoInstructionDef instructions[] = {
 
 
 #if( HILSIM == 1)
-#define MOTOR_ON_TRIGGER_ALT          100  // in meters
-#define MOTOR_ON_IN_SINK_ALT          100  // in meters, set low. Altitude where ground objects must be avoided using motor despite sink
-#define MOTOR_OFF_TRIGGER_ALT         150  // in meters
+#define MOTOR_ON_TRIGGER_ALT          200  // in meters
+#define MOTOR_ON_IN_SINK_ALT          200  // in meters, set low. Altitude where ground objects must be avoided using motor despite sink
+#define MOTOR_OFF_TRIGGER_ALT         250  // in meters
 #define MAX_THERMALLING_ALT           300  // in meters
 /*
 #define MOTOR_ON_TRIGGER_ALT           50  // in meters
@@ -1122,6 +1122,7 @@ const struct logoInstructionDef instructions[] = {
 #define FS_DESCENT_PATTERN                   69
 #define FS_LOITER_LAND                       71
 
+/*
 //Polar_plot
 #define PP_CHECKS                            80
 #define PP_POLAR_PLOT                        81
@@ -1129,6 +1130,7 @@ const struct logoInstructionDef instructions[] = {
 #define PP_RETURN_MC_SOFT_GEOFENCE           85
 #define PP_CRUISE                            87
 #define PP_MOTOR_CLIMB_FORWARD               89
+*/
 
 #define GF_STAT_GEOFENCE                        3
 #define GF_STAT_SOFT_GEOFENCE                   2
@@ -1172,7 +1174,7 @@ const struct logoInstructionDef instructions[] = {
 		IF_EQ(GEOFENCE_STATUS, GF_STAT_GEOFENCE)
 			SET_INTERRUPT(INT_RETURN_GEOFENCE)
 			REPEAT(5)
-				IF_EQ(GEOFENCE_STATUS, GF_STAT_GEOFENCE)
+				IF_EQ(GEOFENCE_STATUS, GF_STAT_GEOFENCE)   //else skip to main
 					IF_NE(GEOFENCE_TURN, 0)
 						IF_LT(GEOFENCE_TURN, 0)
 							LT(10)
@@ -1292,53 +1294,22 @@ const struct logoInstructionDef instructions[] = {
 			IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
 				EXEC (LOGO_MAIN)
 			END
-
-			/*
-			//read delta
-			LOAD_TO_PARAM(AIR_SPEED_Z_VS_START)   // cm/s
-			//if climb improved 0.xx m/s irt last value, shortly reduce bank, shifting the cicle towards better climb
-			IF_GE(PARAM,10)
-				DO (BETTER_LIFT)  // small circle shift
-			ELSE
-				DO (THERMALLING_TURN)
-			END
-			*/
-
 			LOAD_TO_PARAM(AIR_SPEED_Z_VS_START)
 			IF_EQ(PARAM,0)
-				/*
-				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
-					EXEC (LOGO_MAIN)
-				END
-				IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
-					EXEC (LOGO_MAIN)
-				END
 				// to map out a thermal bubble, the pilot can change turn direction on the fly
 				IF_LT(THROTTLE_INPUT_CHANNEL ,3500)     // automode only, only 25% down from fully up, normal position
 					//change turn direction
-					LOAD_TO_PARAM(SET_DIRECTION)
+					LOAD_TO_PARAM(SWITCH_DIRECTION)
 				END
-				*/
 				DO (THERMALLING_TURN) 
 			END
 			IF_EQ(PARAM,1)
-				/*
-				IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
-					EXEC (LOGO_MAIN)
-				END
-				IF_LT( ALT,MOTOR_ON_IN_SINK_ALT+15)
-					EXEC (LOGO_MAIN)
-				END
-				*/
 				DO (BETTER_LIFT)    
 			END
 			IF_EQ(PARAM,2)
 				//LOAD_TO_PARAM(CLEAR_Z_BEST)
 				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift
 			END
-
-			// reduce response to delta
-			//DO (THERMALLING_TURN)
 		END
 	END
 	END
@@ -1563,7 +1534,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (CHECK_SOFT_GF)
-		IF_EQ(GEOFENCE_STATUS,GF_STAT_SOFT_GEOFENCE )              //inside soft geofence
+		IF_EQ(GEOFENCE_STATUS,GF_STAT_SOFT_GEOFENCE )              //if not inside soft geofence
 			EXEC (PLAN_SOFT_GEOFENCE)
 		END
 	END
@@ -1606,36 +1577,36 @@ const struct logoInstructionDef instructions[] = {
 	TO (CHECK_THERMAL)
 		//check for thermals
 		IF_EQ(GEOFENCE_STATUS,GF_STAT_OK )              //inside soft and wind geofence
-		IF_GE( ALT,MOTOR_ON_IN_SINK_ALT+15)
-			IF_EQ( MOTOR_OFF_TIMER,0 )  //motor has stopped more than 4 secons ago
-				//glided into a thermal
-				IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)  //>= 0.2 m/s climb is the trigger, also check GEOFENCE
-					//lift found
-					//keep flying straight until decreasing lift
-					//wait for decrease of lift
-					EXEC (THERMALLING)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
-					//current is less
-					//now beyond the best climbrate..
-					//turn up to 270 deg + 3sec straight if not better
-					//abort the turn if better climbrate is found
-					//every check: if positive, take action, then restart program
-				END // 0.4 m/s trigger
-			ELSE
-				//termalling could still be justified if detected just after or during motorclimb
-				IF_GE(AIR_SPEED_Z,MOTOR_CLIMB_MAX)  //>= 1.2 m/s climb is the trigger, also check GEOFENCE
-					//lift found
-					//keep flying straight until decreasing lift
-					//wait for decrease of lift
-					EXEC (THERMALLING)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
-					//current is less
-					//now beyond the best climbrate..
-					//turn up to 270 deg + 3sec straight if not better
-					//abort the turn if better climbrate is found
-					//every check: if positive, take action, then restart program
-				END // 1.2 m/s trigger
+			IF_GE( ALT,MOTOR_ON_IN_SINK_ALT+15)
+				IF_EQ( MOTOR_OFF_TIMER,0 )  //motor has stopped more than 4 secons ago
+					//glided into a thermal
+					IF_GE(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)  //>= 0.2 m/s climb is the trigger, also check GEOFENCE
+						//lift found
+						//keep flying straight until decreasing lift
+						//wait for decrease of lift
+						EXEC (THERMALLING)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
+						//current is less
+						//now beyond the best climbrate..
+						//turn up to 270 deg + 3sec straight if not better
+						//abort the turn if better climbrate is found
+						//every check: if positive, take action, then restart program
+					END // 0.4 m/s trigger
+				ELSE
+					//termalling could still be justified if detected just after or during motorclimb
+					IF_GE(AIR_SPEED_Z,MOTOR_CLIMB_MAX)  //>= 1.2 m/s climb is the trigger, also check GEOFENCE
+						//lift found
+						//keep flying straight until decreasing lift
+						//wait for decrease of lift
+						EXEC (THERMALLING)     //wait up to 6 sec for the climbrate decrease, keep the best climbrate
+						//current is less
+						//now beyond the best climbrate..
+						//turn up to 270 deg + 3sec straight if not better
+						//abort the turn if better climbrate is found
+						//every check: if positive, take action, then restart program
+					END // 1.2 m/s trigger
+				END
 			END
 		END
-	END
 	END
 	END
 
@@ -1674,13 +1645,14 @@ const struct logoInstructionDef instructions[] = {
 
 
 
+/*
 	TO (CHECK_TEST_MODE)
 		IF_GT(TEST_MODE_INPUT_CHANNEL ,3900)     // automode only
 			EXEC (PP_POLAR_PLOT)
 		END
 	END
 	END
-
+*/
 
 
 	TO (CHECK_TAKEOFF)
@@ -1760,11 +1732,12 @@ const struct logoInstructionDef instructions[] = {
 		REPEAT(3)
 			DO (CHECK_PILOT)
 			DO (CHECK_GF)
+			DO (CHECK_THERMAL)
 
 			DO (CHECK_LAND)
 			DO (CHECK_SINK)
-			DO (CHECK_THERMAL)
 			DO (CHECK_HIGH)
+			DO (CHECK_THERMAL)
 	/*
 			DO (CHECK_LATE)
 	*/
@@ -1772,7 +1745,7 @@ const struct logoInstructionDef instructions[] = {
 			DO (CHECK_MOTOR)
 	//		DO (CHECK_SOFT_GF)
 			DO (CHECK_TAKEOFF)
-			DO (CHECK_TEST_MODE)
+	//		DO (CHECK_TEST_MODE)
 		END
 	END
 	END
@@ -1845,6 +1818,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 
+/*
 //Polar_Plot
 	TO (PP_POLAR_PLOT)
 
@@ -1971,7 +1945,7 @@ const struct logoInstructionDef instructions[] = {
 		END
 	END
 	END
-
+*/
 
 
 
