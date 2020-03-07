@@ -1095,8 +1095,6 @@ const struct logoInstructionDef instructions[] = {
 #define CHECK_SINK                           40
 #define CHECK_THERMAL                        42
 #define CHECK_HIGH                           44
-//#define CHECK_LATE                           46*
-//#define CHECK_OVERSHOOT                      48
 #define CHECK_MOTOR                          50
 #define CHECK_TAKEOFF                        64
 #define CHECK_TEST_MODE                      82
@@ -1104,7 +1102,6 @@ const struct logoInstructionDef instructions[] = {
 #define TOO_HIGH                             53
 #define INT_TOO_HIGH                         56
 #define BETTER_LIFT                          55
-//#define RESET_NAVIGATION                     58
 
 //Land
 #define SET_ALT_ALT                          60
@@ -1285,6 +1282,7 @@ const struct logoInstructionDef instructions[] = {
 
 		//now continue around the core
 		REPEAT_FOREVER
+			DO (CHECK_SOFT_GF)
 			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_CLIMB_MIN)
 				EXEC (LOGO_MAIN)
 			END
@@ -1671,8 +1669,6 @@ const struct logoInstructionDef instructions[] = {
 		//DO (CHECK_SINK)
 		//DO (CHECK_THERMAL)
 		//DO (CHECK_HIGH)
-		//DO (CHECK_LATE)
-//		DO (CHECK_OVERSHOOT)
 		DO (CHECK_MOTOR)
 		//DO (CHECK_SOFT_GF)
 		//DO (CHECK_TAKEOFF)
@@ -1689,10 +1685,6 @@ const struct logoInstructionDef instructions[] = {
 		//DO (CHECK_SINK)
 		//DO (CHECK_THERMAL)
 		//DO (CHECK_HIGH)
-/*
-		DO (CHECK_LATE)
-*/
-//		DO (CHECK_OVERSHOOT)
 		DO (CHECK_MOTOR)
 		//DO (CHECK_SOFT_GF)
 		//DO (CHECK_TAKEOFF)
@@ -1703,7 +1695,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (INT_RETURN_SOFT_GEOFENCE)  //interrupt routine
-		//check pilot, gf, slider, batt, sink, thermal, high, late, overshoot, motor
+		//check pilot, gf, slider, batt, sink, thermal, high, motor
 
 		DO (CHECK_PILOT)
 		DO (CHECK_GF)
@@ -1713,10 +1705,6 @@ const struct logoInstructionDef instructions[] = {
 		DO (CHECK_SINK)
 		DO (CHECK_THERMAL)
 		DO (CHECK_HIGH)
-/*
-		DO (CHECK_LATE)
-*/
-//		DO (CHECK_OVERSHOOT)
 		DO (CHECK_MOTOR)
 
 		//DO (CHECK_SOFT_GF)
@@ -1728,21 +1716,20 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (INT_CRUISE)  //interrupt routine
-		//check pilot, gf, slider, batt, sink, thermal, high, late, overshoot, motor
+		//check pilot, gf, slider, batt, sink, thermal, high, motor
 		REPEAT(3)
 			DO (CHECK_PILOT)
 			DO (CHECK_GF)
-			DO (CHECK_THERMAL)
-
 			DO (CHECK_LAND)
+
+			DO (CHECK_THERMAL)
+			
 			DO (CHECK_SINK)
 			DO (CHECK_HIGH)
-			DO (CHECK_THERMAL)
-	/*
-			DO (CHECK_LATE)
-	*/
-	//		DO (CHECK_OVERSHOOT)
 			DO (CHECK_MOTOR)
+
+			DO (CHECK_THERMAL)  //again
+
 	//		DO (CHECK_SOFT_GF)
 			DO (CHECK_TAKEOFF)
 	//		DO (CHECK_TEST_MODE)
@@ -1753,7 +1740,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (INT_THERMALLING)  //interrupt routine
-		//check pilot, gf, slider, batt, sink,		, high, late, overshoot, motor
+		//check pilot, gf, slider, batt, sink,		, high, motor
 
 		DO (CHECK_PILOT)
 		DO (CHECK_GF)
@@ -1763,10 +1750,8 @@ const struct logoInstructionDef instructions[] = {
 		//DO (CHECK_THERMAL)
 */
 		DO (CHECK_HIGH)
-		//DO (CHECK_LATE)
-//		DO (CHECK_OVERSHOOT)
 		DO (CHECK_MOTOR)
-		DO (CHECK_SOFT_GF)
+		//DO (CHECK_SOFT_GF)
 		//DO (CHECK_TAKEOFF)
 //		DO (CHECK_TEST_MODE)
 	END
@@ -1775,7 +1760,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (INT_SINK)  //interrupt routine
-		//check pilot, gf, slider, batt,	 ,		  , 	, late, overshoot, motor
+		//check pilot, gf, slider, batt,	 ,		  , 	, motor
 
 		DO (CHECK_PILOT)
 		DO (CHECK_GF)
@@ -1784,9 +1769,6 @@ const struct logoInstructionDef instructions[] = {
 		//DO (CHECK_THERMAL)
 /*
 		DO (CHECK_HIGH)
-		DO (CHECK_LATE)
-*/
-//		DO (CHECK_OVERSHOOT)
 		DO (CHECK_MOTOR)
 		//DO (CHECK_SOFT_GF)
 		//DO (CHECK_TAKEOFF)
@@ -1797,7 +1779,7 @@ const struct logoInstructionDef instructions[] = {
 
 
 	TO (INT_TOO_HIGH)  //interrupt routine
-		//check pilot, gf, slider, batt,	 ,		  , 	, late, overshoot, motor
+		//check pilot, gf, slider, batt,	 ,		  , 	, motor
 
 		DO (CHECK_PILOT)
 		DO (CHECK_GF)
@@ -1805,10 +1787,7 @@ const struct logoInstructionDef instructions[] = {
 		//DO (CHECK_SINK)
 		//DO (CHECK_THERMAL)
 		//DO (CHECK_HIGH)
-/*
-		DO (CHECK_LATE)
-*/		//DO (CHECK_SOFT_GF)
-//		DO (CHECK_OVERSHOOT)
+		//DO (CHECK_SOFT_GF)
 		DO (CHECK_MOTOR)
 		//DO (CHECK_TAKEOFF)
 		DO (CHECK_TEST_MODE)

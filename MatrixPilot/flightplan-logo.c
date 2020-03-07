@@ -1893,7 +1893,6 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 		}	
 
 		areaGeoScore(0,1,0,0);  //on pos to minimize alarms    angle, numbOfDirections, metersAhead, windSeconds)   strict
-		//nextAction=0;
 		steps++;
 	}
 	if (steps == 3)  // geofence
@@ -1904,7 +1903,6 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 			//ahead must be avoided, will in some cases cause flying far, brake the balance
 			geoStatus = 3;                             // geofence crossed, not good...
 			//now check what to do,
-			//211
 			areaGeoScore(30,2,50,0);  //  l/r?
 			geoSetTurn();
 			steps=5;
@@ -1918,8 +1916,6 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 	}
 	if ( steps == 5 )
 	{
-		//if ( nextAction == 311 )
-		//if ( (geofenceScore.geoScoreAhead > 1) )
 		if ( geofenceScore.geoScoreRight > 1 || geofenceScore.geoScoreLeft > 1 )
 		{
 			//sgf out
