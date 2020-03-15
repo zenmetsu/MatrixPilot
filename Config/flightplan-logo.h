@@ -1012,9 +1012,9 @@ const struct logoInstructionDef instructions[] = {
 
 
 #if( HILSIM == 1)
-#define MOTOR_ON_TRIGGER_ALT          200  // in meters
-#define MOTOR_ON_IN_SINK_ALT          200  // in meters, set low. Altitude where ground objects must be avoided using motor despite sink
-#define MOTOR_OFF_TRIGGER_ALT         250  // in meters
+#define MOTOR_ON_TRIGGER_ALT          150  // in meters
+#define MOTOR_ON_IN_SINK_ALT          150  // in meters, set low. Altitude where ground objects must be avoided using motor despite sink
+#define MOTOR_OFF_TRIGGER_ALT         200  // in meters
 #define MAX_THERMALLING_ALT           300  // in meters
 /*
 #define MOTOR_ON_TRIGGER_ALT           50  // in meters
@@ -1767,7 +1767,7 @@ const struct logoInstructionDef instructions[] = {
 		DO (CHECK_LAND)
 		//DO (CHECK_SINK)
 		//DO (CHECK_THERMAL)
-/*
+
 		DO (CHECK_HIGH)
 		DO (CHECK_MOTOR)
 		//DO (CHECK_SOFT_GF)
