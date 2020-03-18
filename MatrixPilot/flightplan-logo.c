@@ -1893,7 +1893,6 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 		}	
 
 		areaGeoScore(0,1,0,0);  //on pos to minimize alarms    angle, numbOfDirections, metersAhead, windSeconds)   strict
-		steps++;
 	}
 	if (steps == 3)  // geofence
 	{
@@ -1905,14 +1904,13 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 			//now check what to do,
 			areaGeoScore(30,2,50,0);  //  l/r?
 			geoSetTurn();
-			steps=5;
+			steps=6;
 		}
 		else                                          //inside gf
 		{
 			//in, now check soft geofence
 			areaGeoScore(60,2,70,0);   // normal  gf  = sides ok  ?
 		}
-		steps++;
 	}
 	if ( steps == 5 )
 	{
@@ -1921,6 +1919,7 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 			//sgf out
 			geoStatus = 2;
 			geoSetTurn();
+			steps=6;
 		}
 		else
 		{
@@ -1936,7 +1935,6 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 				geoStatus = 0;                        // ok, do nothing, no advice
 			}
   		}
-		steps++;
 	}
 	//calculate heading to where there is room to fly 400m, for REL_ANGLE_TO_OPPOSITE...
 	if ( steps == 7 )
@@ -1950,9 +1948,8 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 			bestFarScore = geofenceScore.geoScoreAhead;
 			bestFarScoreAngle = -150;
 		}
-		steps++;
 	}
-	if ( steps == 8 )
+	if ( steps == 9 )
 	{
 		areaGeoScore(150,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
 		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
@@ -1960,9 +1957,8 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 			bestFarScore = geofenceScore.geoScoreAhead;
 			bestFarScoreAngle = 150;
 		}
-		steps++;
 	}
-	if ( steps == 9 )
+	if ( steps == 11 )
 	{
 		areaGeoScore(-90,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
 		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
@@ -1970,9 +1966,8 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 			bestFarScore = geofenceScore.geoScoreAhead;
 			bestFarScoreAngle = -90;
 		}
-		steps++;
 	}
-	if ( steps == 10 )
+	if ( steps == 13 )
 	{
 		areaGeoScore(90,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
 		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
@@ -1989,20 +1984,11 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 		{
 			relAngleToOpposite = bestFarScoreAngle; //yes
 		}
-		steps++;
 		//used by REL_ANGLE_TO_OPPOSITE;
 	}
 
-	//steps++;   //not here to finish state before moving on
-	if (steps == 2 || steps == 4)
-	{
-		steps++;
-	}
-	if (steps >= 6)
-	{
-		steps++;
-	}
-	if (steps >= 14)
+	steps++;
+	if (steps >= 15)
 	{
 		steps=1;
 	}
