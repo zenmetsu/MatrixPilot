@@ -1256,14 +1256,13 @@ const struct logoInstructionDef instructions[] = {
 			END
 		END
 
-
 		//lock turn direction here
 		LOAD_TO_PARAM(SET_DIRECTION)
 
 		LOAD_TO_PARAM(CLEAR_Z_BEST)
 
-		//do while turn 180 deg, aim for ~4 sec behind the starting point, for a turn around the core. compensate for the widening turn during the time it takes to level of
-		REPEAT(7) //6 sec =~ 180 deg = 6 * "30 deg per loop"
+		//do while turn 240 deg, aim for ~4 sec behind the starting point, for a turn around the core. compensate for the widening turn during the time it takes to level of
+		REPEAT(8) //8 sec =~ 240 deg = 8 * "30 deg per loop"
 			//use motor to compensate sink if turn takes us outside of the thermal
 			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)
 				FLAG_OFF(F_LAND)    //Motor on
@@ -1277,8 +1276,20 @@ const struct logoInstructionDef instructions[] = {
 		END  //repeat
 		FLAG_ON(F_LAND)    //Motor off
 
-		//Shift the circle for 4 sec
+		/*
+		//Shift the circle for 3 sec
 		DO (THERMALLING_SHIFT_CIRCLE)
+		DO (THERMALLING_SHIFT_CIRCLE)
+		DO (THERMALLING_SHIFT_CIRCLE)
+		DO (THERMALLING_SHIFT_CIRCLE)
+		DO (THERMALLING_SHIFT_CIRCLE)
+		DO (THERMALLING_SHIFT_CIRCLE)
+		*/
+
+		LOAD_TO_PARAM(SHIFT_DURATION)
+		REPEAT_PARAM
+			DO (THERMALLING_SHIFT_CIRCLE)
+		END
 
 		//now continue around the core
 		REPEAT_FOREVER
@@ -1299,10 +1310,10 @@ const struct logoInstructionDef instructions[] = {
 					//change turn direction
 					LOAD_TO_PARAM(SWITCH_DIRECTION)
 				END
-				DO (THERMALLING_TURN) 
+				DO (THERMALLING_TURN)
 			END
 			IF_EQ(PARAM,1)
-				DO (BETTER_LIFT)    
+				DO (BETTER_LIFT)
 			END
 			IF_EQ(PARAM,2)
 				//LOAD_TO_PARAM(CLEAR_Z_BEST)
@@ -1324,7 +1335,7 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (THERMALLING_TURN)
 		//Custom solution using new command FIXED_BANK_ROTATE()
-		FIXED_BANK_ROTATE(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
+		FIXED_BANK_ROTATE(29)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
 	END
 	END
 
@@ -1709,7 +1720,7 @@ const struct logoInstructionDef instructions[] = {
 
 		//DO (CHECK_SOFT_GF)
 		//DO (CHECK_TAKEOFF)   !
-		DO (CHECK_TEST_MODE)
+		//DO (CHECK_TEST_MODE)
 	END
 	END
 
@@ -1772,7 +1783,7 @@ const struct logoInstructionDef instructions[] = {
 		DO (CHECK_MOTOR)
 		//DO (CHECK_SOFT_GF)
 		//DO (CHECK_TAKEOFF)
-		DO (CHECK_TEST_MODE)
+		//DO (CHECK_TEST_MODE)
 	END
 	END
 
@@ -1790,7 +1801,7 @@ const struct logoInstructionDef instructions[] = {
 		//DO (CHECK_SOFT_GF)
 		DO (CHECK_MOTOR)
 		//DO (CHECK_TAKEOFF)
-		DO (CHECK_TEST_MODE)
+		//DO (CHECK_TEST_MODE)
 	END
 	END
 

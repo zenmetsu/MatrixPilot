@@ -93,6 +93,7 @@ enum {
 	READ_THROTTLE_OUTPUT_CHANNEL,
 	SET_DIRECTION,
 	SWITCH_DIRECTION,
+	SHIFT_DURATION,
 #endif
 	PARAM
 };
@@ -288,12 +289,14 @@ static int16_t airSpeedZAverage;
 static int16_t airSpeedZBestHeading;
 int16_t fixedBankTargetAngle = 0; // heading,  used for Logo  - for FIXED_BANK_ROTATE command
 int16_t fixedBankActiveCounter; //  used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
+int16_t durationRotate; //  used for Logo  - for FIXED_BANK_ROTATE and shift circles
 boolean fixedBankActive = false; // used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
 boolean angleTargetActive = false; // used for Logo  - for FIXED_BANK_ROTATE command
 int16_t fixedBankDeg;  // deg bank, used for Logo  - for FIXED_BANK_ROTATE and BANK_1S commands
 static int16_t currentAngle;      // for SET_DIRECTION and FIXED_BANK_ROTATE   set every 1 sec
 static int16_t oldAngle;      // for SET_DIRECTION and FIXED_BANK_ROTATE   set by BANK_1S
 static boolean rotateClockwise;  //topview   for SET_DIRECTION and FIXED_BANK_ROTATE
+static boolean longShiftNeeded;  //for SET_DIRECTION and shift circle
 
 #ifndef THERMALLING_TURN     // in case not specified
 #define THERMALLING_TURN  0  // not implemented
@@ -698,6 +701,16 @@ void flightplan_logo_update(void)
 				{
 					fixedBankActive = false;
 
+					//measure duration of this session to calculate duration of the shifts
+					if (longShiftNeeded)
+					{
+                        durationRotate = (120 - fixedBankActiveCounter) / 14 ; //1..3 sec , typically 2 sec (80) and 1/4 of full circle =  6..8 sec
+     				}
+					else
+					{
+						durationRotate = 1; //smallest unit is fine
+					}
+
 					//force this fly command to end
 
 					// Use current position (for x and y)
@@ -777,6 +790,7 @@ void flightplan_logo_update(void)
 		airSpeedZAverage = ( (airSpeedZAverage * 6) + vario) / 7;
 		oldAngle = currentAngle;
 		currentAngle = get_current_angle();	
+
 		if (motorOffTimer > 0)   //monitor motor run
 		{
 			motorOffTimer--;
@@ -1090,8 +1104,19 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 
 		case SET_DIRECTION: // used by FIXED_BANK_ROTATE routine to sigmal left or right rotation
 		{
-			// if angle increases: right turn, turn with the current trend
-			rotateClockwise = ( ( ( get_current_angle() - oldAngle + 360) % 360 ) < 180 );
+			//longShiftNeeded in stronger thermal and "roll with flow"
+			if (vario > 30)
+			{
+				// if angle increases: right turn, turn with the current trend
+				rotateClockwise = ( ( ( currentAngle - oldAngle + 360) % 360 ) < 180 );
+                longShiftNeeded = true;
+            }
+            else
+            {
+				// if angle increases: left turn, turn against the current trend
+				rotateClockwise = ( ( ( currentAngle - oldAngle + 360) % 360 ) > 180 );
+                longShiftNeeded = false;
+            }
 			return 0;
 		}
 
@@ -1101,6 +1126,14 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			rotateClockwise = !rotateClockwise;
 			return 0;
 		}
+
+        
+		case SHIFT_DURATION: // used by SHIFT_CICRLE call to match turn and shift to cicle the core
+		{
+			return durationRotate;
+		}
+
+
 
 #endif  //THERMALLING_MISSION
 
@@ -1298,7 +1331,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), 25) << 2);
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), 25) << 2);
 
-					oldAngle = get_current_angle();  //for SET_DIRECTION
+					//oldAngle = get_current_angle();  //for SET_DIRECTION
 					fixedBankDeg = instr.arg;  //controls roll
 					fixedBankActiveCounter = 40; //40Hz = 1 sec
 					fixedBankActive = true; 
