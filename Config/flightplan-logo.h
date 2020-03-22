@@ -1256,13 +1256,15 @@ const struct logoInstructionDef instructions[] = {
 			END
 		END
 
+        USE_CURRENT_ANGLE
+
 		//lock turn direction here
 		LOAD_TO_PARAM(SET_DIRECTION)
 
 		LOAD_TO_PARAM(CLEAR_Z_BEST)
 
 		//do while turn 240 deg, aim for ~4 sec behind the starting point, for a turn around the core. compensate for the widening turn during the time it takes to level of
-		REPEAT(8) //8 sec =~ 240 deg = 8 * "30 deg per loop"
+		REPEAT(9) //8 sec =~ 240 deg = 8 * "30 deg per loop"
 			//use motor to compensate sink if turn takes us outside of the thermal
 			IF_LT(AIR_SPEED_Z,CLIMBR_THERMAL_TRIGGER)
 				FLAG_OFF(F_LAND)    //Motor on
@@ -1291,6 +1293,8 @@ const struct logoInstructionDef instructions[] = {
 			DO (THERMALLING_SHIFT_CIRCLE)
 		END
 
+        USE_CURRENT_ANGLE
+
 		//now continue around the core
 		REPEAT_FOREVER
 			DO (CHECK_SOFT_GF)
@@ -1318,6 +1322,8 @@ const struct logoInstructionDef instructions[] = {
 			IF_EQ(PARAM,2)
 				//LOAD_TO_PARAM(CLEAR_Z_BEST)
 				DO (THERMALLING_SHIFT_CIRCLE)  // small circle shift
+
+				USE_CURRENT_ANGLE
 			END
 		END
 	END
@@ -1335,7 +1341,7 @@ const struct logoInstructionDef instructions[] = {
 
 	TO (THERMALLING_TURN)
 		//Custom solution using new command FIXED_BANK_ROTATE()
-		FIXED_BANK_ROTATE(29)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
+		FIXED_BANK_ROTATE(30)   // perform roll to a fixed bank x deg for 30 deg heading change to the right and fly on for ~2 sec, position/navigation will be ignored
 	END
 	END
 
@@ -1512,7 +1518,9 @@ const struct logoInstructionDef instructions[] = {
 			IF_GT(AILERON_INPUT_CHANNEL,3150)
 				BANK_1S(20)
 			END
+			USE_CURRENT_ANGLE
 		END
+
 		EXEC (LOGO_MAIN)
 	END
 	END

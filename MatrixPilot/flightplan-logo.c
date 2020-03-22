@@ -670,6 +670,7 @@ void flightplan_logo_update(void)
 					turtleLocations[currentTurtle].y._.W0 = 0;
 					turtleLocations[currentTurtle].y._.W1 = IMUlocationy._.W1;
 
+
 					// move turtle to simulate arrival, to allow the program flow to continue right away
 					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
 					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
@@ -677,6 +678,9 @@ void flightplan_logo_update(void)
 
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);  //
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+
+					//USE_CURRENT_ANGLE
+					//turtleAngles[currentTurtle] = get_current_angle();
 
 					if (interruptStackBase)   //if in-progress
 					{
@@ -704,11 +708,11 @@ void flightplan_logo_update(void)
 					//measure duration of this session to calculate duration of the shifts
 					if (longShiftNeeded)
 					{
-                        durationRotate = (120 - fixedBankActiveCounter) / 14 ; //1..3 sec , typically 2 sec (80) and 1/4 of full circle =  6..8 sec
+                        durationRotate = (120 - fixedBankActiveCounter) / 17 ; //1..3 sec , typically 2 sec (80) and 1/4 of full circle =  6..8 sec
      				}
 					else
 					{
-						durationRotate = 1; //smallest unit is fine
+						durationRotate = 2; //small is fine
 					}
 
 					//force this fly command to end
@@ -726,6 +730,9 @@ void flightplan_logo_update(void)
 
 					turtleLocations[currentTurtle].x.WW += (__builtin_mulss(-cosine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);  //
 					turtleLocations[currentTurtle].y.WW += (__builtin_mulss(-sine(b_angle), (int16_t)WAYPOINT_PROXIMITY_RADIUS) << 2);
+
+					//USE_CURRENT_ANGLE
+					//turtleAngles[currentTurtle] = get_current_angle();
 
 					if (interruptStackBase)   //if not in-progress
 					{
@@ -1283,22 +1290,24 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					//rotate 30 deg right with a fixed bank or timeout after 2 sec
 
 					//USE_CURRENT_ANGLE
-					turtleAngles[currentTurtle] = get_current_angle();
+					//turtleAngles[currentTurtle] = get_current_angle();
 
 					//rotate turtle too, like RT(). Set the rotation target 30 deg to the right or left
 					if ( rotateClockwise )  //topview
 					{
-						fixedBankTargetAngle = turtleAngles[currentTurtle] + 30; // ~0.5 - 1 sec == 30 deg headingchange
+						fixedBankTargetAngle = turtleAngles[currentTurtle] + 28; // ~0.5 - 1 sec == 30 deg headingchange
 						fixedBankDeg = instr.arg;  //controls roll and yaw,
 					}
 					else
 					{
-						fixedBankTargetAngle = turtleAngles[currentTurtle] - 30; // ~0.5 - 1 sec == 30 deg headingchange
+						fixedBankTargetAngle = turtleAngles[currentTurtle] - 28; // ~0.5 - 1 sec == 30 deg headingchange
 						fixedBankDeg = -instr.arg;  //controls roll and yaw,
 					}
 					//fixedBankTargetAngle = get_current_angle() + 30; // ~0.5 - 1 sec == 30 deg headingchange
 					while (fixedBankTargetAngle < 0) fixedBankTargetAngle += 360;
 					fixedBankTargetAngle = fixedBankTargetAngle % 360;
+
+					turtleAngles[currentTurtle] = fixedBankTargetAngle;
 
 					//this is a fly command, do the same as FD()
 					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
@@ -1320,7 +1329,7 @@ static boolean process_one_instruction(struct logoInstructionDef instr)
 					//maintain a fixed bank or level for one sec
 					
 					//USE_CURRENT_ANGLE
-					turtleAngles[currentTurtle] = get_current_angle();
+					//turtleAngles[currentTurtle] = get_current_angle();
 					//this is a fly command, do the same as FD()
 					int16_t cangle = turtleAngles[currentTurtle];   // 0-359 (clockwise, 0=North)
 					int8_t b_angle = (cangle * 182 + 128) >> 8;     // 0-255 (clockwise, 0=North)
