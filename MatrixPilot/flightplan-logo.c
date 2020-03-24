@@ -708,8 +708,8 @@ void flightplan_logo_update(void)
 					//measure duration of this session to calculate duration of the shifts
 					if (longShiftNeeded)
 					{
-                        durationRotate = (120 - fixedBankActiveCounter) / 17 ; //1..3 sec , typically 2 sec (80) and 1/4 of full circle =  6..8 sec
-     				}
+						durationRotate = (120 - fixedBankActiveCounter) / 17 ; //1..3 sec , typically 2 sec (80) and 1/4 of full circle =  6..8 sec
+					}
 					else
 					{
 						durationRotate = 2; //small is fine
@@ -1116,14 +1116,14 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			{
 				// if angle increases: right turn, turn with the current trend
 				rotateClockwise = ( ( ( currentAngle - oldAngle + 360) % 360 ) < 180 );
-                longShiftNeeded = true;
-            }
-            else
-            {
+				longShiftNeeded = true;
+			}
+			else
+			{
 				// if angle increases: left turn, turn against the current trend
 				rotateClockwise = ( ( ( currentAngle - oldAngle + 360) % 360 ) > 180 );
-                longShiftNeeded = false;
-            }
+				longShiftNeeded = false;
+			}
 			return 0;
 		}
 
@@ -1134,7 +1134,7 @@ static int16_t logo_value_for_identifier(uint8_t ident)
 			return 0;
 		}
 
-        
+
 		case SHIFT_DURATION: // used by SHIFT_CICRLE call to match turn and shift to cicle the core
 		{
 			return durationRotate;
@@ -1946,7 +1946,7 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 			//now check what to do,
 			areaGeoScore(30,2,50,0);  //  l/r?
 			geoSetTurn();
-			steps=6;
+			steps=8;
 		}
 		else                                          //inside gf
 		{
@@ -1961,25 +1961,39 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 			//sgf out
 			geoStatus = 2;
 			geoSetTurn();
-			steps=6;
+			steps=8;
 		}
 		else
 		{
-			areaGeoScore(60,2,60,1);     // also check ahead; l/r - for clearing edges
+			areaGeoScore(120,2,70,0);     // also check aft; l/r - for clearing edges
 			if ( geofenceScore.geoScoreRight > 1 || geofenceScore.geoScoreLeft > 1 )
 			{
 				//outside wind line, thermalling only
-				geoStatus = 1;                        // assume no room for a new thermal turn
+				geoStatus = 2;
 				geoSetTurn();
-			}
-			else
-			{
-				geoStatus = 0;                        // ok, do nothing, no advice
+				steps=8;
 			}
   		}
 	}
-	//calculate heading to where there is room to fly 400m, for REL_ANGLE_TO_OPPOSITE...
+
 	if ( steps == 7 )
+	{
+		areaGeoScore(60,2,60,1);     // also check winf gf
+		if ( geofenceScore.geoScoreRight > 1 || geofenceScore.geoScoreLeft > 1 )
+		{
+			//outside wind line, thermalling only
+			geoStatus = 1;                        // assume no room for a new thermal turn
+			geoSetTurn();
+		}
+		else
+		{
+			geoStatus = 0;                        // ok, do nothing, no advice
+		}
+	}
+	
+
+	//calculate heading to where there is room to fly 400m, for REL_ANGLE_TO_OPPOSITE...
+	if ( steps == 9 )
 	{
 		bestFarScore = 2;   //start bad
 		bestFarScoreAngle = -1;
@@ -1991,7 +2005,7 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 			bestFarScoreAngle = -150;
 		}
 	}
-	if ( steps == 9 )
+	if ( steps == 11 )
 	{
 		areaGeoScore(150,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
 		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
@@ -2000,7 +2014,7 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 			bestFarScoreAngle = 150;
 		}
 	}
-	if ( steps == 11 )
+	if ( steps == 13 )
 	{
 		areaGeoScore(-90,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
 		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
@@ -2009,7 +2023,7 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 			bestFarScoreAngle = -90;
 		}
 	}
-	if ( steps == 13 )
+	if ( steps == 15 )
 	{
 		areaGeoScore(90,1,500,0);  //(int16_t angle, int16_t numbOfDirections, int16_t metersAhead, int16_t windSeconds)
 		if ( (geofenceScore.geoScoreAhead < bestFarScore) && (geofenceScore.geoScoreAhead == 1) )
@@ -2030,7 +2044,7 @@ void geoSetStatus() // set geoStatus. WindSeconds; translate x and y downwind, e
 	}
 
 	steps++;
-	if (steps >= 15)
+	if (steps >= 17)
 	{
 		steps=1;
 	}
