@@ -65,13 +65,13 @@
 //    AIRFRAME_GLIDER           Under development. Elevator, Flaps, Ailerons and/or Rudder control, motor optional 
 // (Note that although AIRFRAME_HELI is also recognized, the code for this airframe type is not ready.)
 #ifndef AIRFRAME_TYPE
-#define AIRFRAME_TYPE                       AIRFRAME_STANDARD
+#define AIRFRAME_TYPE                       AIRFRAME_GLIDER
 #endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set this value to your GPS type.  (Set to GPS_STD, GPS_UBX_2HZ, GPS_UBX_4HZ, GPS_MTEK, GPS_NMEA, or GPS_NONE)
-#define GPS_TYPE                            GPS_STD
+#define GPS_TYPE                            GPS_MTEK
 //#define DEFAULT_GPS_BAUD                    57600   // added for GPS_NMEA support
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -115,7 +115,7 @@
 // This is an option for modulating the navigation gains in flight
 // to maintain a constant turn radius in heavy winds in waypoing mode.
 // Define WIND_GAIN_ADJUSTMENT as 1 to turn this feature on.
-#define WIND_GAIN_ADJUSTMENT                0
+#define WIND_GAIN_ADJUSTMENT                1
 
 // Altitude Hold
 // Use altitude hold in stabilized mode?  In waypoint mode?
@@ -134,7 +134,7 @@
 // If you define SPEED_CONTROL to be 1, MatrixPilot will take air speed into account
 // in the altitude controls, and will trim the throttle and pitch to maintain air speed.
 // Define DESIRED_SPEED to be the air speed that you want, in meters/second.
-#define SPEED_CONTROL                       0
+#define SPEED_CONTROL                       1
 #define DESIRED_SPEED                       10.0    // meters/second
 
 // Inverted flight
@@ -182,7 +182,7 @@
 // recommended that you actually use this option, since you'd have no manual control to fall
 // back on if things go wrong.  It may not even be legal in your area.
 #ifndef NORADIO
-#define NORADIO                             0
+#define NORADIO                             1
 #endif
 
 
@@ -203,7 +203,7 @@
 // often different from the NUM_INPUTS value below, and should usually be left at 8.
 //
 #define USE_PPM_INPUT                       0
-#define PPM_NUMBER_OF_CHANNELS              8
+#define PPM_NUMBER_OF_CHANNELS              6
 #define PPM_SIGNAL_INVERTED                 0
 #define PPM_ALT_OUTPUT_PINS                 0
 
@@ -218,17 +218,17 @@
 // If using PWM inputs (parallel Rx connections), set to the number of cables connected, 1-8
 // If using PPM inputs (serial Rx connection), set to the number of Rx channels, up to PPM_NUMBER_OF_CHANNELS
 // If using LRS library (integrated SPI tranceiver), set to the number of Rx channels, up to 16
-#define NUM_INPUTS                          5
+#define NUM_INPUTS                          6
 
 // Channel numbers for each input.
 // Use as is, or edit to match your setup.
 //   - If you're set up to use Rudder Navigation (like MatrixNav), then you may want to swap
 //     the aileron and rudder channels so that rudder is CHANNEL_1, and aileron is 5.
-#define THROTTLE_INPUT_CHANNEL              CHANNEL_3
-#define AILERON_INPUT_CHANNEL               CHANNEL_1
-#define ELEVATOR_INPUT_CHANNEL              CHANNEL_2
-#define RUDDER_INPUT_CHANNEL                CHANNEL_5
-#define MODE_SWITCH_INPUT_CHANNEL           CHANNEL_4
+#define THROTTLE_INPUT_CHANNEL              CHANNEL_1
+#define AILERON_INPUT_CHANNEL               CHANNEL_2
+#define ELEVATOR_INPUT_CHANNEL              CHANNEL_3
+#define RUDDER_INPUT_CHANNEL                CHANNEL_4
+#define MODE_SWITCH_INPUT_CHANNEL           CHANNEL_5
 #define BRAKE_THR_SEL_INPUT_CHANNEL         CHANNEL_UNUSED
 #define BRAKE_INPUT_CHANNEL                 CHANNEL_UNUSED
 #define FLAPS_INPUT_CHANNEL                 CHANNEL_UNUSED
@@ -248,7 +248,7 @@
 // For UDB4/5 boards: Set to 3-8 (or up to 10 using pins RA4 and RA1.)
 // For AUAV3 boards:  Set to 3-8 (or up to 11 using pins RE1, RA6 and RA7.)
 //                               (this needs developing, so contact the list)
-#define NUM_OUTPUTS                         4
+#define NUM_OUTPUTS                         8
 
 // Channel numbers for each output
 // Use as is, or edit to match your setup.
@@ -261,10 +261,10 @@
 // connect THROTTLE_OUTPUT_CHANNEL to one of the built-in Outputs (1, 2, or 3) to make
 // sure your board gets power.
 //
-#define THROTTLE_OUTPUT_CHANNEL             CHANNEL_3
-#define AILERON_OUTPUT_CHANNEL              CHANNEL_1
-#define AILERON_SECONDARY_OUTPUT_CHANNEL    CHANNEL_UNUSED
-#define ELEVATOR_OUTPUT_CHANNEL             CHANNEL_2
+#define THROTTLE_OUTPUT_CHANNEL             CHANNEL_1
+#define AILERON_OUTPUT_CHANNEL              CHANNEL_2
+#define AILERON_SECONDARY_OUTPUT_CHANNEL    CHANNEL_6
+#define ELEVATOR_OUTPUT_CHANNEL             CHANNEL_3
 #define RUDDER_OUTPUT_CHANNEL               CHANNEL_4
 #define AILERON_LEFT_OUTPUT_CHANNEL         CHANNEL_UNUSED
 #define FLAP_LEFT_OUTPUT_CHANNEL            CHANNEL_UNUSED
@@ -293,7 +293,7 @@
 #define AILERON_CHANNEL_REVERSED            0
 #define ELEVATOR_CHANNEL_REVERSED           0
 #define RUDDER_CHANNEL_REVERSED             0
-#define AILERON_SECONDARY_CHANNEL_REVERSED  0
+#define AILERON_SECONDARY_CHANNEL_REVERSED  1
 #define THROTTLE_CHANNEL_REVERSED           0
 #define CAMERA_PITCH_CHANNEL_REVERSED       0
 #define CAMERA_YAW_CHANNEL_REVERSED         0
@@ -319,7 +319,7 @@
 // switch state back in stabilized. The important design concept is that Manual position is always Manual state immediately.
 // Stabilized position is Stabilized mode unless you try  hard to reach Autonomous mode.
 // Set MODE_SWITCH_TWO_POSITION to 0 for a normal three position mode switch.
-#define MODE_SWITCH_TWO_POSITION            0
+#define MODE_SWITCH_TWO_POSITION            1
 
 ////////////////////////////////////////////////////////////////////////////////
 // The Failsafe Channel is the RX channel that is monitored for loss of signal
@@ -335,8 +335,8 @@
 // FAILSAFE_INPUT_MIN and _MAX define the range within which we consider the radio on.
 // Normal signals should fall within about 2000 - 4000.
 #define FAILSAFE_INPUT_CHANNEL              THROTTLE_INPUT_CHANNEL
-#define FAILSAFE_INPUT_MIN                  1500
-#define FAILSAFE_INPUT_MAX                  4500
+#define FAILSAFE_INPUT_MIN                  2000
+#define FAILSAFE_INPUT_MAX                  4200
 
 // FAILSAFE_TYPE controls the UDB's behavior when in failsafe mode due to loss of transmitter
 // signal.  (Set to FAILSAFE_RTL or FAILSAFE_MAIN_FLIGHTPLAN.)
@@ -360,7 +360,7 @@
 // to exit Failsafe mode.  This avoids the situation where your plane flies in and out of range,
 // and keeps switching into and out of Failsafe mode, which depending on your configuration,
 // could be confusing and/or dangerous.
-#define FAILSAFE_HOLD                       0
+#define FAILSAFE_HOLD                       1
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -378,7 +378,7 @@
 // Note that SERIAL_MAVLINK defaults to using a baud rate of 57600 baud (other formats default to 19200)
 
 #ifndef SERIAL_OUTPUT_FORMAT
-#define SERIAL_OUTPUT_FORMAT                SERIAL_NONE
+#define SERIAL_OUTPUT_FORMAT                SERIAL_UDB_EXTRA
 #endif
 
 
@@ -789,9 +789,9 @@
 //#define ID_VEHICLE_REGISTRATION "TW2-PDH-UK"
 //#define ID_LEAD_PILOT "Pete Hollands"
 //#define ID_DIY_DRONES_URL "http://www.diydrones.com/profile/PeterHollands"
-#define ID_VEHICLE_MODEL_NAME               "Not Defined"
-#define ID_VEHICLE_REGISTRATION             "Not Defined"
-#define ID_LEAD_PILOT                       "Not Defined"
+#define ID_VEHICLE_MODEL_NAME               "SkyBench Olympic II"
+#define ID_VEHICLE_REGISTRATION             "W7BBS-7"
+#define ID_LEAD_PILOT                       "Jason Westervelt"
 #define ID_DIY_DRONES_URL                   "http://www.diydrones.com"
 
 
