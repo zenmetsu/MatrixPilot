@@ -63,6 +63,7 @@
 //    AIRFRAME_HELI             Not currently supported
 //    AIRFRAME_QUAD             Under development
 //    AIRFRAME_GLIDER           Under development. Elevator, Flaps, Ailerons and/or Rudder control, motor optional 
+//    AIRFRAME_RESGLIDER	Under development. Rudder, Elevator, Spoileron glider, no motor
 // (Note that although AIRFRAME_HELI is also recognized, the code for this airframe type is not ready.)
 #ifndef AIRFRAME_TYPE
 #define AIRFRAME_TYPE                       AIRFRAME_GLIDER
@@ -224,13 +225,13 @@
 // Use as is, or edit to match your setup.
 //   - If you're set up to use Rudder Navigation (like MatrixNav), then you may want to swap
 //     the aileron and rudder channels so that rudder is CHANNEL_1, and aileron is 5.
-#define THROTTLE_INPUT_CHANNEL              CHANNEL_1
+#define THROTTLE_INPUT_CHANNEL              CHANNEL_UNUSED
 #define AILERON_INPUT_CHANNEL               CHANNEL_2
 #define ELEVATOR_INPUT_CHANNEL              CHANNEL_3
 #define RUDDER_INPUT_CHANNEL                CHANNEL_4
 #define MODE_SWITCH_INPUT_CHANNEL           CHANNEL_5
 #define BRAKE_THR_SEL_INPUT_CHANNEL         CHANNEL_UNUSED
-#define BRAKE_INPUT_CHANNEL                 CHANNEL_UNUSED
+#define BRAKE_INPUT_CHANNEL                 CHANNEL_1
 #define FLAPS_INPUT_CHANNEL                 CHANNEL_UNUSED
 #define CAMERA_PITCH_INPUT_CHANNEL          CHANNEL_UNUSED
 #define CAMERA_YAW_INPUT_CHANNEL            CHANNEL_UNUSED
@@ -261,15 +262,15 @@
 // connect THROTTLE_OUTPUT_CHANNEL to one of the built-in Outputs (1, 2, or 3) to make
 // sure your board gets power.
 //
-#define THROTTLE_OUTPUT_CHANNEL             CHANNEL_1
-#define AILERON_OUTPUT_CHANNEL              CHANNEL_2
-#define AILERON_SECONDARY_OUTPUT_CHANNEL    CHANNEL_6
+#define THROTTLE_OUTPUT_CHANNEL             CHANNEL_UNUSED
+#define AILERON_OUTPUT_CHANNEL              CHANNEL_UNUSED
+#define AILERON_SECONDARY_OUTPUT_CHANNEL    CHANNEL_UNUSED
 #define ELEVATOR_OUTPUT_CHANNEL             CHANNEL_3
 #define RUDDER_OUTPUT_CHANNEL               CHANNEL_4
-#define AILERON_LEFT_OUTPUT_CHANNEL         CHANNEL_UNUSED
+#define AILERON_LEFT_OUTPUT_CHANNEL         CHANNEL_2
 #define FLAP_LEFT_OUTPUT_CHANNEL            CHANNEL_UNUSED
 #define FLAP_RIGHT_OUTPUT_CHANNEL           CHANNEL_UNUSED
-#define AILERON_RIGHT_OUTPUT_CHANNEL        CHANNEL_UNUSED
+#define AILERON_RIGHT_OUTPUT_CHANNEL        CHANNEL_1
 #define BRAKE_OUTPUT_CHANNEL                CHANNEL_UNUSED
 #define FLAPS_OUTPUT_CHANNEL                CHANNEL_UNUSED
 #define CAMERA_PITCH_OUTPUT_CHANNEL         CHANNEL_UNUSED
